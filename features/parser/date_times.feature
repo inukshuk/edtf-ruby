@@ -1,11 +1,10 @@
 Feature: EDTF parses date/time strings
 
-	In order to use dates and times in EDTF
 	As a user of edtf-ruby
 	I want to parse date/time strings formatted in EDTF
 	
 	Scenario Outline: EDTF parses a date/time string
-		When I parse the date/time string "<string>"
+		When I parse the string "<string>"
 		Then the year should be "<year>"
 		And the month should be "<month>"
 		And the day should be "<day>"
@@ -14,7 +13,7 @@ Feature: EDTF parses date/time strings
 		And the seconds should be "<seconds>"
 
 		@date @time @basic_features
-		Scenarios: simple dates (with hyphen)
+		Scenarios: simple dates
 			| string               | year | month | day | hours | minutes | seconds |
 			| 2001-02-03           | 2001 | 2     | 3   | 0     | 0       | 0       |
 			| 2008-12              | 2008 | 12    | 1   | 0     | 0       | 0       |
@@ -24,7 +23,7 @@ Feature: EDTF parses date/time strings
 
 
 	Scenario Outline: EDTF parses a date/time string with timezone indicator
-		When I parse the date/time string "<string>"
+		When I parse the string "<string>"
 		Then the year should be "<year>" (UTC)
 		And the month should be "<month>" (UTC)
 		And the day should be "<day>" (UTC)

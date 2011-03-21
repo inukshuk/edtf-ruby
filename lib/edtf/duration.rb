@@ -19,7 +19,11 @@ class EDTF
     def to_s
       'P' + each_pair.map { |k,v| [v.to_i, k[0].upcase] }.each_slice(4).map(&:join).join('T').gsub(/0[YMWDHS]/, '').chomp('T')
     end
-        
+
+    members.each do |member|
+      alias_method [member,'s'].join, member
+    end
+    
   end
 
 end

@@ -17,7 +17,7 @@ class EDTF
       end
 
       %w[ P1Y P1M P1W P1D PT1H PT1M PT1S ].each do |pattern|
-        it 'accepts partial patterns (single value)' do
+        it "accepts partial patterns (#{pattern})" do
           Duration.new(pattern).to_s.should == pattern
         end
       end

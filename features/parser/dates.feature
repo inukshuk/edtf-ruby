@@ -5,7 +5,7 @@ Feature: EDTF parser parses date strings
 	I want to parse date strings formatted in EDTF
 
 	Scenario Outline: EDTF parses a date string
-		When I parse the date string "<string>"
+		When I parse the string "<string>"
 		Then the year should be "<year>"
 		And the month should be "<month>"
 

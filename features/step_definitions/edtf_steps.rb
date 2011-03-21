@@ -1,4 +1,4 @@
-When /^I parse the date(?:\/time)? string "([^"]*)"$/ do |string|
+When /^I parse the string "([^"]*)"$/ do |string|
   @date = EDTF.parse(string)
 end
 
@@ -41,4 +41,20 @@ end
 
 Then /^the seconds should be "([^"]*)"$/ do |seconds|
   @date.sec.should == seconds.to_i
+end
+
+Then /^the century should be "([^"]*)"$/ do |century|
+  pending
+end
+
+Then /^the duration should last "([^"]*)" (\w+)$/ do |value, part|
+  @date.send(part).should == value.to_i
+end
+
+Then /^the interval should start at "([^"]*)"$/ do |date|
+  @date.begin.to_s.should == date
+end
+
+Then /^the interval should end at "([^"]*)"$/ do |date|
+  @date.end.to_s.should == date
 end
