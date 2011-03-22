@@ -49,12 +49,22 @@ class EDTF
         end
       end
     end
-  end
-  
-  describe 'arithmetics' do
-    it 'adds a 100 years when adding 1' do
-      Century.new(2011).year.should == (Century.new(1911) + 1).year
+    
+    describe 'arithmetics' do
+      it 'adds a 100 years when adding 1' do
+        (Century.new(1911) + 1).year.should == 2011
+      end
     end
-  end
-  
+
+    describe '#iso8601' do
+      it 'returns the century as an iso8061 string by default' do
+        instance.iso8601.should == '00'
+      end
+
+      it 'parses an iso8601 string if argument is given' do
+        instance.iso8601('19').century.should == 20
+      end
+    end
+    
+  end  
 end

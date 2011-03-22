@@ -5,8 +5,10 @@ class EDTF
     
     attr_accessor :year
     
+    def self.iso8601(string); new(string.to_s); end
+    
     def initialize(argument = 0)
-      argument.is_a?(String) ? self.century = argument.to_i + 1 : @year = argument
+      argument.is_a?(String) ? iso8601(argument) : @year = argument
     end
     
     def century
@@ -22,7 +24,18 @@ class EDTF
     def century=(new_century)
       @year = (new_century.to_i - century) * 100 + (@year || 1)  
     end
+    
+    def iso8601(argument = nil)
+      argument && parse(argument) || ('%02d' % [self.century - 1])
+    end
 
+    def to_s; iso8601(); end
+    
+    def parse(string)
+      self.century = string.to_i + 1
+      self
+    end
+    
     def +(other)
       self.century = century + other.to_i
       self
