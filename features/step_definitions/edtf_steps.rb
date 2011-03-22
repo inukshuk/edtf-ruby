@@ -44,7 +44,7 @@ Then /^the seconds should be "([^"]*)"$/ do |seconds|
 end
 
 Then /^the century should be "([^"]*)"$/ do |century|
-  pending
+  @date.century.should == century.to_i
 end
 
 Then /^the duration should last "([^"]*)" (\w+)$/ do |value, part|

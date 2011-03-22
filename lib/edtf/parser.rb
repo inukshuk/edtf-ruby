@@ -15,7 +15,7 @@ class EDTF
     when /^P/
       Duration.new(string)
     when /^\d{2}$/
-      Date.strptime(string + '00', '%Y')
+      Century.iso8601(string)
     when /^-?\d{4}$/
       Date.strptime(string, '%Y')
     when /^-?\d{4}-\d{1,2}$/
