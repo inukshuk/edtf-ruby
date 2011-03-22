@@ -3,10 +3,15 @@ class EDTF
   class Century
     include Comparable
     
+    PATTERN = /^\d{2}$/
+    
     attr_accessor :year
     
-    def self.iso8601(string); new(string.to_s); end
-    
+    class << self
+      def parse(argument); new(argument.to_s); end
+      alias :iso8601 :parse
+    end
+
     def initialize(argument = 0)
       argument.is_a?(String) ? iso8601(argument) : @year = argument
     end
