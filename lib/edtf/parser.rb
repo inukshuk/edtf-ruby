@@ -14,10 +14,12 @@ class EDTF
     case string
     when /^P/
       Duration.new(string)
+    when /^\d{2}$/
+      Date.strptime(string + '00', '%Y')
     when /^-?\d{4}$/
-      DateTime.strptime(string, '%Y')
+      Date.strptime(string, '%Y')
     when /^-?\d{4}-\d{1,2}$/
-      DateTime.strptime(string, '%Y-%m')
+      Date.strptime(string, '%Y-%m')
     else
       DateTime.parse(string)
     end
