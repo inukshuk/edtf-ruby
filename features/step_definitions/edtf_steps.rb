@@ -58,3 +58,15 @@ end
 Then /^the interval should end at "([^"]*)"$/ do |date|
   @edtf.end.to_s.should == date
 end
+
+Then /^the year should be uncertain\? "([^"]*)"$/ do |arg1|
+  @edtf.uncertain?(:year).should == !!(arg1 =~ /y(es)?/i)
+end
+
+Then /^the month should be uncertain\? "([^"]*)"$/ do |arg1|
+  @edtf.uncertain?(:month).should == !!(arg1 =~ /y(es)?/i)
+end
+
+Then /^the day should be uncertain\? "([^"]*)"$/ do |arg1|
+  @edtf.uncertain?(:day).should == !!(arg1 =~ /y(es)?/i)
+end

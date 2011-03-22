@@ -31,7 +31,7 @@ class EDTF
     end
     
     def iso8601(argument = nil)
-      argument && parse(argument) || ('%02d' % [self.century - 1])
+      argument.nil? ? ('%02d' % [self.century - 1]) : parse(argument)
     end
 
     def to_s; iso8601(); end
