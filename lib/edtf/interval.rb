@@ -1,6 +1,4 @@
-require 'forwardable'
-
-class EDTF
+module EDTF
   
   class Interval
     extend Forwardable
@@ -16,7 +14,7 @@ class EDTF
         Range.new(start_date, end_date)
     end
     
-    def_delegators(:@range, *Range.instance_methods)
+    def_delegators(:@range, *Range.instance_methods.reject { |m| m.to_s =~ /^__/ || m.to_s == 'object_id' })
   end
   
 end

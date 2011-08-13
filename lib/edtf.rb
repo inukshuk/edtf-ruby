@@ -1,3 +1,7 @@
+
+require 'date'
+require 'forwardable'
+
 require 'edtf/version'
 require 'edtf/uncertainty'
 require 'edtf/date'

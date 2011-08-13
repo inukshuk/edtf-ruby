@@ -1,4 +1,4 @@
-class EDTF
+module EDTF
   
   describe Uncertainty do
 
@@ -39,6 +39,12 @@ class EDTF
         
       end
       
+    end
+    
+    describe '#uncertain!' do
+      it 'should make all parts certain when no part given' do
+        lambda { uncertainty.uncertain! }.should change { uncertainty.certain? }
+      end
     end
     
   end

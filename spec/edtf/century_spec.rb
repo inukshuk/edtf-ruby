@@ -1,4 +1,4 @@
-class EDTF
+module EDTF
   describe Century do
     
     let(:instance) { Century.new }

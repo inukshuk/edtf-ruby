@@ -1,4 +1,4 @@
-class EDTF
+module EDTF
   
   def self.parse(string)
     case string.to_s

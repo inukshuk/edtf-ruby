@@ -1,12 +1,20 @@
-class EDTF
+module EDTF
  
   class Uncertainty < Struct.new(:year, :month, :day, :hour, :minute, :second)
     
-    def uncertain?(part = nil)
-      part.nil? ? values.any? { |v| !!v } : !!send(part)
+    def uncertain?(parts = members)
+      [parts].flatten.any? { |p| !!send(p) }
     end
 
-    def certain?(part = nil); !uncertain?(nil); end
+    def uncertain!(parts = members)
+      [parts].flatten.each { |p| send("#{p}=", true) }
+    end
+
+    def certain?(parts = members); !uncertain?(parts); end
+    
+    def certain!(parts = members)
+      [parts].flatten.each { |p| send("#{p}=", false) }
+    end
    
   end
   

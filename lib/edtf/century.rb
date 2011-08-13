@@ -1,4 +1,4 @@
-class EDTF
+module EDTF
   
   class Century
     include Comparable

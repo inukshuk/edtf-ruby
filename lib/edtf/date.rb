@@ -1,6 +1,8 @@
-class EDTF
+module EDTF
   
   module ExtendedDateTime
+    
+    extend Forwardable
     
     def self.included(base)
       base.extend(ClassMethods)
@@ -9,8 +11,10 @@ class EDTF
     def uncertain; @uncertain ||= Uncertainty.new; end
     def approximate; @approximate ||= Uncertainty.new; end
     
-    def uncertain?(part = nil); uncertain.uncertain?(part); end
-    def approximate?(part = nil); approximate.uncertain?(part); end
+    def_delegators :uncertain, :uncertain?, :uncertain!, :certain?, :certain!
+
+    def approximate?(*arguments); approximate.uncertain?(*arguments); end
+    def approximate!(*arguments); approximate.certain!(*arguments); end
 
     module ClassMethods  
       def edtf(string)

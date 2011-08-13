@@ -1,4 +1,4 @@
-class EDTF
+module EDTF
   describe Duration do
     
     describe '#new' do

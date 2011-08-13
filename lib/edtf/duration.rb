@@ -1,4 +1,4 @@
-class EDTF
+module EDTF
 
   class Duration < Struct.new(:year, :month, :week, :day, :hour, :minute, :second)
     include Comparable
