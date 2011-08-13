@@ -10,3 +10,7 @@ group :testing do
 	gem 'rspec'
 	gem 'cucumber'
 end
+
+group :dev do
+	gem 'racc'
+end
