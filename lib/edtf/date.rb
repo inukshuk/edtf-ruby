@@ -13,8 +13,13 @@ module EDTF
     
     def_delegators :uncertain, :uncertain?, :uncertain!, :certain?, :certain!
 
+    def certain!(*arguments); uncertain.certain!(*arguments); self; end
+    def uncertain!(*arguments); uncertain.uncertain!(*arguments); self; end
+
     def approximate?(*arguments); approximate.uncertain?(*arguments); end
-    def approximate!(*arguments); approximate.certain!(*arguments); end
+    def approximate!(*arguments); approximate.uncertain!(*arguments); self; end
+    
+    def precise!(*arguments); approximate.certain!(*arguments); self; end
 
     module ClassMethods  
       def edtf(string)

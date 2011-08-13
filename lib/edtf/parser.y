@@ -2,7 +2,8 @@
 
 class EDTF::Parser
 
-token T Z PLUS MINUS COLON SLASH D0 D1 D2 D3 D4 D5 D6 D7 D8 D9 UNMATCHED
+token T Z PLUS MINUS COLON SLASH D0 D1 D2 D3 D4 D5 D6 D7 D8 D9
+  UNCERTAIN APPROXIMATE UNMATCHED
 
 expect 0
 
@@ -10,12 +11,15 @@ rule
 
   edtf :
        | level_0_expression
-       # | level_1_expression
+       | level_1_expression
        # | level_2_expression
 
+
+  # ---- Level 0 / ISO 8601 Rules ----
+  
   level_0_expression : date
-    | date_time
-    | level_0_interval
+                     | date_time
+                     | level_0_interval
 
   date : positive_date
        | negative_date
@@ -83,6 +87,25 @@ rule
   second : d00_59
   
   level_0_interval : date SLASH date   { result = val[0] ... val[1] }
+
+  # ---- Level 1 Extension Rules ----
+  
+  level_1_expression : uncertain_or_approximate_date 
+                     # | unspecified
+                     # | level_1_interval
+                     # | long_year_simple
+                     # | season
+  
+  uncertain_or_approximate_date : date uncertain_or_approximate { result = val[0].send(val[1]) }
+  
+  uncertain_or_approximate : UNCERTAIN    { result = 'uncertain!' }
+                           | APPROXIMATE  { result = 'approximate!' }
+                           
+  
+  # ---- Level 2 Extension Rules ----
+  
+  
+  # ---- Auxiliary Rules ----
 
   digit : D0             { result = 0 }
         | positive_digit
@@ -172,6 +195,10 @@ require 'strscan'
         @stack << [:T, @src.matched]
       when @src.scan(/Z/)
         @stack << [:Z, @src.matched]
+      when @src.scan(/\?/)
+        @stack << [:UNCERTAIN, @src.matched]
+      when @src.scan(/~/)
+        @stack << [:APPROXIMATE, @src.matched]
       when @src.scan(/\+/)
         @stack << [:PLUS, @src.matched]
       when @src.scan(/-/)
