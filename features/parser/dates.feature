@@ -17,6 +17,7 @@ Feature: EDTF parser parses date strings
 		| 2008-12    | 2008 | 12    | 1   |
 		| 2008       | 2008 | 1     | 1   |
 		| -0999      | -999 | 1     | 1   |
+		| 0000       | 0    | 1     | 1   |
 
 
 	Scenario Outline: EDTF parses uncertain date strings
