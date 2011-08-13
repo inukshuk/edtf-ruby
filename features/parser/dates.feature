@@ -33,3 +33,5 @@ Feature: EDTF parser parses date strings
 	Scenarios: uncertain dates
 		| string     | year | uncertain-year | month | uncertain-month | day | uncertain-day |
 		| 1992?      | 1992 | yes            | 1     | no              | 1   | no            |
+		| 1984?      | 1984 | yes            | 1     | no              | 1   | no            |
+		| 2004-06?   | 2004 | no             | 6     | yes             | 1   | no            |
