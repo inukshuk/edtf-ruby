@@ -43,12 +43,8 @@ Then /^the seconds should be "([^"]*)"$/ do |seconds|
   @edtf.sec.should == seconds.to_i
 end
 
-Then /^the century should be "([^"]*)"$/ do |century|
-  @edtf.century.should == century.to_i
-end
-
-Then /^the duration should last "([^"]*)" (\w+)$/ do |value, part|
-  @edtf.send(part).should == value.to_i
+Then /^the duration should range from "([^"]*)" to "([^"]*)"$/ do |*expected|
+  [@edtf.begin.year.to_s, @edtf.end.year.to_s].should == expected
 end
 
 Then /^the interval should start at "([^"]*)"$/ do |date|

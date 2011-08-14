@@ -12,14 +12,9 @@ Feature: EDTF parses date/time strings
 		And the minutes should be "<minutes>"
 		And the seconds should be "<seconds>"
 
-		@date @time @basic_features
+		@002 @level0
 		Scenarios: simple dates
 			| string               | year | month | day | hours | minutes | seconds |
-			| 2001-02-03           | 2001 | 2     | 3   | 0     | 0       | 0       |
-			| 2008-12              | 2008 | 12    | 1   | 0     | 0       | 0       |
-			| 2008                 | 2008 | 1     | 1   | 0     | 0       | 0       |
-			| -0999                | -999 | 1     | 1   | 0     | 0       | 0       |
-			| 0000                 | 0    | 1     | 1   | 0     | 0       | 0       |
 			| 2001-02-03T09:30:01  | 2001 | 2     | 3   | 9     | 30      | 1       |
 
 
@@ -32,9 +27,9 @@ Feature: EDTF parses date/time strings
 		And the minutes should be "<minutes>"
 		And the seconds should be "<seconds>"
 
-		@date @time @timezone @basic_features
+		@002 @level0
 		Scenarios: date/times with timezone
 			| string                    | year | month | day | hours | minutes | seconds |
 			| 2004-01-01T10:10:10Z      | 2004 | 1     | 1   | 10    | 10      | 10      |
 			| 2004-01-01T10:10:10+05:00 | 2004 | 1     | 1   | 5     | 10      | 10      |
-			| 2004-01-01T2:10:10+05:00  | 2003 | 12    | 31  | 21    | 10      | 10      |
+			| 2004-01-01T02:10:10+05:00 | 2003 | 12    | 31  | 21    | 10      | 10      |
