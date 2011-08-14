@@ -2,7 +2,7 @@
 
 class EDTF::Parser
 
-token T Z PLUS MINUS COLON SLASH D0 D1 D2 D3 D4 D5 D6 D7 D8 D9 LP RP
+token T Z E PLUS MINUS COLON SLASH D0 D1 D2 D3 D4 D5 D6 D7 D8 D9 LP RP
   UNCERTAIN APPROXIMATE UNSPECIFIED UNKNOWN OPEN LONGYEAR CARET UNMATCHED
 
 expect 0
@@ -140,10 +140,17 @@ rule
                      # | masked_precision
                      # | level_2_interval
                      # | date_and_calendar
-                     # | long_year_scientific
+                     | long_year_scientific
   
 
   season_qualified : season CARET { result = val[0]; result.qualifier = val[1] }
+
+  long_year_scientific : long_year_simple E integer { result = Date.new(val[0].year * 10 ** val[2]) }
+                       | long_year_short E integer  { result = Date.new(val[0] * 10 ** val[2]) }
+
+  long_year_short : LONGYEAR int1_4       { result = val[1] }
+                    LONGYEAR MINUS int1_4 { result = -1 * val[2] }
+  
 
   # ---- Auxiliary Rules ----
 
@@ -200,6 +207,15 @@ rule
   d00_59 : D0 D0             { result = 0 }
          | d01_59
 
+  int1_4 : positive_digit                   { result = val[0] }
+        | positive_digit digit             { result = 10 * val[0] + val[1] }
+        | positive_digit digit digit       { result = val.zip([100,10,1]).reduce(0) { |s,(a,b)| s += a * b } }
+        | positive_digit digit digit digit { result = val.zip([1000,100,10,1]).reduce(0) { |s,(a,b)| s += a * b } }
+
+  integer : positive_digit { result = val[0] }
+         | integer digit  { result = 10 * val[0] + val[1] }
+
+
 
 ---- header
 require 'strscan'
@@ -251,6 +267,8 @@ require 'strscan'
         @stack << [:UNSPECIFIED, @src.matched]
       when @src.scan(/y/)
         @stack << [:LONGYEAR, @src.matched]
+      when @src.scan(/e/)
+        @stack << [:E, @src.matched]
       when @src.scan(/\+/)
         @stack << [:PLUS, @src.matched]
       when @src.scan(/-/)
