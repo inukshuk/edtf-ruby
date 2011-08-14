@@ -67,19 +67,8 @@ module EDTF
     alias specific! specified!
           
     module ClassMethods  
-      def edtf(string)
-        case string
-        when /^(-?\d{4})([\?~])?$/
-          match = $~
-          date = strptime(match.captures[0], '%Y')
-          date.uncertain.year = match.captures[1] == '?'
-          date
-
-        when /^-?\d{4}-\d{1,2}$/
-          strptime(string, '%Y-%m')
-        else
-          parse(string)
-        end
+      def edtf(input, options = {})
+        ::EDTF::Parser.new(options).parse(input)
       end
     end
     
