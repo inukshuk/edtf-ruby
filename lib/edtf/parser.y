@@ -2,17 +2,17 @@
 
 class EDTF::Parser
 
-token T Z PLUS MINUS COLON SLASH D0 D1 D2 D3 D4 D5 D6 D7 D8 D9
-  UNCERTAIN APPROXIMATE UNSPECIFIED UNKNOWN OPEN LONGYEAR UNMATCHED
+token T Z PLUS MINUS COLON SLASH D0 D1 D2 D3 D4 D5 D6 D7 D8 D9 LP RP
+  UNCERTAIN APPROXIMATE UNSPECIFIED UNKNOWN OPEN LONGYEAR CARET UNMATCHED
 
 expect 0
 
 rule
 
-  edtf :
-       | level_0_expression
+  edtf : level_0_expression
        | level_1_expression
-       # | level_2_expression
+       | level_2_expression
+       # | { result = Date.today }
 
 
   # ---- Level 0 / ISO 8601 Rules ----
@@ -71,6 +71,7 @@ rule
   
   second : d00_59
   
+  # covered by level_1_interval
   # level_0_interval : date SLASH date   { result = Interval.new(val[0], val[1]) }
 
   # ---- Level 1 Extension Rules ----
@@ -128,9 +129,22 @@ rule
                 | D2 D3 { result = 23 }
                 | D2 D4 { result = 24 }
 
+
   # ---- Level 2 Extension Rules ----
   
+  level_2_expression : season_qualified
+                     # | internal_uncertain_or_approximate
+                     # | internal_unspecified
+                     # | choice_list
+                     # | inclusive_list
+                     # | masked_precision
+                     # | level_2_interval
+                     # | date_and_calendar
+                     # | long_year_scientific
   
+
+  season_qualified : season CARET { result = val[0]; result.qualifier = val[1] }
+
   # ---- Auxiliary Rules ----
 
   digit : D0             { result = 0 }
@@ -217,6 +231,10 @@ require 'strscan'
   def tokenize
     until @src.eos?
       case
+      when @src.scan(/\(/)
+        @stack << [:LP, @src.matched]
+      when @src.scan(/\)/)
+        @stack << [:RP, @src.matched]
       when @src.scan(/T/)
         @stack << [:T, @src.matched]
       when @src.scan(/Z/)
@@ -241,6 +259,8 @@ require 'strscan'
         @stack << [:COLON, @src.matched]
       when @src.scan(/\//)
         @stack << [:SLASH, @src.matched]
+      when @src.scan(/\^\w+/)
+        @stack << [:CARET, @src.matched[1..-1]]
       when @src.scan(/\d/)
         @stack << [['D', @src.matched].join.intern, @src.matched]
       else @src.scan(/./)
