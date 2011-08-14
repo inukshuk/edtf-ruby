@@ -55,6 +55,10 @@ Then /^the interval should end at "([^"]*)"$/ do |date|
   @edtf.end.to_s.should == date
 end
 
+Then /^the date should be uncertain\? "([^"]*)"$/ do |arg1|
+  @edtf.uncertain?.should == !!(arg1 =~ /y(es)?/i)
+end
+
 Then /^the year should be uncertain\? "([^"]*)"$/ do |arg1|
   @edtf.uncertain?(:year).should == !!(arg1 =~ /y(es)?/i)
 end
@@ -65,4 +69,8 @@ end
 
 Then /^the day should be uncertain\? "([^"]*)"$/ do |arg1|
   @edtf.uncertain?(:day).should == !!(arg1 =~ /y(es)?/i)
+end
+
+Then /^the date should be approximate\? "([^"]*)"$/ do |arg1|
+  @edtf.approximate?.should == !!(arg1 =~ /y(es)?/i)
 end

@@ -8,7 +8,7 @@ Feature: EDTF parses ISO 8601 interval strings
 		And the interval should end at "<to>"
 	
 	@004 @level0
-	Scenarios: intervals
+	Scenarios: specification intervals
 		| string                | from       | to         |
 		| 1964/2008             | 1964-01-01 | 2008-01-01 |
 		| 2004-06/2006-08       | 2004-06-01 | 2006-08-01 |
