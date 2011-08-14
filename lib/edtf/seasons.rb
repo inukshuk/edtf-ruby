@@ -17,9 +17,19 @@ module EDTF
       end
     end
     
-    [:spring, :summer, :autumn, :winter].zip(21..24).each do |season, code|
-      define_method("#{season}?") { @season == code }
+    [:first, :second, :third, :fourth].zip(21..24).each do |quarter, code|
+      define_method("#{quarter}?") { @season == code }
+      define_method("#{quarter}!") { @season = code }
     end
+    
+    [:spring, :summer, :autumn, :winter].zip([:first, :second, :third, :fourth]).each do |season, quarter|
+      alias_method("#{season}?", "#{quarter}?")
+      alias_method("#{season}!", "#{quarter}!")
+    end
+    
+    attr_accessor :qualifier
+    
+    def qualified?; !!@qualifier; end
     
   end
   
