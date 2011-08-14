@@ -3,7 +3,7 @@
 class EDTF::Parser
 
 token T Z PLUS MINUS COLON SLASH D0 D1 D2 D3 D4 D5 D6 D7 D8 D9
-  UNCERTAIN APPROXIMATE UNSPECIFIED UNKNOWN OPEN UNMATCHED
+  UNCERTAIN APPROXIMATE UNSPECIFIED UNKNOWN OPEN LONGYEAR UNMATCHED
 
 expect 0
 
@@ -78,7 +78,7 @@ rule
   level_1_expression : uncertain_or_approximate_date 
                      | unspecified 
                      | level_1_interval
-                     # | long_year_simple
+                     | long_year_simple
                      # | season
   
 
@@ -112,7 +112,14 @@ rule
   level_1_end : level_1_start
               | OPEN                             { result = :open }
 
-  
+
+  long_year_simple : LONGYEAR long_year          { result = Date.new(val[1]) }
+                   | LONGYEAR MINUS long_year    { result = Date.new(-1 * val[2]) }
+            
+  long_year : positive_digit digit digit digit digit { result = val.zip([10000,1000,100,10,1]).reduce(0) { |s,(a,b)| s += a * b } }
+            | long_year digit { result = 10 * val[0] + val[1] }
+
+                   
   # ---- Level 2 Extension Rules ----
   
   
@@ -216,6 +223,8 @@ require 'strscan'
         @stack << [:UNKNOWN, @src.matched]
       when @src.scan(/u/)
         @stack << [:UNSPECIFIED, @src.matched]
+      when @src.scan(/y/)
+        @stack << [:LONGYEAR, @src.matched]
       when @src.scan(/\+/)
         @stack << [:PLUS, @src.matched]
       when @src.scan(/-/)
