@@ -3,7 +3,7 @@
 class EDTF::Parser
 
 token T Z PLUS MINUS COLON SLASH D0 D1 D2 D3 D4 D5 D6 D7 D8 D9
-  UNCERTAIN APPROXIMATE UNMATCHED
+  UNCERTAIN APPROXIMATE UNSPECIFIED UNMATCHED
 
 expect 0
 
@@ -56,29 +56,14 @@ rule
   year : digit digit digit digit { result = val.zip([1000,100,10,1]).reduce(0) { |s,(a,b)| s += a * b } }
   
   month : d01_12
-    
-  long_month : D0 D1 { result = 1  }
-             | D0 D3 { result = 3  }
-             | D0 D5 { result = 5  }
-             | D0 D7 { result = 7  }
-             | D0 D8 { result = 8  }
-             | D1 D0 { result = 10 }
-             | D1 D2 { result = 12 }
-  
-  short_month : D0 D4 { result = 4  }
-              | D0 D6 { result = 6  }
-              | D0 D9 { result = 9  }
-              | D1 D1 { result = 11 }
-  
-  february : D0 D2 { result = 2 }
-  
-  month_day : long_month MINUS d01_31   { result = [val[0], val[2]] }
-            | short_month MINUS d01_30  { result = [val[0], val[2]] }
-            | february MINUS d01_29     { result = [val[0], val[2]] }
-  
+      
   year_month : year MINUS month         { result = [val[0], val[2]] }
   
-  year_month_day : year MINUS month_day { result = val[0,1] + val[2] }
+  # We raise an exception if there are two many days for the month, but
+  # do not consider leap years, as the EDTF BNF did not either.
+  # NB: an exception will be raised regardless, because the Ruby Date
+  # implementation calculates leap years.
+  year_month_day : year_month MINUS d01_31 { result = val[0] << val[2]; raise ArgumentError, "invalid date (invalid days #{result[2]} for month #{result[1]})" if result[2] > 31 || (result[2] > 30 && [2,4,6,9,11].include?(result[1])) || (result[2] > 29 && result[1] == 2) }
 
   hour : d00_23
   
@@ -91,7 +76,7 @@ rule
   # ---- Level 1 Extension Rules ----
   
   level_1_expression : uncertain_or_approximate_date 
-                     # | unspecified 
+                     | unspecified 
                      # | level_1_interval
                      # | long_year_simple
                      # | season
@@ -100,8 +85,21 @@ rule
   
   uncertain_or_approximate : UNCERTAIN    { result = 'uncertain!' }
                            | APPROXIMATE  { result = 'approximate!' }
-                           
   
+  unspecified : unspecified_year
+              | unspecified_month
+              | unspecified_day
+              | unspecified_day_and_month
+  
+  unspecified_year : digit digit digit UNSPECIFIED       { result = Date.new(val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }); result.unspecified.year[3] = true }
+                   | digit digit UNSPECIFIED UNSPECIFIED { result = Date.new(val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }); result.unspecified.year[2,2] = true }
+  
+  unspecified_month : year MINUS UNSPECIFIED UNSPECIFIED { result = Date.new(val[0]).unspecified!(:month) }
+  
+  unspecified_day : year_month MINUS UNSPECIFIED UNSPECIFIED { result = Date.new(*val[0]).unspecified!(:day) }
+  
+  unspecified_day_and_month : year MINUS UNSPECIFIED UNSPECIFIED MINUS UNSPECIFIED UNSPECIFIED { result = Date.new(val[0]).unspecified!([:day,:month]) }
+
   # ---- Level 2 Extension Rules ----
   
   
@@ -199,6 +197,8 @@ require 'strscan'
         @stack << [:UNCERTAIN, @src.matched]
       when @src.scan(/~/)
         @stack << [:APPROXIMATE, @src.matched]
+      when @src.scan(/u/)
+        @stack << [:UNSPECIFIED, @src.matched]
       when @src.scan(/\+/)
         @stack << [:PLUS, @src.matched]
       when @src.scan(/-/)

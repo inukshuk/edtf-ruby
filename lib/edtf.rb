@@ -1,5 +1,5 @@
 
-autoload :DateTime, 'date'
+require 'date'
 autoload :Rational, 'rational'
 
 require 'forwardable'

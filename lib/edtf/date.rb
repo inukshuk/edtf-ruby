@@ -17,7 +17,7 @@ module EDTF
     def approximate
       @approximate ||= Uncertainty.new
     end
-    
+
     def unspecified
       @unspecified ||= Unspecified.new
     end
