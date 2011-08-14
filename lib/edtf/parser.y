@@ -3,7 +3,7 @@
 class EDTF::Parser
 
 token T Z PLUS MINUS COLON SLASH D0 D1 D2 D3 D4 D5 D6 D7 D8 D9
-  UNCERTAIN APPROXIMATE UNSPECIFIED UNMATCHED
+  UNCERTAIN APPROXIMATE UNSPECIFIED UNKOWN OPEN UNMATCHED
 
 expect 0
 
@@ -71,21 +71,23 @@ rule
   
   second : d00_59
   
-  level_0_interval : date SLASH date   { result = val[0] ... val[1] }
+  level_0_interval : date SLASH date   { result = Interval.new(val[0], val[1]) }
 
   # ---- Level 1 Extension Rules ----
   
   level_1_expression : uncertain_or_approximate_date 
                      | unspecified 
-                     # | level_1_interval
+                     | level_1_interval
                      # | long_year_simple
                      # | season
   
+
   uncertain_or_approximate_date : date uncertain_or_approximate { result = val[0].send(val[1]) }
   
   uncertain_or_approximate : UNCERTAIN    { result = 'uncertain!' }
                            | APPROXIMATE  { result = 'approximate!' }
   
+
   unspecified : unspecified_year
               | unspecified_month
               | unspecified_day
@@ -100,6 +102,15 @@ rule
   
   unspecified_day_and_month : year MINUS UNSPECIFIED UNSPECIFIED MINUS UNSPECIFIED UNSPECIFIED { result = Date.new(val[0]).unspecified!([:day,:month]) }
 
+
+  level_1_interval : level_1_start SLASH level_1_end
+
+  level_1_start : uncertain_or_approximate_date
+                | UNKOWN
+                
+  level_1_end : level_1_start
+              | OPEN
+  
   # ---- Level 2 Extension Rules ----
   
   
@@ -197,6 +208,10 @@ require 'strscan'
         @stack << [:UNCERTAIN, @src.matched]
       when @src.scan(/~/)
         @stack << [:APPROXIMATE, @src.matched]
+      when @src.scan(/open/i)
+        @stack << [:OPEN, @src.matched]
+      when @src.scan(/unknown/i)
+        @stack << [:UNKNOWN, @src.matched]
       when @src.scan(/u/)
         @stack << [:UNSPECIFIED, @src.matched]
       when @src.scan(/\+/)
