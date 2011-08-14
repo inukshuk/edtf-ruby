@@ -79,13 +79,14 @@ rule
                      | unspecified 
                      | level_1_interval
                      | long_year_simple
-                     # | season
+                     | season
   
 
-  uncertain_or_approximate_date : date uncertain_or_approximate { result = val[0].send(val[1]) }
+  uncertain_or_approximate_date : date uncertain_or_approximate { result = val[0]; val[1].each { |m| result.send(m) } }
   
-  uncertain_or_approximate : UNCERTAIN    { result = :uncertain! }
-                           | APPROXIMATE  { result = :approximate! }
+  uncertain_or_approximate : UNCERTAIN              { result = [:uncertain!] }
+                           | APPROXIMATE            { result = [:approximate!] }
+                           | UNCERTAIN APPROXIMATE  { result = [:uncertain!, :approximate!] }
   
 
   unspecified : unspecified_year
@@ -119,7 +120,14 @@ rule
   long_year : positive_digit digit digit digit digit { result = val.zip([10000,1000,100,10,1]).reduce(0) { |s,(a,b)| s += a * b } }
             | long_year digit { result = 10 * val[0] + val[1] }
 
-                   
+
+  season : year MINUS season_number { result = Date.new(val[0]); result.season = val[2] }
+
+  season_number : D2 D1 { result = 21 }
+                | D2 D2 { result = 22 }
+                | D2 D3 { result = 23 }
+                | D2 D4 { result = 24 }
+
   # ---- Level 2 Extension Rules ----
   
   
