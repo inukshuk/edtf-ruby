@@ -74,3 +74,7 @@ end
 Then /^the date should be approximate\? "([^"]*)"$/ do |arg1|
   @edtf.approximate?.should == !!(arg1 =~ /y(es)?/i)
 end
+
+Then /^the unspecified string code be "([^"]*)"$/ do |arg1|
+  @edtf.unspecified.to_s.should == arg1
+end

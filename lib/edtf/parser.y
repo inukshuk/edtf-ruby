@@ -96,7 +96,7 @@ rule
               | unspecified_day_and_month
   
   unspecified_year : digit digit digit UNSPECIFIED       { result = Date.new(val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }); result.unspecified.year[3] = true }
-                   | digit digit UNSPECIFIED UNSPECIFIED { result = Date.new(val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }); result.unspecified.year[2,2] = true }
+                   | digit digit UNSPECIFIED UNSPECIFIED { result = Date.new(val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }); result.unspecified.year[2,2] = [true, true] }
   
   unspecified_month : year MINUS UNSPECIFIED UNSPECIFIED { result = Date.new(val[0]).unspecified!(:month) }
   
