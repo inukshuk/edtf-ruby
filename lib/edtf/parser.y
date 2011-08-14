@@ -2,7 +2,7 @@
 
 class EDTF::Parser
 
-token T Z E PLUS MINUS COLON SLASH D0 D1 D2 D3 D4 D5 D6 D7 D8 D9 LP RP
+token T Z E X PLUS MINUS COLON SLASH D0 D1 D2 D3 D4 D5 D6 D7 D8 D9 LP RP
   UNCERTAIN APPROXIMATE UNSPECIFIED UNKNOWN OPEN LONGYEAR CARET UNMATCHED
 
 expect 0
@@ -137,7 +137,7 @@ rule
                      # | internal_unspecified
                      # | choice_list
                      # | inclusive_list
-                     # | masked_precision
+                     | masked_precision
                      # | level_2_interval
                      | date_and_calendar
                      | long_year_scientific
@@ -150,8 +150,12 @@ rule
                        | LONGYEAR int1_4 E integer       { result = Date.new(val[1] * 10 ** val[3]) }
                        | LONGYEAR MINUS int1_4 E integer { result = Date.new(-1 * val[2] * 10 ** val[4]) }
   
+
   date_and_calendar : date CARET { result = val[0]; result.calendar = val[1] }
   
+
+  masked_precision : digit digit digit X { d = val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }; result = Date.new(d) ... Date.new(d+10) }
+                   | digit digit X X     { d = val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }; result = Date.new(d) ... Date.new(d+100) }
 
   # ---- Auxiliary Rules ----
 
@@ -279,6 +283,8 @@ require 'strscan'
         @stack << [:UNKNOWN, @src.matched]
       when @src.scan(/u/)
         @stack << [:UNSPECIFIED, @src.matched]
+      when @src.scan(/x/i)
+        @stack << [:X, @src.matched]
       when @src.scan(/y/)
         @stack << [:LONGYEAR, @src.matched]
       when @src.scan(/e/)

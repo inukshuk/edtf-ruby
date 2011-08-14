@@ -65,7 +65,7 @@ module EDTF
     end
 
     alias specific! specified!
-        
+          
     module ClassMethods  
       def edtf(string)
         case string
