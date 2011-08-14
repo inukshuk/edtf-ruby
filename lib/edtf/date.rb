@@ -6,6 +6,8 @@ module EDTF
     
     include Seasons
     
+    attr_accessor :calendar
+    
     def self.included(base)
       base.extend(ClassMethods)
     end

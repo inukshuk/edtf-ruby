@@ -139,15 +139,18 @@ rule
                      # | inclusive_list
                      # | masked_precision
                      # | level_2_interval
-                     # | date_and_calendar
+                     | date_and_calendar
                      | long_year_scientific
   
 
   season_qualified : season CARET { result = val[0]; result.qualifier = val[1] }
 
+
   long_year_scientific : long_year_simple E integer      { result = Date.new(val[0].year * 10 ** val[2]) }
                        | LONGYEAR int1_4 E integer       { result = Date.new(val[1] * 10 ** val[3]) }
                        | LONGYEAR MINUS int1_4 E integer { result = Date.new(-1 * val[2] * 10 ** val[4]) }
+  
+  date_and_calendar : date CARET { result = val[0]; result.calendar = val[1] }
   
 
   # ---- Auxiliary Rules ----
