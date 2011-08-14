@@ -29,7 +29,33 @@ given a valid EDTF string the return value will either be an (extended) `Date`,
     $ [sudo] gem install edtf
     $ irb
     > require 'edtf'
-    > 
+    > d = Date.edtf('1984?')
+    > d.uncertain?
+     => true
+    > d.certain!
+    > d.uncertain?               
+     => false
+    > d = Date.edtf('1999-03-uu')
+    > d.unspecified?
+     => true
+    > d.unspecified? :year
+     => false
+    > d.unspecified? :day
+     => true
+    > Date.edtf('2003-24').winter?
+     => true
+		> Date.edtf('196x')
+		 => #<Date: 1960-01-01>...#<Date: 1970-01-01>
+		> Date.edtf('y-17e7').year
+		 => -170000000
+		> d = Date.edtf('1984-06?/2004-08?')
+		> d.from.uncertain?
+		 => true
+		> d.each.to_a.length
+		 => 7367 # days between 1984-06 and 2004-08
+		> Date.edtf('2004-01-01/open').open?
+		 => true
+		
 
 For additional features take a look at the rdoc, source, and rspec examples.
 
