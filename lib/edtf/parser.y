@@ -145,11 +145,9 @@ rule
 
   season_qualified : season CARET { result = val[0]; result.qualifier = val[1] }
 
-  long_year_scientific : long_year_simple E integer { result = Date.new(val[0].year * 10 ** val[2]) }
-                       | long_year_short E integer  { result = Date.new(val[0] * 10 ** val[2]) }
-
-  long_year_short : LONGYEAR int1_4       { result = val[1] }
-                    LONGYEAR MINUS int1_4 { result = -1 * val[2] }
+  long_year_scientific : long_year_simple E integer      { result = Date.new(val[0].year * 10 ** val[2]) }
+                       | LONGYEAR int1_4 E integer       { result = Date.new(val[1] * 10 ** val[3]) }
+                       | LONGYEAR MINUS int1_4 E integer { result = Date.new(-1 * val[2] * 10 ** val[4]) }
   
 
   # ---- Auxiliary Rules ----
@@ -207,13 +205,13 @@ rule
   d00_59 : D0 D0             { result = 0 }
          | d01_59
 
-  int1_4 : positive_digit                   { result = val[0] }
+  int1_4 : positive_digit                  { result = val[0] }
         | positive_digit digit             { result = 10 * val[0] + val[1] }
         | positive_digit digit digit       { result = val.zip([100,10,1]).reduce(0) { |s,(a,b)| s += a * b } }
         | positive_digit digit digit digit { result = val.zip([1000,100,10,1]).reduce(0) { |s,(a,b)| s += a * b } }
 
   integer : positive_digit { result = val[0] }
-         | integer digit  { result = 10 * val[0] + val[1] }
+         | integer digit   { result = 10 * val[0] + val[1] }
 
 
 
@@ -222,8 +220,21 @@ require 'strscan'
 
 ---- inner
 
+  @defaults = {
+    :level => 2,
+    :debug => false
+  }
+  
+  class << self; attr_reader :defaults; end
+  
+  attr_reader :options
+  
+  def initialize(options = {})
+    @options = Parser.defaults.merge(options)
+  end
+  
   def parse(input)
-    @yydebug = !!ENV['DEBUG']
+    @yydebug = @options[:debug] || ENV['DEBUG']
     scan(input)
     do_parse
   end
