@@ -91,7 +91,7 @@ rule
   # ---- Level 1 Extension Rules ----
   
   level_1_expression : uncertain_or_approximate_date 
-                     # | unspecified
+                     # | unspecified 
                      # | level_1_interval
                      # | long_year_simple
                      # | season

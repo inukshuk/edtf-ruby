@@ -17,6 +17,10 @@ module EDTF
       end
     end
     
+    [:spring, :summer, :autumn, :winter].zip(21..24).each do |season, code|
+      define_method("#{season}?") { @season == code }
+    end
+    
   end
   
 end

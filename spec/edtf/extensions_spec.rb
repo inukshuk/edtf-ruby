@@ -9,7 +9,7 @@ describe DateTime do
   end
   
   describe 'instance methods' do
-    [:uncertain?, :approximate?, :uncertain, :approximate].each do |method|
+    [:uncertain?, :approximate?, :unspecified?, :uncertain, :approximate, :unspecified].each do |method|
       it "responds to #{method}" do
         DateTime.new.respond_to?(method).should == true
       end
