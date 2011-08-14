@@ -3,13 +3,64 @@ module EDTF
   class Interval
 
     extend Forwardable
-        
-    def initialize(start_date, end_date)
-      @range = end_date.is_a?(Duration) ? end_date.to_range(start_date) :
-        Range.new(start_date, end_date)
+
+    include Enumerable
+    
+    def_delegators :to_range, *(Range.instance_methods - Enumerable.instance_methods - Object.instance_methods)
+
+    attr_reader :from, :to
+    
+    def initialize(from = :open, to = :open)
+      @from, @to = from, to
     end
     
-    def_delegators(:@range, *Range.instance_methods.reject { |m| m.to_s =~ /^__/ || m.to_s == 'object_id' })
+    def from=(from)
+      @from = from || :open
+    end
+
+    def to=(to)
+      @to = to || :open
+    end
+
+    [:open, :unknown].each do |method_name|
+      
+      define_method("#{method_name}?") do
+        @to == method_name || @from == method_name
+      end
+
+      define_method("#{method_name}!") do
+        @to = method_name
+      end
+
+      alias_method("#{method_name}_end!", "#{method_name}!")
+      
+      define_method("#{method_name}_end?") do
+        @to == method_name
+      end
+      
+    end
+
+    def unknown_start?
+      @from == :unknown
+    end
+    
+    def unknown_start!
+      @from = :unknown
+    end
+    
+    # TODO how to handle +/- Infinity for Dates?
+    
+    def to_range
+      case
+      when open?
+        nil
+      when unknown_end?
+        nil
+      else
+        Range.new(unknown_start? ? Date.new : from, to)
+      end
+    end
+    
   end
   
 end
