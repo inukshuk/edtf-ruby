@@ -130,6 +130,42 @@ module EDTF
         d.length.should == 3
       end
       
+      it 'parses intern unspecified "199u-01-01"' do
+        Parser.new.parse('199u-01-01').unspecified.to_s.should == 'sssu-ss-ss'
+      end
+      
+      it 'parses intern unspecified "19uu-01-01"' do
+        Parser.new.parse('19uu-01-01').unspecified.to_s.should == 'ssuu-ss-ss'
+      end
+
+      it 'parses intern unspecified "199u-uu-01"' do
+        Parser.new.parse('199u-uu-01').unspecified.to_s.should == 'sssu-uu-ss'
+      end
+      
+      it 'parses intern unspecified "19uu-uu-01"' do
+        Parser.new.parse('19uu-uu-01').unspecified.to_s.should == 'ssuu-uu-ss'
+      end
+
+      it 'parses intern unspecified "199u-uu-uu"' do
+        Parser.new.parse('199u-uu-uu').unspecified.to_s.should == 'sssu-uu-uu'
+      end
+      
+      it 'parses intern unspecified "19uu-uu-uu"' do
+        Parser.new.parse('19uu-uu-uu').unspecified.to_s.should == 'ssuu-uu-uu'
+      end
+
+      it 'parses intern unspecified "199u-01-uu"' do
+        Parser.new.parse('199u-01-uu').unspecified.to_s.should == 'sssu-ss-uu'
+      end
+      
+      it 'parses intern unspecified "19uu-01-uu"' do
+        Parser.new.parse('19uu-01-uu').unspecified.to_s.should == 'ssuu-ss-uu'
+      end
+
+      it 'parses intern unspecified "1999-uu-01"' do
+        Parser.new.parse('1999-uu-01').unspecified.to_s.should == 'ssss-uu-ss'
+      end
+      
     end
   end
 end

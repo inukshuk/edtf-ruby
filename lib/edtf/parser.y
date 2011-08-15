@@ -91,13 +91,13 @@ rule
                            | UNCERTAIN APPROXIMATE  { result = [:uncertain!, :approximate!] }
   
 
-  unspecified : unspecified_year
+  unspecified : unspecified_year          { result = Date.new(val[0][0]); result.unspecified.year[2,2] = val[0][1]; result.precision = :year }
               | unspecified_month
               | unspecified_day
               | unspecified_day_and_month
   
-  unspecified_year : digit digit digit UNSPECIFIED       { result = Date.new(val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }); result.unspecified.year[3] = true; result.precision = :year }
-                   | digit digit UNSPECIFIED UNSPECIFIED { result = Date.new(val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }); result.unspecified.year[2,2] = [true, true]; result.precision = :year }
+  unspecified_year : digit digit digit UNSPECIFIED       { result = [val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }, [false,true]] }
+                   | digit digit UNSPECIFIED UNSPECIFIED { result = [val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }, [true, true]] }
   
   unspecified_month : year MINUS UNSPECIFIED UNSPECIFIED { result = Date.new(val[0]).unspecified!(:month); result.precision = :month }
   
@@ -135,7 +135,7 @@ rule
   
   level_2_expression : season_qualified
                      # | internal_uncertain_or_approximate
-                     # | internal_unspecified
+                     | internal_unspecified
                      | choice_list
                      | inclusive_list
                      | masked_precision
@@ -189,7 +189,14 @@ rule
   consecutives : year_month_day DOTS year_month_day
                | year_month DOTS year_month
                | year DOTS year                      { result = (val[0]..val[2]).to_a.map }
-                   
+
+  
+  internal_unspecified : unspecified_year MINUS month MINUS d01_31 { result = Date.new(val[0][0], val[2], val[4]); result.unspecified.year[2,2] = val[0][1] }
+   | unspecified_year MINUS UNSPECIFIED UNSPECIFIED MINUS d01_31  { result = Date.new(val[0][0], 1, val[5]); result.unspecified.year[2,2] = val[0][1]; result.unspecified!(:month) }
+   | unspecified_year MINUS UNSPECIFIED UNSPECIFIED MINUS UNSPECIFIED UNSPECIFIED { result = Date.new(val[0][0], 1, 1); result.unspecified.year[2,2] = val[0][1]; result.unspecified!([:month, :day]) }
+   | unspecified_year MINUS month MINUS UNSPECIFIED UNSPECIFIED  { result = Date.new(val[0][0], val[2], 1); result.unspecified.year[2,2] = val[0][1]; result.unspecified!(:day) }
+   | year MINUS UNSPECIFIED UNSPECIFIED MINUS d01_31  { result = Date.new(val[0], 1, val[5]); result.unspecified!(:month) }
+  
 
   # ---- Auxiliary Rules ----
 
