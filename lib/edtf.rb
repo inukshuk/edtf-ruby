@@ -8,6 +8,8 @@ autoload :Rational, 'rational'
 
 require 'forwardable'
 
+require 'edtf/compatibility'
+
 require 'edtf/version'
 require 'edtf/uncertainty'
 require 'edtf/seasons'

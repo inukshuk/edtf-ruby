@@ -17,7 +17,7 @@ module EDTF
       end
     end
     
-    [:first, :second, :third, :fourth].zip(21..24).each do |quarter, code|
+    [:first, :second, :third, :fourth].zip((21..24).to_a).each do |quarter, code|
       define_method("#{quarter}?") { @season == code }
       define_method("#{quarter}!") { @season = code }
     end

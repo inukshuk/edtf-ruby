@@ -43,8 +43,8 @@ Then /^the seconds should be "([^"]*)"$/ do |seconds|
   @edtf.sec.should == seconds.to_i
 end
 
-Then /^the duration should range from "([^"]*)" to "([^"]*)"$/ do |*expected|
-  [@edtf.begin.year.to_s, @edtf.end.year.to_s].should == expected
+Then /^the duration should range from "([^"]*)" to "([^"]*)"$/ do |from,to|
+  [@edtf.begin.year.to_s, @edtf.end.year.to_s].should == [from,to]
 end
 
 Then /^the interval should start at "([^"]*)"$/ do |date|
