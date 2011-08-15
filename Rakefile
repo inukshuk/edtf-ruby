@@ -1,5 +1,9 @@
+lib = File.expand_path('../lib/', __FILE__)
+$:.unshift lib unless $:.include?(lib)
 
 require 'rake/clean'
+require 'edtf/version'
+
 
 desc 'Generates the parser'
 task :racc do
@@ -16,6 +20,12 @@ task :build => [:racc] do
   system 'gem build edtf.gemspec'
 end
 
+task :release => [:build] do
+  system "git tag #{EDTF::VERSION}"
+  system "gem push edtf-#{EDTF::VERSION}.gem"
+end
+
 CLEAN.include('lib/edtf/parser.rb')
 CLEAN.include('lib/edtf/parser.output')
 CLEAN.include('*.gem')
+CLEAN.include('**/*.rbc')

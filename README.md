@@ -17,6 +17,9 @@ As of EDTF Specification DRAFT, August 4, 2001:
 The following level 2 extensions are currently _not_ supported: 201, 202, 203,
 204, and 205.
 
+EDTF-Ruby has been confirmed to work on the following Ruby implementations:
+1.9.2, 1.8.7, rbx, jruby.
+
 
 Quickstart
 ----------

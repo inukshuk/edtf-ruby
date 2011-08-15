@@ -1,3 +1,4 @@
 Gemfile.lock
 lib/edtf/parser.rb
+*.rbc
 
