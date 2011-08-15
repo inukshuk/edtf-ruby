@@ -18,7 +18,7 @@ module EDTF
         Parser.new.parse('2011-08-15T11:19:00+01:00').to_s.should == '2011-08-15T11:19:00+01:00'
       end
       
-      it 'parses simple intervals' do
+      it 'parses simple intervals like "2007/2008"' do
         Parser.new.parse('2007/2008').should include(Date.new(2007,12,24))
         Parser.new.parse('2007/2008').should_not include(Date.new(2008,1,2))
       end
@@ -100,6 +100,35 @@ module EDTF
         d.should_not include(Date.new(1799,12,31))
       end
       
+      it 'parses multiple dates (years)' do
+        d = Parser.new.parse('{1667,1668, 1670..1672}')
+        d.map(&:year).should == [1667,1668,1670,1671,1672]
+      end
+      
+      it 'parses multiple dates (mixed years and months)' do
+        d = Parser.new.parse('{1960, 1961-12}')
+        d.map { |x| [x.year,x.month] }.should == [[1960,1],[1961,12]]
+      end
+      
+      it 'parses choice lists (One of the years 1667, 1668, 1670, 1671, 1672)' do
+        d = Parser.new.parse('[1667,1668, 1670..1672]')
+        d.map(&:year).should == [1667,1668,1670,1671,1672]
+      end
+
+      it 'parses choice lists (December 3, 1760 or some earlier date)' do
+        d = Parser.new.parse('[..1760-12-03]')
+        d.map(&:to_s).should == ['1760-12-03']
+      end
+
+      it 'parses choice lists (December 1760 or some later month)' do
+        d = Parser.new.parse('[1760-12..]')
+        d.map { |x| [x.year,x.month] }.should == [[1760,12]]
+      end
+
+      it 'parses choice lists (January or February of 1760 or December 1760 or some later month)' do
+        d = Parser.new.parse('[1760-01, 1760-02, 1760-12..]')
+        d.length.should == 3
+      end
       
     end
   end

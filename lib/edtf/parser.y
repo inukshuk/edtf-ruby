@@ -4,6 +4,7 @@ class EDTF::Parser
 
 token T Z E X PLUS MINUS COLON SLASH D0 D1 D2 D3 D4 D5 D6 D7 D8 D9 LP RP
   UNCERTAIN APPROXIMATE UNSPECIFIED UNKNOWN OPEN LONGYEAR CARET UNMATCHED
+  DOTS COMMA LBRACE RBRACE LSQUARE RSQUARE
 
 expect 0
 
@@ -24,11 +25,11 @@ rule
   date : positive_date
        | negative_date
 
-  positive_date : year           { result = Date.new(val[0]) }
-                | year_month     { result = Date.new(*val.flatten) }
-                | year_month_day { result = Date.new(*val.flatten) }
+  positive_date : year           { result = Date.new(val[0]); result.precision = :year }
+                | year_month     { result = Date.new(*val.flatten); result.precision = :month }
+                | year_month_day { result = Date.new(*val.flatten); result.precision = :day }
                 
-  negative_date :  MINUS positive_date { result = Date.new(-1 * val[1].year, val[1].month, val[1].day) }
+  negative_date :  MINUS positive_date { result = -val[1] }
 
 
   date_time : date T time { result = DateTime.new(val[0].year, val[0].month, val[0].day, *val[2]) }
@@ -95,10 +96,10 @@ rule
               | unspecified_day
               | unspecified_day_and_month
   
-  unspecified_year : digit digit digit UNSPECIFIED       { result = Date.new(val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }); result.unspecified.year[3] = true }
-                   | digit digit UNSPECIFIED UNSPECIFIED { result = Date.new(val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }); result.unspecified.year[2,2] = [true, true] }
+  unspecified_year : digit digit digit UNSPECIFIED       { result = Date.new(val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }); result.unspecified.year[3] = true; result.precision = :year }
+                   | digit digit UNSPECIFIED UNSPECIFIED { result = Date.new(val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }); result.unspecified.year[2,2] = [true, true]; result.precision = :year }
   
-  unspecified_month : year MINUS UNSPECIFIED UNSPECIFIED { result = Date.new(val[0]).unspecified!(:month) }
+  unspecified_month : year MINUS UNSPECIFIED UNSPECIFIED { result = Date.new(val[0]).unspecified!(:month); result.precision = :month }
   
   unspecified_day : year_month MINUS UNSPECIFIED UNSPECIFIED { result = Date.new(*val[0]).unspecified!(:day) }
   
@@ -115,14 +116,14 @@ rule
               | OPEN                             { result = :open }
 
 
-  long_year_simple : LONGYEAR long_year          { result = Date.new(val[1]) }
-                   | LONGYEAR MINUS long_year    { result = Date.new(-1 * val[2]) }
+  long_year_simple : LONGYEAR long_year          { result = Date.new(val[1]); result.precision = :year }
+                   | LONGYEAR MINUS long_year    { result = Date.new(-1 * val[2]); result.precision = :year }
             
   long_year : positive_digit digit digit digit digit { result = val.zip([10000,1000,100,10,1]).reduce(0) { |s,(a,b)| s += a * b } }
             | long_year digit { result = 10 * val[0] + val[1] }
 
 
-  season : year MINUS season_number { result = Date.new(val[0]); result.season = val[2] }
+  season : year MINUS season_number { result = Date.new(val[0]); result.season = val[2]; result.precision = :year }
 
   season_number : D2 D1 { result = 21 }
                 | D2 D2 { result = 22 }
@@ -135,8 +136,8 @@ rule
   level_2_expression : season_qualified
                      # | internal_uncertain_or_approximate
                      # | internal_unspecified
-                     # | choice_list
-                     # | inclusive_list
+                     | choice_list
+                     | inclusive_list
                      | masked_precision
                      # | level_2_interval
                      | date_and_calendar
@@ -146,9 +147,9 @@ rule
   season_qualified : season CARET { result = val[0]; result.qualifier = val[1] }
 
 
-  long_year_scientific : long_year_simple E integer      { result = Date.new(val[0].year * 10 ** val[2]) }
-                       | LONGYEAR int1_4 E integer       { result = Date.new(val[1] * 10 ** val[3]) }
-                       | LONGYEAR MINUS int1_4 E integer { result = Date.new(-1 * val[2] * 10 ** val[4]) }
+  long_year_scientific : long_year_simple E integer      { result = Date.new(val[0].year * 10 ** val[2]); result.precision = :year }
+                       | LONGYEAR int1_4 E integer       { result = Date.new(val[1] * 10 ** val[3]); result.precision = :year }
+                       | LONGYEAR MINUS int1_4 E integer { result = Date.new(-1 * val[2] * 10 ** val[4]); result.precision = :year }
   
 
   date_and_calendar : date CARET { result = val[0]; result.calendar = val[1] }
@@ -157,27 +158,37 @@ rule
   masked_precision : digit digit digit X { d = val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }; result = Date.new(d) ... Date.new(d+10) }
                    | digit digit X X     { d = val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }; result = Date.new(d) ... Date.new(d+100) }
 
-  # 
-  # choiceList =   “[“ listContent “]”
-  # inclusiveList = “{“ listContent “}”
-  # 
-  # 
-  # listContent = earlier ("," listElement)*
-  #             | (earlier ",")? (listElement ",")* later
-  #             | listElement ("," listElement)+
-  #             | consecutives
-  # 
-  # listElement =    date
-  #                | dateWithInternalUncertainty
-  #                | uncertainOrApproxDate
-  #                | unspecified      
-  #                | consecutives
-  # 
-  # earlier =  “..” date
-  # later = date “..”
-  # consecutives = yearMonthDay ".." yearMonthDay
-  #                    | yearMonth ".." yearMonth
-  #                    | year ".." year
+  
+  choice_list : LSQUARE list RSQUARE { result = val[1] }
+  
+  inclusive_list : LBRACE list RBRACE { result = val[1] }
+  
+  list : earlier                                 { result = [val[0]] }
+       | earlier COMMA list_elements COMMA later { result = [val[0]] + val[2] + [val[4]] }
+       | earlier COMMA list_elements             { result = [val[0]] + val[2] }
+       | earlier COMMA later                     { result = [val[0]] + [val[2]] }
+       | list_elements COMMA later               { result = val[0] + [val[2]] }
+       | list_elements
+       | later                                   { result = [val[0]] }
+           
+  list_elements : list_element                     { result = [val[0]].flatten }
+                | list_elements COMMA list_element { result = val[0] + [val[2]].flatten }
+                
+  list_element : date
+               # | date_with_internal_uncertainty
+               | uncertain_or_approximate_date
+               | unspecified
+               | consecutives                      { result = val[0].map { |d| Date.new(*d) } }
+  
+  earlier : DOTS date          { result = val[1] }
+  
+  later : year_month_day DOTS  { result = Date.new(*val[0]); result.precision = :day }
+        | year_month DOTS      { result = Date.new(*val[0]); result.precision = :month }
+        | year DOTS            { result = Date.new(val[0]); result.precision = :year }
+  
+  consecutives : year_month_day DOTS year_month_day
+               | year_month DOTS year_month
+               | year DOTS year                      { result = (val[0]..val[2]).to_a.map }
                    
 
   # ---- Auxiliary Rules ----
@@ -288,10 +299,20 @@ require 'strscan'
   def tokenize
     until @src.eos?
       case
+      # when @src.scan(/\s+/)
+        # ignore whitespace
       when @src.scan(/\(/)
         @stack << [:LP, @src.matched]
       when @src.scan(/\)/)
         @stack << [:RP, @src.matched]
+      when @src.scan(/\[/)
+        @stack << [:LSQUARE, @src.matched]
+      when @src.scan(/\]/)
+        @stack << [:RSQUARE, @src.matched]
+      when @src.scan(/\{/)
+        @stack << [:LBRACE, @src.matched]
+      when @src.scan(/\}/)
+        @stack << [:RBRACE, @src.matched]
       when @src.scan(/T/)
         @stack << [:T, @src.matched]
       when @src.scan(/Z/)
@@ -320,6 +341,10 @@ require 'strscan'
         @stack << [:COLON, @src.matched]
       when @src.scan(/\//)
         @stack << [:SLASH, @src.matched]
+      when @src.scan(/\s*\.\.\s*/)
+        @stack << [:DOTS, '..']
+      when @src.scan(/\s*,\s*/)
+        @stack << [:COMMA, ',']
       when @src.scan(/\^\w+/)
         @stack << [:CARET, @src.matched[1..-1]]
       when @src.scan(/\d/)
