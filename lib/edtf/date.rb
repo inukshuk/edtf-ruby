@@ -45,6 +45,10 @@ module EDTF
       self
     end
     
+    def precise?(*arguments)
+      !approximate?(*arguments)
+    end
+    
     def precise!(*arguments)
       approximate.certain!(*arguments)
       self

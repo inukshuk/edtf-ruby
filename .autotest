@@ -1,0 +1,8 @@
+require 'autotest/bundler'
+
+Autotest.add_hook :initialize do |at|
+  at.add_mapping(/.+\.y$/) do |f,_|
+    system 'rake clean racc'
+  end
+end
+

@@ -157,6 +157,29 @@ rule
   masked_precision : digit digit digit X { d = val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }; result = Date.new(d) ... Date.new(d+10) }
                    | digit digit X X     { d = val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }; result = Date.new(d) ... Date.new(d+100) }
 
+  # 
+  # choiceList =   “[“ listContent “]”
+  # inclusiveList = “{“ listContent “}”
+  # 
+  # 
+  # listContent = earlier ("," listElement)*
+  #             | (earlier ",")? (listElement ",")* later
+  #             | listElement ("," listElement)+
+  #             | consecutives
+  # 
+  # listElement =    date
+  #                | dateWithInternalUncertainty
+  #                | uncertainOrApproxDate
+  #                | unspecified      
+  #                | consecutives
+  # 
+  # earlier =  “..” date
+  # later = date “..”
+  # consecutives = yearMonthDay ".." yearMonthDay
+  #                    | yearMonth ".." yearMonth
+  #                    | year ".." year
+                   
+
   # ---- Auxiliary Rules ----
 
   digit : D0             { result = 0 }
