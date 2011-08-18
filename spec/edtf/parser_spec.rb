@@ -2,7 +2,7 @@ module EDTF
   describe Parser do
     describe '#parse' do
       
-      it 'parses simple dates' do
+      it 'parses simple dates "2001-02-03"' do
         Parser.new.parse('2001-02-03').to_s.should == '2001-02-03'
       end
       
@@ -24,7 +24,7 @@ module EDTF
       end
    
       it 'parses uncertain dates' do
-        Parser.new.parse('1984?').should be_uncertain
+        Parser.new.parse('1984?').should be_uncertain        
         Parser.new.parse('1984').should be_certain
       end
 

@@ -3,7 +3,7 @@ Feature: EDTF parser parses date strings
   In order to use dates in EDTF
   As a user of edtf-ruby
   I want to parse date strings formatted in EDTF
-
+    
   Scenario Outline: EDTF parses a date string
     When I parse the string "<string>"
     Then the year should be "<year>"
