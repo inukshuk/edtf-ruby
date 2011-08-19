@@ -15,6 +15,8 @@ Gem::Specification.new do |s|
   s.description = 'An Extended Date/Time Format (EDTF) Parser for Ruby.'
   s.license     = 'FreeBSD'
 
+  s.add_runtime_dependency('activesupport', ['~>3.0'])
+  
   s.add_development_dependency('rake', ['~>0.9'])
   s.add_development_dependency('racc', ['~>1.4'])
   s.add_development_dependency('cucumber', ['~>1.0'])

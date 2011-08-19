@@ -31,7 +31,44 @@ describe 'Date/DateTime' do
 
     it 'copies precision' do
       date.dup.precision.should == :month
-    end 
+    end
+    
+    it 'copies uncertainty by value' do
+      lambda { date.dup.certain! }.should_not change { date.uncertain? }
+    end
+    
+  end
+  
+  describe '#change' do
+    let(:date) { Date.edtf('2004-09?~') }
+
+    it 'returns a copy of the date if given empty option hash' do
+      date.change({}).should == date
+      date.change({}).should_not equal(date)
+    end
+    
+    describe 'when given a new year' do
+      let(:changeset) { { :year => 1999 } }
+      
+      it 'returns a new date instance with the changed year' do
+        date.change(changeset).year.should == 1999
+      end
+      
+    end
+
+    describe 'when given a new precision' do
+      let(:changeset) { { :precision => :year } }
+      
+      it 'returns a new date instance with the changed precision' do
+        date.change(changeset).precision.should == :year
+      end
+
+    end
+
+    it 'copies extended values by value' do
+      lambda { date.change({}).approximate! }.should_not change { date.approximate? }
+    end
+    
   end
   
   describe '#uncertain?' do
