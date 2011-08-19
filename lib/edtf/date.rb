@@ -15,6 +15,11 @@ class Date
   
   attr_accessor :calendar
   
+  PRECISIONS.each do |p|
+    define_method("#{p}_precision?") { @precision == p }
+    define_method("#{p}_precision!") { @precision =  p }
+  end
+  
   def dup
     d = super
     d.uncertain = uncertain.dup

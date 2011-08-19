@@ -34,7 +34,9 @@ autoload :Rational, 'rational'
 require 'forwardable'
 
 require 'active_support/core_ext/date/calculations'
+require 'active_support/core_ext/date_time/calculations'
 require 'active_support/core_ext/time/calculations'
+
 
 require 'active_support/core_ext/date/conversions'
 

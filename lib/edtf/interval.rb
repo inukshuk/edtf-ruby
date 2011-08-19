@@ -57,10 +57,21 @@ module EDTF
       when unknown_end?
         nil
       else
-        Range.new(unknown_start? ? Date.new : from, to)
+        Range.new(unknown_start? ? Date.new : @from, bounds)
       end
     end
     
+    def bounds
+      case
+      when open_end?, to.day_precision? 
+        to
+      when to.month_precision?
+        to.end_of_month
+      else
+        to.end_of_year
+      end
+    end
+     
   end
   
 end

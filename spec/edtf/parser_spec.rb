@@ -20,7 +20,8 @@ module EDTF
       
       it 'parses simple intervals like "2007/2008"' do
         Parser.new.parse('2007/2008').should include(Date.new(2007,12,24))
-        Parser.new.parse('2007/2008').should_not include(Date.new(2008,1,2))
+        Parser.new.parse('2007/2008').should include(Date.new(2008,1,2))
+        Parser.new.parse('2007/2008').should_not include(Date.new(2009,1,2))
       end
    
       it 'parses uncertain dates' do
