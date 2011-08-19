@@ -55,6 +55,11 @@ Then /^the interval should end at "([^"]*)"$/ do |date|
   @edtf.end.to_s.should == date
 end
 
+Then /^the interval should include the date "([^"]*)"$/ do |date|
+  @edtf.should include(Date.parse(date))
+end
+
+
 Then /^the date should be uncertain\? "([^"]*)"$/ do |arg1|
   @edtf.uncertain?.should == !!(arg1 =~ /y(es)?/i)
 end
