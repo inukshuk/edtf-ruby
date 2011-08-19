@@ -48,8 +48,16 @@ module EDTF
       arguments.flatten!
       raise ArgumentError, "wrong number of arguments (#{arguments.length} for 0..3)" if arguments.length > 3
       
-      if arguments.length == 1 && arguments[0].is_a?(Date)
-        @year, @season = arguments[0].year, NORTHERN_MONTHS[arguments[0]]
+      if arguments.length == 1
+        case arguments[0]
+        when Date
+          @year, @season = arguments[0].year, NORTHERN_MONTHS[arguments[0]]
+        when Symbol, String
+          @year, @season = Date.today.year, SEASONS[CODES[arguments[0].intern]]
+        else
+          self.year = arguments[0]
+          @season = NORTHERN_MONTHS[Date.today.month]
+        end
       else
         self.year      = arguments[0] || Date.today.year
         self.season    = arguments[1] || NORTHERN_MONTHS[Date.today.month]
@@ -77,11 +85,49 @@ module EDTF
     alias to_edtf to_s
     
     def <=>(other)
+      case other
+      when Date
+        include?(other) ? 0 : to_date <=> other
+      when Season
+        [year, month, qualifier] <=> [other.year, other.month, other.qualifier]
+      else
+        nil
+      end
+    rescue
+      nil
     end
     
-    def to_range
-      d = Date.new(@year, NORTHERN[@season][0])
+    def ===(other)
+      (self <=> other) == 0
+    rescue
+      false
     end
+    
+    def to_date
+      Date.new(year, month)
+    end
+
+    # def include?(other)
+    #   case other
+    #   when Date
+    #     d = to_date
+    #     other >= d && other <= d.months_since(3).end_of_month
+    #   else
+    #     false
+    #   end
+    # end
+    
+    def to_range
+      d = to_date
+      d .. d.months_since(3).end_of_month
+    end
+    
+    protected
+    
+    def month
+      NORTHERN[@season][0]
+    end
+    
   end
   
 end

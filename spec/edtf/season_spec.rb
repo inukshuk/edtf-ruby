@@ -47,6 +47,15 @@ module EDTF
       end
     end
 
+    describe '#include?' do
+      
+      context 'for summer' do
+        it 'returns true for August 24' do
+          Season.new(1980, :summer).should include(Date.new(1980,8,24))
+        end
+      end
+      
+    end
     
   end
 end

@@ -131,6 +131,18 @@ class Date
     send("next_#{precision}")
   end
   
+  # def succ
+  # end
+
+  # def ==(other)
+  # end
+
+  # def <=>(other)
+  # end
+
+  # def ===(other)
+  # end
+  
   def values
     precision_filter.map { |p| send(p) }
   end
