@@ -2,19 +2,16 @@ class Date
   
   PRECISIONS = [:year, :month, :day].freeze
 
-  EXTENDED_ATTRIBUTES = %w{ calendar precision season qualifier uncertain
-    approximate unspecified }.map(&:intern).freeze
+  EXTENDED_ATTRIBUTES = %w{ calendar precision uncertain approximate
+    unspecified }.map(&:intern).freeze
     
   extend Forwardable  
-  
-  include EDTF::Seasons
   
   class << self
     def edtf(input, options = {})
       ::EDTF::Parser.new(options).parse(input)
     end
   end
-  
   
   attr_accessor :calendar
   
@@ -120,13 +117,18 @@ class Date
 
   alias specific! specified!
   
+  def season?; false; end
+  
+  def season
+    Season.new(self)
+  end
+  
   def to_edtf
     "TODO"
   end
 
-  # TODO take precision into account
   def next
-    super
+    send("next_#{precision}")
   end
   
   def values

@@ -123,7 +123,7 @@ rule
             | long_year digit { result = 10 * val[0] + val[1] }
 
 
-  season : year MINUS season_number { result = Date.new(val[0]); result.season = val[2]; result.precision = :year }
+  season : year MINUS season_number { result = Season.new(val[0], val[2]) }
 
   season_number : D2 D1 { result = 21 }
                 | D2 D2 { result = 22 }
