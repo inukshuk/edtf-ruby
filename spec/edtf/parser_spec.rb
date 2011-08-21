@@ -10,6 +10,10 @@ module EDTF
         Parser.new.parse('-2323').to_s.should == '-2323-01-01'
       end
       
+			it 'parses the negative year -2101 and sets the precision to :year' do
+				Parser.new.parse('-2101').should be_year_precision
+			end
+			
       it 'parses year zero' do
         Parser.new.parse('0000').to_s.should == '0000-01-01'
       end

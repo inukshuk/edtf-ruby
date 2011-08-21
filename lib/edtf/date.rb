@@ -129,10 +129,12 @@ class Date
     Season.new(self)
   end
   
-  def to_edtf
+  def edtf
     FORMATS.take(values.length).join('-') % values
   end
 
+	alias to_edtf edtf
+	
   def next
     send("next_#{precision}")
   end
@@ -155,9 +157,7 @@ class Date
   
   # Returns the same date with negated year        
   def negate
-    v = values
-    y = -1 * v.shift
-    self.class.new(y, *v) # TODO copy extended attributes
+		change(:year => year * -1)
   end
   
   alias -@ negate

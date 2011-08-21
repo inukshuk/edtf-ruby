@@ -39,6 +39,23 @@ describe 'Date/DateTime' do
     
   end
   
+	describe '#negate' do
+    let(:date) { Date.edtf('2004?') }
+		
+		it 'should return a new date with the negated year' do
+			date.negate.year.should == (date.year * -1)
+		end
+		
+		it 'should return a new date with the same month and day' do
+			date.negate.month.should == date.month
+			date.negate.day.should == date.day
+		end
+		
+		it 'should return a new date with the same precision' do
+			date.negate.precision.should == date.precision
+		end
+	end
+	
   describe '#change' do
     let(:date) { Date.edtf('2004-09?~') }
 

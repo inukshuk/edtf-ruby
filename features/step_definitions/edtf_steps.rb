@@ -4,7 +4,7 @@ Given /^the date "([^"]*)"(?: with precision set to "([^"]*)")?$/ do |date, prec
 end
 
 When /^I convert the date$/ do
-  @string = @date.to_edtf
+  @string = @date.edtf
 end
 
 Then /^the EDTF String should be "([^"]*)"$/i do |edtf|

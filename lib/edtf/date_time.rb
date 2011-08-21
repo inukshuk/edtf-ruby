@@ -1,8 +1,8 @@
 class DateTime
-  def to_edtf
-    super
-  end    
-
+	
+	alias edtf iso8601
+	alias to_edtf edtf
+	
   def values
     super + [hour,minute,second,offset]
   end

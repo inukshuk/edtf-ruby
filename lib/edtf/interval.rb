@@ -71,7 +71,16 @@ module EDTF
         to.end_of_year
       end
     end
-     
+   
+  	def edtf
+			[
+				@from.send(@from.respond_to?(:edtf) ? :edtf : :to_s),
+				@to.send(@to.respond_to?(:edtf) ? :edtf : :to_s)
+			].join('/')
+		end
+		
+		alias to_s edtf
+		
   end
   
 end
