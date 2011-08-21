@@ -29,6 +29,8 @@
 #++
 
 require 'date'
+require 'time'
+
 autoload :Rational, 'rational'
 
 require 'forwardable'

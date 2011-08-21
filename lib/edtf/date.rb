@@ -4,7 +4,7 @@ class Date
 	FORMATS = %w{ %04d %02d %02d }.freeze
 
   EXTENDED_ATTRIBUTES = %w{ calendar precision uncertain approximate
-    unspecified }.map(&:intern).freeze
+    unspecified }.map(&:to_sym).freeze
    	
   extend Forwardable  
   
@@ -47,7 +47,7 @@ class Date
   end
   
   def precision=(precision)
-    precision = precision.intern
+    precision = precision.to_sym
     raise ArgumentError, "invalid precision #{precision.inspect}" unless PRECISIONS.include?(precision)
     @precision = precision
     update_precision_filter[-1]
