@@ -1,10 +1,11 @@
 class Date
   
   PRECISIONS = [:year, :month, :day].freeze
+	FORMATS = %w{ %04d %02d %02d }.freeze
 
   EXTENDED_ATTRIBUTES = %w{ calendar precision uncertain approximate
     unspecified }.map(&:intern).freeze
-    
+   	
   extend Forwardable  
   
   class << self
@@ -129,7 +130,7 @@ class Date
   end
   
   def to_edtf
-    "TODO"
+    FORMATS.take(values.length).join('-') % values
   end
 
   def next
@@ -163,7 +164,7 @@ class Date
   
   
   private
-  
+
   def precision_filter
     @precision_filter ||= update_precision_filter
   end
