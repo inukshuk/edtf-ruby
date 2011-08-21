@@ -283,85 +283,71 @@ require 'strscan'
   
   def parse(input)
     @yydebug = @options[:debug] || ENV['DEBUG']
-    scan(input)
+    @src = StringScanner.new(input)
     do_parse
   end
   
-  def next_token
-    @stack.shift
-  end
-
   def on_error(tid, val, vstack)
     warn "failed to parse extended date time %s (%s) %s" % [val.inspect, token_to_str(tid) || '?', vstack.inspect]
   end
 
-  def scan(input)
-    @src = StringScanner.new(input)
-    @stack = []
-    tokenize
-  end
-
-  private
-
-  def tokenize
-    until @src.eos?
-      case
-      # when @src.scan(/\s+/)
-        # ignore whitespace
-      when @src.scan(/\(/)
-        @stack << [:LP, @src.matched]
-      when @src.scan(/\)/)
-        @stack << [:RP, @src.matched]
-      when @src.scan(/\[/)
-        @stack << [:LSQUARE, @src.matched]
-      when @src.scan(/\]/)
-        @stack << [:RSQUARE, @src.matched]
-      when @src.scan(/\{/)
-        @stack << [:LBRACE, @src.matched]
-      when @src.scan(/\}/)
-        @stack << [:RBRACE, @src.matched]
-      when @src.scan(/T/)
-        @stack << [:T, @src.matched]
-      when @src.scan(/Z/)
-        @stack << [:Z, @src.matched]
-      when @src.scan(/\?/)
-        @stack << [:UNCERTAIN, @src.matched]
-      when @src.scan(/~/)
-        @stack << [:APPROXIMATE, @src.matched]
-      when @src.scan(/open/i)
-        @stack << [:OPEN, @src.matched]
-      when @src.scan(/unkn?own/i) # matches 'unkown' typo too
-        @stack << [:UNKNOWN, @src.matched]
-      when @src.scan(/u/)
-        @stack << [:UNSPECIFIED, @src.matched]
-      when @src.scan(/x/i)
-        @stack << [:X, @src.matched]
-      when @src.scan(/y/)
-        @stack << [:LONGYEAR, @src.matched]
-      when @src.scan(/e/)
-        @stack << [:E, @src.matched]
-      when @src.scan(/\+/)
-        @stack << [:PLUS, @src.matched]
-      when @src.scan(/-/)
-        @stack << [:MINUS, @src.matched]
-      when @src.scan(/:/)
-        @stack << [:COLON, @src.matched]
-      when @src.scan(/\//)
-        @stack << [:SLASH, @src.matched]
-      when @src.scan(/\s*\.\.\s*/)
-        @stack << [:DOTS, '..']
-      when @src.scan(/\s*,\s*/)
-        @stack << [:COMMA, ',']
-      when @src.scan(/\^\w+/)
-        @stack << [:CARET, @src.matched[1..-1]]
-      when @src.scan(/\d/)
-        @stack << [['D', @src.matched].join.intern, @src.matched]
-      else @src.scan(/./)
-        @stack << [:UNMATCHED, @src.rest]
-      end
-    end
-  
-    @stack
+  def next_token
+		case
+		when @src.eos?
+			nil
+	  # when @src.scan(/\s+/)
+	    # ignore whitespace
+	  when @src.scan(/\(/)
+	    [:LP, @src.matched]
+	  when @src.scan(/\)/)
+	    [:RP, @src.matched]
+	  when @src.scan(/\[/)
+	    [:LSQUARE, @src.matched]
+	  when @src.scan(/\]/)
+	    [:RSQUARE, @src.matched]
+	  when @src.scan(/\{/)
+	    [:LBRACE, @src.matched]
+	  when @src.scan(/\}/)
+	    [:RBRACE, @src.matched]
+	  when @src.scan(/T/)
+	    [:T, @src.matched]
+	  when @src.scan(/Z/)
+	    [:Z, @src.matched]
+	  when @src.scan(/\?/)
+	    [:UNCERTAIN, @src.matched]
+	  when @src.scan(/~/)
+	    [:APPROXIMATE, @src.matched]
+	  when @src.scan(/open/i)
+	    [:OPEN, @src.matched]
+	  when @src.scan(/unkn?own/i) # matches 'unkown' typo too
+	    [:UNKNOWN, @src.matched]
+	  when @src.scan(/u/)
+	    [:UNSPECIFIED, @src.matched]
+	  when @src.scan(/x/i)
+	    [:X, @src.matched]
+	  when @src.scan(/y/)
+	    [:LONGYEAR, @src.matched]
+	  when @src.scan(/e/)
+	    [:E, @src.matched]
+	  when @src.scan(/\+/)
+	    [:PLUS, @src.matched]
+	  when @src.scan(/-/)
+	    [:MINUS, @src.matched]
+	  when @src.scan(/:/)
+	    [:COLON, @src.matched]
+	  when @src.scan(/\//)
+	    [:SLASH, @src.matched]
+	  when @src.scan(/\s*\.\.\s*/)
+	    [:DOTS, '..']
+	  when @src.scan(/\s*,\s*/)
+	    [:COMMA, ',']
+	  when @src.scan(/\^\w+/)
+	    [:CARET, @src.matched[1..-1]]
+	  when @src.scan(/\d/)
+	    [['D', @src.matched].join.intern, @src.matched]
+	  else @src.scan(/./)
+	    [:UNMATCHED, @src.rest]
+	  end
   end
 
 
