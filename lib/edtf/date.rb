@@ -130,7 +130,7 @@ class Date
   end
   
   def edtf
-    FORMATS.take(values.length).join('-') % values
+    FORMATS.take(values.length).join('-') % values << (uncertain? ? '?' : '')
   end
 
 	alias to_edtf edtf
