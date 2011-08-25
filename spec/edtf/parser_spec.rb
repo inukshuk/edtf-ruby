@@ -33,6 +33,11 @@ module EDTF
         Parser.new.parse('1984').should be_certain
       end
 
+      it 'parses uncertain dates (day precision)' do
+        Parser.new.parse('1984-11-23?').should be_uncertain        
+        Parser.new.parse('1984-11-23').should be_certain
+      end
+
       it 'parses approximate dates' do
         Parser.new.parse('1984-01~').should be_approximate
         Parser.new.parse('1984-01').should be_precise

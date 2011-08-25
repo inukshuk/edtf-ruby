@@ -32,9 +32,9 @@ Feature: EDTF parser parses date strings
     @101 @level1
     Scenarios: uncertain date examples from the specification
       | string      | year | uncertain-year | month | uncertain-month | day | uncertain-day |
-      | 1992?       | 1992 | yes            | 1     | yes             | 1   | yes           |
-      | 1984?       | 1984 | yes            | 1     | yes             | 1   | yes           |
-      | 2004-06?    | 2004 | yes            | 6     | yes             | 1   | yes           |
+      | 1992?       | 1992 | yes            | 1     | no              | 1   | no            |
+      | 1984?       | 1984 | yes            | 1     | no              | 1   | no            |
+      | 2004-06?    | 2004 | yes            | 6     | yes             | 1   | no            |
       | 2004-06-11? | 2004 | yes            | 6     | yes             | 11  | yes           |
 
 

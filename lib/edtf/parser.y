@@ -6,7 +6,7 @@ token T Z E X PLUS MINUS COLON SLASH D0 D1 D2 D3 D4 D5 D6 D7 D8 D9 LP RP
   UNCERTAIN APPROXIMATE UNSPECIFIED UNKNOWN OPEN LONGYEAR CARET UNMATCHED
   DOTS COMMA LBRACE RBRACE LSQUARE RSQUARE
 
-expect 0
+expect 2
 
 rule
 
@@ -77,18 +77,18 @@ rule
 
   # ---- Level 1 Extension Rules ----
   
-  level_1_expression : uncertain_or_approximate_date 
-                     | unspecified 
+  level_1_expression : unspecified 
+                     # | uncertain_or_approximate_date # -> covered by level 2
                      | level_1_interval
                      | long_year_simple
                      | season
   
 
-  uncertain_or_approximate_date : date uncertain_or_approximate { result = val[0]; val[1].each { |m| result.send(m) } }
-  
-  uncertain_or_approximate : UNCERTAIN              { result = [:uncertain!] }
-                           | APPROXIMATE            { result = [:approximate!] }
-                           | UNCERTAIN APPROXIMATE  { result = [:uncertain!, :approximate!] }
+  # uncertain_or_approximate_date : date uncertain_or_approximate { result = val[0]; val[1].each { |m| result.send(m) } }
+  # 
+  # uncertain_or_approximate : UNCERTAIN              { result = [:uncertain!] }
+  #                          | APPROXIMATE            { result = [:approximate!] }
+  #                          | UNCERTAIN APPROXIMATE  { result = [:uncertain!, :approximate!] }
   
 
   unspecified : unspecified_year          { result = Date.new(val[0][0]); result.unspecified.year[2,2] = val[0][1]; result.precision = :year }
@@ -109,7 +109,8 @@ rule
   level_1_interval : level_1_start SLASH level_1_end { result = Interval.new(val[0], val[2]) }
 
   level_1_start : date
-                | uncertain_or_approximate_date
+                # | uncertain_or_approximate_date
+                | internal_uncertain_or_approximate_date
                 | UNKNOWN                        { result = :unknown }
                 
   level_1_end : level_1_start
@@ -134,12 +135,12 @@ rule
   # ---- Level 2 Extension Rules ----
   
   level_2_expression : season_qualified
-                     # | internal_uncertain_or_approximate
+                     | internal_uncertain_or_approximate_date
                      | internal_unspecified
                      | choice_list
                      | inclusive_list
                      | masked_precision
-                     # | level_2_interval
+                     # | level_2_interval # -> level 1
                      | date_and_calendar
                      | long_year_scientific
   
@@ -175,8 +176,8 @@ rule
                 | list_elements COMMA list_element { result = val[0] + [val[2]].flatten }
                 
   list_element : date
-               # | date_with_internal_uncertainty
-               | uncertain_or_approximate_date
+               | internal_uncertain_or_approximate_date
+               # | uncertain_or_approximate_date
                | unspecified
                | consecutives                      { result = val[0].map { |d| Date.new(*d) } }
   
@@ -191,75 +192,127 @@ rule
                | year DOTS year                      { result = (val[0]..val[2]).to_a.map }
 
   
-  internal_unspecified : unspecified_year MINUS month MINUS d01_31 { result = Date.new(val[0][0], val[2], val[4]); result.unspecified.year[2,2] = val[0][1] }
-   | unspecified_year MINUS UNSPECIFIED UNSPECIFIED MINUS d01_31  { result = Date.new(val[0][0], 1, val[5]); result.unspecified.year[2,2] = val[0][1]; result.unspecified!(:month) }
-   | unspecified_year MINUS UNSPECIFIED UNSPECIFIED MINUS UNSPECIFIED UNSPECIFIED { result = Date.new(val[0][0], 1, 1); result.unspecified.year[2,2] = val[0][1]; result.unspecified!([:month, :day]) }
-   | unspecified_year MINUS month MINUS UNSPECIFIED UNSPECIFIED  { result = Date.new(val[0][0], val[2], 1); result.unspecified.year[2,2] = val[0][1]; result.unspecified!(:day) }
-   | year MINUS UNSPECIFIED UNSPECIFIED MINUS d01_31  { result = Date.new(val[0], 1, val[5]); result.unspecified!(:month) }
-  
+  internal_unspecified :
+		unspecified_year MINUS month MINUS d01_31
+		{
+			result = Date.new(val[0][0], val[2], val[4])
+			result.unspecified.year[2,2] = val[0][1]
+		}
+		| unspecified_year MINUS UNSPECIFIED UNSPECIFIED MINUS d01_31
+		{
+			result = Date.new(val[0][0], 1, val[5])
+			result.unspecified.year[2,2] = val[0][1]
+			result.unspecified!(:month)
+		}
+		| unspecified_year MINUS UNSPECIFIED UNSPECIFIED MINUS UNSPECIFIED UNSPECIFIED
+		{
+			result = Date.new(val[0][0], 1, 1)
+			result.unspecified.year[2,2] = val[0][1]
+			result.unspecified!([:month, :day])
+		}
+		| unspecified_year MINUS month MINUS UNSPECIFIED UNSPECIFIED
+		{
+			result = Date.new(val[0][0], val[2], 1)
+			result.unspecified.year[2,2] = val[0][1]
+			result.unspecified!(:day)
+		}
+		| year MINUS UNSPECIFIED UNSPECIFIED MINUS d01_31
+		{
+			result = Date.new(val[0], 1, val[5])
+			result.unspecified!(:month)
+		}
+		;
 
-  # ---- Auxiliary Rules ----
+ 	internal_uncertain_or_approximate_date : internal_uncertain_or_approximate
+		| LP internal_uncertain_or_approximate RP ua { result = val[1]; val[3].each { |u| result.send(u) } }
 
-  digit : D0             { result = 0 }
-        | positive_digit
-        
-  positive_digit : D1 { result = 1 }
-                 | D2 { result = 2 }
-                 | D3 { result = 3 }
-                 | D4 { result = 4 }
-                 | D5 { result = 5 }
-                 | D6 { result = 6 }
-                 | D7 { result = 7 }
-                 | D8 { result = 8 }
-                 | D9 { result = 9 }
+	internal_uncertain_or_approximate : iua_year { result = val[0]; result.precision = :year }
+	    | iua_year_month                         { result = val[0]; result.precision = :month }
+	    | iua_year_month_day
+	
+	iua_year : year ua { result = Date.new(val[0]); val[1].each { |u| result.send(u, :year) } }
+	
+	iua_year_month : iua_year MINUS month opt_ua { result = val[0].change(:month => val[2]); val[3].each { |u| result.send(u, [:month, :year]) } }
+		| LP iua_year RP MINUS month opt_ua  { result = val[1].change(:month => val[2]); val[3].each { |u| result.send(u, :month) } }
+		| year MINUS month ua { result = Date.new(val[0], val[2]); val[3].each { |u| result.send(u, [:year, :month]) } }
+		| year MINUS LP month RP ua { result = Date.new(val[0], val[3]); val[5].each { |u| result.send(u, [:month]) } }
 
-  d01_12 : D0 positive_digit { result = val[1] }
-         | D1 D0             { result = 10 }
-         | D1 D1             { result = 11 }
-         | D1 D2             { result = 12 }
+	iua_year_month_day : iua_year_month MINUS d01_31 opt_ua { result = val[0].change(:day => val[2]); val[3].each { |u| result.send(u) } }
+		| iua_year_month MINUS LP d01_31 RP ua { result = val[0].change(:day => val[3]); val[5].each { |u| result.send(u, [:day]) } }
+		| LP iua_year_month RP ua MINUS d01_31 opt_ua { result = val[1].change(:day => val[5]); val[6].each { |u| result.send(u, [:day]) } }
+		| year_month MINUS d01_31 ua  { result = Date.new(val[0][0], val[0][1], val[2]); val[3].each { |u| result.send(u) } }
+		| year_month MINUS LP d01_31 RP ua { result = Date.new(val[0][0], val[0][1], val[3]); val[5].each { |u| result.send(u, [:day]) } }
+		
 
-  d01_13 : d01_12
-         | D1 D3             { result = 13 }
-         
-  d01_23 : D0 positive_digit { result = val[1] }
-         | D1 digit          { result = 10 + val[1] }
-         | D2 D0             { result = 20 }
-         | D2 D1             { result = 21 }
-         | D2 D2             { result = 22 }
-         | D2 D3             { result = 23 }
+	opt_ua : { result = [] }
+		| ua
 
-  d00_23 : D0 D0             { result = 0  }
-         | d01_23
+	ua : UNCERTAIN              { result = [:uncertain!] }
+	   | APPROXIMATE            { result = [:approximate!] }
+	   | UNCERTAIN APPROXIMATE  { result = [:uncertain!, :approximate!] }
+	
+	# ---- Auxiliary Rules ----
 
-  d01_29 : d01_23
-         | D2 D4             { result = 24 }
-         | D2 D5             { result = 25 }
-         | D2 D6             { result = 26 }
-         | D2 D7             { result = 27 }
-         | D2 D8             { result = 28 }
-         | D2 D9             { result = 29 }
+	digit : D0             { result = 0 }
+	      | positive_digit
+      
+	positive_digit : D1 { result = 1 }
+	               | D2 { result = 2 }
+	               | D3 { result = 3 }
+	               | D4 { result = 4 }
+	               | D5 { result = 5 }
+	               | D6 { result = 6 }
+	               | D7 { result = 7 }
+	               | D8 { result = 8 }
+	               | D9 { result = 9 }
 
-  d01_30 : d01_29
-         | D3 D0             { result = 30 }
+	d01_12 : D0 positive_digit { result = val[1] }
+	       | D1 D0             { result = 10 }
+	       | D1 D1             { result = 11 }
+	       | D1 D2             { result = 12 }
 
-  d01_31 : d01_30
-         | D3 D1             { result = 31 }
-  
-  d01_59 : d01_29
-         | D3 digit          { result = 30 + val[1] }
-         | D4 digit          { result = 40 + val[1] }
-         | D5 digit          { result = 50 + val[1] }
-         
-  d00_59 : D0 D0             { result = 0 }
-         | d01_59
+	d01_13 : d01_12
+	       | D1 D3             { result = 13 }
+       
+	d01_23 : D0 positive_digit { result = val[1] }
+	       | D1 digit          { result = 10 + val[1] }
+	       | D2 D0             { result = 20 }
+	       | D2 D1             { result = 21 }
+	       | D2 D2             { result = 22 }
+	       | D2 D3             { result = 23 }
 
-  int1_4 : positive_digit                  { result = val[0] }
-        | positive_digit digit             { result = 10 * val[0] + val[1] }
-        | positive_digit digit digit       { result = val.zip([100,10,1]).reduce(0) { |s,(a,b)| s += a * b } }
-        | positive_digit digit digit digit { result = val.zip([1000,100,10,1]).reduce(0) { |s,(a,b)| s += a * b } }
+	d00_23 : D0 D0             { result = 0  }
+	       | d01_23
 
-  integer : positive_digit { result = val[0] }
-         | integer digit   { result = 10 * val[0] + val[1] }
+	d01_29 : d01_23
+	       | D2 D4             { result = 24 }
+	       | D2 D5             { result = 25 }
+	       | D2 D6             { result = 26 }
+	       | D2 D7             { result = 27 }
+	       | D2 D8             { result = 28 }
+	       | D2 D9             { result = 29 }
+
+	d01_30 : d01_29
+	       | D3 D0             { result = 30 }
+
+	d01_31 : d01_30
+	       | D3 D1             { result = 31 }
+
+	d01_59 : d01_29
+	       | D3 digit          { result = 30 + val[1] }
+	       | D4 digit          { result = 40 + val[1] }
+	       | D5 digit          { result = 50 + val[1] }
+       
+	d00_59 : D0 D0             { result = 0 }
+	       | d01_59
+
+	int1_4 : positive_digit                  { result = val[0] }
+	       | positive_digit digit             { result = 10 * val[0] + val[1] }
+	       | positive_digit digit digit       { result = val.zip([100,10,1]).reduce(0) { |s,(a,b)| s += a * b } }
+	       | positive_digit digit digit digit { result = val.zip([1000,100,10,1]).reduce(0) { |s,(a,b)| s += a * b } }
+
+	integer : positive_digit { result = val[0] }
+	        | integer digit   { result = 10 * val[0] + val[1] }
 
 
 
