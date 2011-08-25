@@ -31,11 +31,18 @@ Feature: EDTF parser parses date strings
 
     @101 @level1
     Scenarios: uncertain date examples from the specification
-      | string      | year | uncertain-year | month | uncertain-month | day | uncertain-day |
-      | 1992?       | 1992 | yes            | 1     | no              | 1   | no            |
-      | 1984?       | 1984 | yes            | 1     | no              | 1   | no            |
-      | 2004-06?    | 2004 | yes            | 6     | yes             | 1   | no            |
-      | 2004-06-11? | 2004 | yes            | 6     | yes             | 11  | yes           |
+     | string      | year | uncertain-year | month | uncertain-month | day | uncertain-day |
+     | 1992?       | 1992 | yes            | 1     | no              | 1   | no            |
+     | 1984?       | 1984 | yes            | 1     | no              | 1   | no            |
+     | 2004-06?    | 2004 | yes            | 6     | yes             | 1   | no            |
+     | 2004-06-11? | 2004 | yes            | 6     | yes             | 11  | yes           |
+
+   @201 @level2
+   Scenarios: uncertain date examples from the specification
+	   | string        | year | uncertain-year | month | uncertain-month | day | uncertain-day |
+     | 2004?-06-11   | 2004 | yes            | 6     | no              | 11  | no            |
+     | 2004-(06)?-11 | 2004 | no             | 6     | yes             | 11  | no            |
+     | 2004-(06-11)? | 2004 | no             | 6     | yes             | 11  | yes           |
 
 
   Scenario Outline: EDTF parses uncertain or approximate date strings
