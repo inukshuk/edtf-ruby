@@ -45,3 +45,45 @@ Feature: Print Date/Time objects as Level 2 EDTF strings
 		When I parse the string "1999-uu-uu"
 		When I convert the date
 		Then the EDTF string should be "1999-uu-uu"
+
+	@103 @level1 @interval
+	Scenario: Prints L1 Extended Intervals
+		When I parse the string "unknown/2006"
+		When I convert the date
+		Then the EDTF string should be "unknown/2006"
+
+		When I parse the string "2004-06-01/unknown"
+		When I convert the date
+		Then the EDTF string should be "2004-06-01/unknown"
+
+		When I parse the string "2004-01-01/open"
+		When I convert the date
+		Then the EDTF string should be "2004-01-01/open"
+
+		When I parse the string "1984~/2004-06"
+		When I convert the date
+		Then the EDTF string should be "1984~/2004-06"
+
+		When I parse the string "1984/2004-06~"
+		When I convert the date
+		Then the EDTF string should be "1984/2004-06~"
+
+		When I parse the string "1984~/2004~"
+		When I convert the date
+		Then the EDTF string should be "1984~/2004~"
+
+		When I parse the string "1984?/2004?~"
+		When I convert the date
+		Then the EDTF string should be "1984?/2004?~"
+
+		When I parse the string "1984-06?/2004-08?"
+		When I convert the date
+		Then the EDTF string should be "1984-06?/2004-08?"
+
+		When I parse the string "1984-06-02?/2004-08-08~"
+		When I convert the date
+		Then the EDTF string should be "1984-06-02?/2004-08-08~"
+
+		When I parse the string "1984-06-02?/unknown"
+		When I convert the date
+		Then the EDTF string should be "1984-06-02?/unknown"
