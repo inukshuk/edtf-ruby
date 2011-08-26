@@ -55,9 +55,9 @@ given a valid EDTF string the return value will either be an (extended) `Date`,
     > d.to_a.length
     => 7397 # days between 1984-06-01 and 2004-08-31
 		> Date.edtf('1582-10/1582-10').to_a.length
-    => true
 		=> 21 # number of days in October 1582 (Gregorian calendar)
 		> Date.edtf('2004/open').open?
+    => true
     
 
 For additional features take a look at the RDoc and RSpec examples.
