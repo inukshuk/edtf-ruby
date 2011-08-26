@@ -3,6 +3,12 @@ class Date
   PRECISIONS = [:year, :month, :day].freeze
 	FORMATS = %w{ %04d %02d %02d }.freeze
 
+	SYMBOLS = {
+		:uncertain   => '?',
+		:approximate => '~',
+		:unspecified => 'u'
+	}.freeze
+	
   EXTENDED_ATTRIBUTES = %w{ calendar precision uncertain approximate
     unspecified }.map(&:to_sym).freeze
    	
@@ -131,7 +137,10 @@ class Date
   end
   
   def edtf
-    FORMATS.take(values.length).join('-') % values << (uncertain? ? '?' : '')
+    s = FORMATS.take(values.length).join('-') % values
+		s << SYMBOLS[:uncertain] if uncertain?
+		s << SYMBOLS[:approximate] if approximate?
+		s
   end
 
 	alias to_edtf edtf
