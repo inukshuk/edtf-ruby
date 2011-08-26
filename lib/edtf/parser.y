@@ -2,7 +2,7 @@
 
 class EDTF::Parser
 
-token T Z E X PLUS UNSPECIFIED UNKNOWN OPEN LONGYEAR UNMATCHED DOTS
+token T Z E X PLUS UNSPECIFIED UNKNOWN OPEN LONGYEAR UNMATCHED DOTS IUA
 
 expect 0
 
@@ -220,7 +220,7 @@ rule
 		;
 
  	internal_uncertain_or_approximate_date : internal_uncertain_or_approximate
-		| '(' internal_uncertain_or_approximate ')' ua { result = apply_uncertainty(val[1], val[3]) }
+		| '(' internal_uncertain_or_approximate ')' ua { result = uoa(val[1], val[3]) }
 
 	internal_uncertain_or_approximate : iua_year { result = val[0]; result.precision = :year }
 	    | iua_year_month                         { result = val[0]; result.precision = :month }
@@ -229,55 +229,48 @@ rule
 	iua_year : year ua { result = apply_uncertainty(Date.new(val[0]), val[1], :year) }
 	
 	iua_year_month : iua_year '-' month opt_ua { result = val[0].change(:month => val[2]); val[3].each { |u| result.send(u, [:month, :year]) } }
-		# | '(' iua_year ')' '-' month opt_ua  { result = val[1].change(:month => val[2]); val[3].each { |u| result.send(u, :month) } }
-		| year '-' month ua { result = Date.new(val[0], val[2]); val[3].each { |u| result.send(u, [:year, :month]) } }
-		| year '-' '(' month ')' ua { result = apply_uncertainty(Date.new(val[0], val[3]), val[5], [:month]) }
+		| '(' iua_year IUA month opt_ua  { result = uoa(uoa(val[1], val[2], :year).change(:month => val[3]), val[4], :month) }
+		| year '-' month ua { result = uoa(Date.new(val[0], val[2]), val[3], [:year, :month]) }
+		| year '-' '(' month ')' ua { result = uoa(Date.new(val[0], val[3]), val[5], [:month]) }
 
-	iua_year_month_day : iua_year_month '-' d01_31 opt_ua { result = apply_uncertainty(val[0].change(:day => val[2]), val[3]) }
-		| iua_year_month '-' '(' d01_31 ')' ua { result = apply_uncertainty(val[0].change(:day => val[3]), val[5], [:day]) }
-		# | '(' iua_year_month ')' ua '-' d01_31 opt_ua { result = apply_uncertainty(val[1].change(:day => val[5]), val[6], [:day]) }
-		| year_month '-' d01_31 ua  { result = apply_uncertainty(Date.new(val[0][0], val[0][1], val[2]), val[3]) }
-		| year_month '-' '(' d01_31 ')' ua { result = apply_uncertainty(Date.new(val[0][0], val[0][1], val[3]), val[5], [:day]) }
-		| year '-' '(' month '-' d01_31 ')' ua { result = apply_uncertainty(Date.new(val[0], val[3], val[5]), val[7], [:month, :day]) }
+	iua_year_month_day : iua_year_month '-' d01_31 opt_ua { result = uoa(val[0].change(:day => val[2]), val[3]) }
+		| iua_year_month '-' '(' d01_31 ')' ua { result = uoa(val[0].change(:day => val[3]), val[5], [:day]) }
+		| '(' iua_year_month IUA d01_31 opt_ua { result = uoa(uoa(val[1], val[2], [:year, :month]).change(:day => val[3]), val[4], :day) }
+		| year '-' '(' month IUA d01_31 opt_ua { result = uoa(uoa(Date.new(val[0], val[3], val[5]), val[4], :month), val[6], :day) }
+		| year_month '-' d01_31 ua  { result = uoa(Date.new(val[0][0], val[0][1], val[2]), val[3]) }
+		| year_month '-' '(' d01_31 ')' ua { result = uoa(Date.new(val[0][0], val[0][1], val[3]), val[5], [:day]) }
+		| year '-' '(' month '-' d01_31 ')' ua { result = uoa(Date.new(val[0], val[3], val[5]), val[7], [:month, :day]) }
 
 	opt_ua : { result = [] }
-		| ua
+		     | ua
 
-	ua : '?'      { result = [:uncertain!] }
-	   | '~'      { result = [:approximate!] }
-	   | '?' '~'  { result = [:uncertain!, :approximate!] }
+	ua : '?'
+	   | '~'
+	   | '?' '~'  { result = val.flatten }
 	
 	# ---- Auxiliary Rules ----
 
 	digit : '0'             { result = 0 }
 	      | positive_digit
       
-	positive_digit : '1' { result = 1 }
-	               | '2' { result = 2 }
-	               | '3' { result = 3 }
-	               | '4' { result = 4 }
-	               | '5' { result = 5 }
-	               | '6' { result = 6 }
-	               | '7' { result = 7 }
-	               | '8' { result = 8 }
-	               | '9' { result = 9 }
+	positive_digit : '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 
 	d01_12 : '0' positive_digit { result = val[1] }
-	       | '1' '0'             { result = 10 }
-	       | '1' '1'             { result = 11 }
-	       | '1' '2'             { result = 12 }
+	       | '1' '0'            { result = 10 }
+	       | '1' '1'            { result = 11 }
+	       | '1' '2'            { result = 12 }
 
 	d01_13 : d01_12
-	       | '1' '3'             { result = 13 }
+	       | '1' '3'            { result = 13 }
        
 	d01_23 : '0' positive_digit { result = val[1] }
 	       | '1' digit          { result = 10 + val[1] }
-	       | '2' '0'             { result = 20 }
-	       | '2' '1'             { result = 21 }
-	       | '2' '2'             { result = 22 }
-	       | '2' '3'             { result = 23 }
+	       | '2' '0'            { result = 20 }
+	       | '2' '1'            { result = 21 }
+	       | '2' '2'            { result = 22 }
+	       | '2' '3'            { result = 23 }
 
-	d00_23 : '0' '0'             { result = 0  }
+	d00_23 : '0' '0'
 	       | d01_23
 
 	d01_29 : d01_23
@@ -299,7 +292,7 @@ rule
 	       | '4' digit          { result = 40 + val[1] }
 	       | '5' digit          { result = 50 + val[1] }
        
-	d00_59 : '0' '0'             { result = 0 }
+	d00_59 : '0' '0'
 	       | d01_59
 
 	int1_4 : positive_digit                  { result = val[0] }
@@ -347,6 +340,8 @@ require 'strscan'
 		date
 	end
 	
+	alias uoa apply_uncertainty
+	
   def next_token
 		case
 		when @src.eos?
@@ -354,7 +349,13 @@ require 'strscan'
 	  # when @src.scan(/\s+/)
 	    # ignore whitespace
 	  when @src.scan(/\(/)
-	    ['(', @src.matched]
+	    ['(', @src.matched]	
+	  when @src.scan(/\)\?~-/)
+			[:IUA, [:uncertain!, :approximate!]]
+	  when @src.scan(/\)\?-/)
+			[:IUA, [:uncertain!]]
+	  when @src.scan(/\)~-/)
+			[:IUA, [:approximate!]]
 	  when @src.scan(/\)/)
 	    [')', @src.matched]
 	  when @src.scan(/\[/)
@@ -370,9 +371,9 @@ require 'strscan'
 	  when @src.scan(/Z/)
 	    [:Z, @src.matched]
 	  when @src.scan(/\?/)
-	    ['?', @src.matched]
+	    ['?', [:uncertain!]]
 	  when @src.scan(/~/)
-	    ['~', @src.matched]
+	    ['~', [:approximate!]]
 	  when @src.scan(/open/i)
 	    [:OPEN, @src.matched]
 	  when @src.scan(/unkn?own/i) # matches 'unkown' typo too

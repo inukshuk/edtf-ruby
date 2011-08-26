@@ -191,9 +191,15 @@ module EDTF
 			
 			it 'parses "2004-(06)?-11": uncertain month, year and day known' do
 				d = Parser.new.parse('2004-(06)?-11')
+
 				d.uncertain?(:year).should be false
+				d.approximate?(:year).should be false
+
 				d.uncertain?(:month).should be true
+				d.approximate?(:month).should be false
+
 				d.uncertain?(:day).should be false
+				d.approximate?(:day).should be false
 			end
 
 			it 'parses "2004-06-(11)~": day is approximate; year, month known' do
@@ -254,7 +260,6 @@ module EDTF
 				d.approximate?(:day).should be false
 				d.uncertain?(:day).should be false
 			end
-
 
     end
   end

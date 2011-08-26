@@ -37,13 +37,6 @@ Feature: EDTF parser parses date strings
      | 2004-06?    | 2004 | yes            | 6     | yes             | 1   | no            |
      | 2004-06-11? | 2004 | yes            | 6     | yes             | 11  | yes           |
 
-   @201 @level2
-   Scenarios: uncertain date examples from the specification
-	   | string        | year | uncertain-year | month | uncertain-month | day | uncertain-day |
-     | 2004?-06-11   | 2004 | yes            | 6     | no              | 11  | no            |
-     | 2004-(06)?-11 | 2004 | no             | 6     | yes             | 11  | no            |
-     | 2004-(06-11)? | 2004 | no             | 6     | yes             | 11  | yes           |
-
 
   Scenario Outline: EDTF parses uncertain or approximate date strings
     When I parse the string "<string>"
@@ -58,3 +51,24 @@ Feature: EDTF parser parses date strings
       | string      | year | month | day | uncertain | approximate |
       | 1984~       | 1984 | 1     | 1   | no        | yes         |
       | 1984?~      | 1984 | 1     | 1   | yes       | yes         |
+
+  Scenario Outline: EDTF parses uncertain or approximate dates
+    When I parse the string "<string>"
+    And the year should be uncertain? "<?-year>"
+    And the month should be uncertain? "<?-month>"
+    And the day should be uncertain? "<?-day>"
+    And the year should be approximate? "<~-year>"
+    And the month should be approximate? "<~-month>"
+    And the day should be approximate? "<~-day>"
+
+  @201 @level2
+  Scenarios: uncertain date examples from the specification
+   | string          | ~-year | ?-year | ~-month | ?-month | ~-day | ?-day |
+	 | 2004?-06-11     | no     | yes    | no      | no      | no    | no    |
+	 | 2004-06~-11     | yes    | no     | yes     | no      | no    | no    |
+	 | 2004-(06)?-11   | no     | no     | no      | yes     | no    | no    |
+	 | 2004-06-(11)~   | no     | no     | no      | no      | yes   | no    |
+	 | 2004-(06)?~     | no     | no     | yes     | yes     | no    | no    |
+	 | 2004-(06-11)?   | no     | no     | no      | yes     | no    | yes   |
+	 | 2004?-06-(11)~  | no     | yes    | no      | no      | yes   | no    |
+	 | (2004-(06)~)?   | no     | yes    | yes     | yes     | no    | no    |

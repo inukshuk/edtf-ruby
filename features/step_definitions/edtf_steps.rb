@@ -93,6 +93,19 @@ Then /^the date should be approximate\? "([^"]*)"$/ do |arg1|
   @date.approximate?.should == !!(arg1 =~ /y(es)?/i)
 end
 
+Then /^the year should be approximate\? "([^"]*)"$/ do |arg1|
+  @date.approximate?(:year).should == !!(arg1 =~ /y(es)?/i)
+end
+
+Then /^the month should be approximate\? "([^"]*)"$/ do |arg1|
+  @date.approximate?(:month).should == !!(arg1 =~ /y(es)?/i)
+end
+
+Then /^the day should be approximate\? "([^"]*)"$/ do |arg1|
+  @date.approximate?(:day).should == !!(arg1 =~ /y(es)?/i)
+end
+
+
 Then /^the unspecified string code be "([^"]*)"$/ do |arg1|
   @date.unspecified.to_s.should == arg1
 end
