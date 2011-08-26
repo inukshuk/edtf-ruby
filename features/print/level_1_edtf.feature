@@ -87,3 +87,14 @@ Feature: Print Date/Time objects as Level 2 EDTF strings
 		When I parse the string "1984-06-02?/unknown"
 		When I convert the date
 		Then the EDTF string should be "1984-06-02?/unknown"
+
+	@104 @level1
+	Scenario: Prints years with more than four digits
+		When I parse the string "y170000002"
+		When I convert the date
+		Then the EDTF string should be "y170000002"
+
+		When I parse the string "y-170000002"
+		When I convert the date
+		Then the EDTF string should be "y-170000002"
+

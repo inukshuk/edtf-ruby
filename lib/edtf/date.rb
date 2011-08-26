@@ -137,6 +137,8 @@ class Date
   end
   
   def edtf
+		return "y#{year}" if long_year?
+		
 		s = FORMATS.take(values.length).zip(values).map { |f,v| f % v }
 		s = unspecified.mask(s).join('-')
 		
@@ -179,7 +181,11 @@ class Date
   
   alias -@ negate
   
-  
+	# Returns true if this Date/Time has year precision and the year exceeds four digits.
+  def long_year?
+		precision == :year && year.abs > 9999
+	end
+	
   private
 
   def precision_filter
