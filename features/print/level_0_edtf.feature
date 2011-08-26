@@ -1,4 +1,4 @@
-Feature: Print Date/Time objects as Level 1 EDTF strings
+Feature: Print Date/Time objects as Level 0 EDTF strings
   As a Ruby programmer
   I want to convert Date/Time objects to EDTF strings
   
