@@ -133,7 +133,7 @@ rule
     result = Interval.new(val[0], val[2])
   }
 
-  level_1_start : date | internal_uncertain_or_approximate_date | UNKNOWN
+  level_1_start : date | internal_uncertain_or_approximate_date | internal_unspecified | UNKNOWN
              
   level_1_end : level_1_start | OPEN
 

@@ -6,6 +6,7 @@ class Date
 	SYMBOLS = {
 		:uncertain   => '?',
 		:approximate => '~',
+		:calendar    => '^',
 		:unspecified => 'u'
 	}.freeze
 	
@@ -132,6 +133,8 @@ class Date
   
   def season?; false; end
   
+	def calendar?; !!@calendar; end
+
   def season
     Season.new(self)
   end
@@ -144,6 +147,7 @@ class Date
 		
 		s << SYMBOLS[:uncertain] if uncertain?
 		s << SYMBOLS[:approximate] if approximate?
+		s << SYMBOLS[:calendar] << calendar if calendar?
 		
 		s
   end

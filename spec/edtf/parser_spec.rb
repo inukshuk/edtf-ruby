@@ -175,7 +175,16 @@ module EDTF
       it 'parses intern unspecified "1999-uu-01"' do
         Parser.new.parse('1999-uu-01').unspecified.to_s.should == 'ssss-uu-ss'
       end
+
+      it 'parses intern unspecified "1999-01-uu"' do
+        Parser.new.parse('1999-01-uu').unspecified.to_s.should == 'ssss-ss-uu'
+      end
+
       
+			it 'parses internal unspecified interval  "2004-06-uu/2004-07-03"' do
+				Parser.new.parse('2004-06-uu/2004-07-03').from.should == Date.new(2004,6,1)
+			end
+			
 			it 'parses "2004?-06-11": uncertain year; month, day known' do
 				d = Parser.new.parse('2004?-06-11')
 				d.uncertain?(:year).should be true
