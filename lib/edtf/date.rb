@@ -46,6 +46,7 @@ class Date
     @precision ||= :day
   end
   
+	# Sets this Date/Time's precision to the passed-in value.
   def precision=(precision)
     precision = precision.to_sym
     raise ArgumentError, "invalid precision #{precision.inspect}" unless PRECISIONS.include?(precision)
@@ -71,37 +72,37 @@ class Date
   
   def_delegators :uncertain, :uncertain?, :certain?
 
-  def certain!(*arguments)
-    uncertain.certain!(*arguments)
+  def certain!(arguments = precision_filter)
+    uncertain.certain!(arguments)
     self
   end
   
-  def uncertain!(*arguments)
-    uncertain.uncertain!(*arguments)
+  def uncertain!(arguments = precision_filter)
+    uncertain.uncertain!(arguments)
     self
   end
 
-  def approximate?(*arguments)
-    approximate.uncertain?(*arguments)
+  def approximate?(arguments = precision_filter)
+    approximate.uncertain?(arguments)
   end
   
   alias approximately? approximate?
   
-  def approximate!(*arguments)
-    approximate.uncertain!(*arguments)
+  def approximate!(arguments = precision_filter)
+    approximate.uncertain!(arguments)
     self
   end
   
   alias approximately! approximate!
   
-  def precise?(*arguments)
-    !approximate?(*arguments)
+  def precise?(arguments = precision_filter)
+    !approximate?(arguments)
   end
   
   alias precisely? precise?
 
-  def precise!(*arguments)
-    approximate.certain!(*arguments)
+  def precise!(arguments = precision_filter)
+    approximate.certain!(arguments)
     self
   end
 
@@ -109,15 +110,15 @@ class Date
   
   def_delegators :unspecified, :unspecified?, :specified?, :unsepcific?, :specific?
   
-  def unspecified!(*arguments)
-    unspecified.unspecified!(*arguments)
+  def unspecified!(arguments = precision_filter)
+    unspecified.unspecified!(arguments)
     self
   end
 
   alias unspecific! unspecified!
 
-  def specified!(*arguments)
-    unspecified.specified!(*arguments)
+  def specified!(arguments = precision_filter)
+    unspecified.specified!(arguments)
     self
   end
 
@@ -135,6 +136,8 @@ class Date
 
 	alias to_edtf edtf
 	
+	# Returns a the Date of the next day, month, or year depending on the
+	# current Date/Time's precision.
   def next
     send("next_#{precision}")
   end
@@ -151,6 +154,8 @@ class Date
   # def ===(other)
   # end
   
+	# Returns an array of the current year, month, and day values filtered by
+	# the Date/Time's precision.
   def values
     precision_filter.map { |p| send(p) }
   end

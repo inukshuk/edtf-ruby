@@ -2,8 +2,7 @@
 
 class EDTF::Parser
 
-token T Z E X PLUS D0 D1 D2 D3 D4 D5 D6 D7 D8 D9 UNSPECIFIED UNKNOWN OPEN
-	LONGYEAR UNMATCHED DOTS
+token T Z E X PLUS UNSPECIFIED UNKNOWN OPEN LONGYEAR UNMATCHED DOTS
 
 expect 0
 
@@ -12,23 +11,19 @@ rule
   edtf : level_0_expression
        | level_1_expression
        | level_2_expression
-       ;
 
   # ---- Level 0 / ISO 8601 Rules ----
   
   # NB: level 0 intervals are covered by the level 1 interval rules
   level_0_expression : date
                      | date_time
-                     ;
 
   date : positive_date
        | negative_date
-       ;
 
   positive_date : year           { result = Date.new(val[0]); result.precision = :year }
                 | year_month     { result = Date.new(*val.flatten); result.precision = :month }
                 | year_month_day { result = Date.new(*val.flatten); result.precision = :day }
-                ;
         
   negative_date :  '-' positive_date { result = -val[1] }
 
@@ -41,19 +36,19 @@ rule
   base_time : hour ':' minute ':' second { result = [val[0], val[2], val[4]] }
             | midnight
   
-  midnight : D2 D4 ':' D0 D0 ':' D0 D0   { result = [24, 0, 0] }
+  midnight : '2' '4' ':' '0' '0' ':' '0' '0'   { result = [24, 0, 0] }
   
   zone_offset : Z                            { result = 0 }
               | '-' zone_offset_hour       { result = -1 * val[1] }
               | PLUS positive_zone_offset    { result = val[1] }
 
   positive_zone_offset : zone_offset_hour
-                       | D0 D0 ':' D0 D0   { result = 0 }
+                       | '0' '0' ':' '0' '0'   { result = 0 }
               
               
   zone_offset_hour : d01_13 ':' minute     { result = Rational(val[0] * 60 + val[2], 1440) }
-                   | D1 D4 ':' D0 D0       { result = Rational(840, 1440) }
-                   | D0 D0 ':' d01_59      { result = Rational(val[3], 1440) }
+                   | '1' '4' ':' '0' '0'       { result = Rational(840, 1440) }
+                   | '0' '0' ':' d01_59      { result = Rational(val[3], 1440) }
   
   year : digit digit digit digit { result = val.zip([1000,100,10,1]).reduce(0) { |s,(a,b)| s += a * b } }
   
@@ -127,10 +122,10 @@ rule
 
   season : year '-' season_number { result = Season.new(val[0], val[2]) }
 
-  season_number : D2 D1 { result = 21 }
-                | D2 D2 { result = 22 }
-                | D2 D3 { result = 23 }
-                | D2 D4 { result = 24 }
+  season_number : '2' '1' { result = 21 }
+                | '2' '2' { result = 22 }
+                | '2' '3' { result = 23 }
+                | '2' '4' { result = 24 }
 
 
   # ---- Level 2 Extension Rules ----
@@ -225,7 +220,7 @@ rule
 		;
 
  	internal_uncertain_or_approximate_date : internal_uncertain_or_approximate
-		| '(' internal_uncertain_or_approximate ')' ua { result = val[1]; val[3].each { |u| result.send(u) } }
+		| '(' internal_uncertain_or_approximate ')' ua { result = apply_uncertainty(val[1], val[3]) }
 
 	internal_uncertain_or_approximate : iua_year { result = val[0]; result.precision = :year }
 	    | iua_year_month                         { result = val[0]; result.precision = :month }
@@ -234,13 +229,13 @@ rule
 	iua_year : year ua { result = apply_uncertainty(Date.new(val[0]), val[1], :year) }
 	
 	iua_year_month : iua_year '-' month opt_ua { result = val[0].change(:month => val[2]); val[3].each { |u| result.send(u, [:month, :year]) } }
-		| '(' iua_year ')' '-' month opt_ua  { result = val[1].change(:month => val[2]); val[3].each { |u| result.send(u, :month) } }
+		# | '(' iua_year ')' '-' month opt_ua  { result = val[1].change(:month => val[2]); val[3].each { |u| result.send(u, :month) } }
 		| year '-' month ua { result = Date.new(val[0], val[2]); val[3].each { |u| result.send(u, [:year, :month]) } }
 		| year '-' '(' month ')' ua { result = apply_uncertainty(Date.new(val[0], val[3]), val[5], [:month]) }
 
 	iua_year_month_day : iua_year_month '-' d01_31 opt_ua { result = apply_uncertainty(val[0].change(:day => val[2]), val[3]) }
 		| iua_year_month '-' '(' d01_31 ')' ua { result = apply_uncertainty(val[0].change(:day => val[3]), val[5], [:day]) }
-		| '(' iua_year_month ')' ua '-' d01_31 opt_ua { result = apply_uncertainty(val[1].change(:day => val[5]), val[6], [:day]) }
+		# | '(' iua_year_month ')' ua '-' d01_31 opt_ua { result = apply_uncertainty(val[1].change(:day => val[5]), val[6], [:day]) }
 		| year_month '-' d01_31 ua  { result = apply_uncertainty(Date.new(val[0][0], val[0][1], val[2]), val[3]) }
 		| year_month '-' '(' d01_31 ')' ua { result = apply_uncertainty(Date.new(val[0][0], val[0][1], val[3]), val[5], [:day]) }
 		| year '-' '(' month '-' d01_31 ')' ua { result = apply_uncertainty(Date.new(val[0], val[3], val[5]), val[7], [:month, :day]) }
@@ -254,57 +249,57 @@ rule
 	
 	# ---- Auxiliary Rules ----
 
-	digit : D0             { result = 0 }
+	digit : '0'             { result = 0 }
 	      | positive_digit
       
-	positive_digit : D1 { result = 1 }
-	               | D2 { result = 2 }
-	               | D3 { result = 3 }
-	               | D4 { result = 4 }
-	               | D5 { result = 5 }
-	               | D6 { result = 6 }
-	               | D7 { result = 7 }
-	               | D8 { result = 8 }
-	               | D9 { result = 9 }
+	positive_digit : '1' { result = 1 }
+	               | '2' { result = 2 }
+	               | '3' { result = 3 }
+	               | '4' { result = 4 }
+	               | '5' { result = 5 }
+	               | '6' { result = 6 }
+	               | '7' { result = 7 }
+	               | '8' { result = 8 }
+	               | '9' { result = 9 }
 
-	d01_12 : D0 positive_digit { result = val[1] }
-	       | D1 D0             { result = 10 }
-	       | D1 D1             { result = 11 }
-	       | D1 D2             { result = 12 }
+	d01_12 : '0' positive_digit { result = val[1] }
+	       | '1' '0'             { result = 10 }
+	       | '1' '1'             { result = 11 }
+	       | '1' '2'             { result = 12 }
 
 	d01_13 : d01_12
-	       | D1 D3             { result = 13 }
+	       | '1' '3'             { result = 13 }
        
-	d01_23 : D0 positive_digit { result = val[1] }
-	       | D1 digit          { result = 10 + val[1] }
-	       | D2 D0             { result = 20 }
-	       | D2 D1             { result = 21 }
-	       | D2 D2             { result = 22 }
-	       | D2 D3             { result = 23 }
+	d01_23 : '0' positive_digit { result = val[1] }
+	       | '1' digit          { result = 10 + val[1] }
+	       | '2' '0'             { result = 20 }
+	       | '2' '1'             { result = 21 }
+	       | '2' '2'             { result = 22 }
+	       | '2' '3'             { result = 23 }
 
-	d00_23 : D0 D0             { result = 0  }
+	d00_23 : '0' '0'             { result = 0  }
 	       | d01_23
 
 	d01_29 : d01_23
-	       | D2 D4             { result = 24 }
-	       | D2 D5             { result = 25 }
-	       | D2 D6             { result = 26 }
-	       | D2 D7             { result = 27 }
-	       | D2 D8             { result = 28 }
-	       | D2 D9             { result = 29 }
+	       | '2' '4'             { result = 24 }
+	       | '2' '5'             { result = 25 }
+	       | '2' '6'             { result = 26 }
+	       | '2' '7'             { result = 27 }
+	       | '2' '8'             { result = 28 }
+	       | '2' '9'             { result = 29 }
 
 	d01_30 : d01_29
-	       | D3 D0             { result = 30 }
+	       | '3' '0'             { result = 30 }
 
 	d01_31 : d01_30
-	       | D3 D1             { result = 31 }
+	       | '3' '1'             { result = 31 }
 
 	d01_59 : d01_29
-	       | D3 digit          { result = 30 + val[1] }
-	       | D4 digit          { result = 40 + val[1] }
-	       | D5 digit          { result = 50 + val[1] }
+	       | '3' digit          { result = 30 + val[1] }
+	       | '4' digit          { result = 40 + val[1] }
+	       | '5' digit          { result = 50 + val[1] }
        
-	d00_59 : D0 D0             { result = 0 }
+	d00_59 : '0' '0'             { result = 0 }
 	       | d01_59
 
 	int1_4 : positive_digit                  { result = val[0] }
@@ -345,9 +340,9 @@ require 'strscan'
     warn "failed to parse extended date time %s (%s) %s" % [val.inspect, token_to_str(tid) || '?', vstack.inspect]
   end
 
-	def apply_uncertainty(date, uncertainty, scope = [:year, :month, :day])
+	def apply_uncertainty(date, uncertainty, scope = nil)
 		uncertainty.each do |u|
-			date.send(u, scope)
+			scope.nil? ? date.send(u) : date.send(u, scope)
 		end
 		date
 	end
@@ -405,7 +400,7 @@ require 'strscan'
 	  when @src.scan(/\^\w+/)
 	    ['^', @src.matched[1..-1]]
 	  when @src.scan(/\d/)
-	    [['D', @src.matched].join.intern, @src.matched]
+	    [@src.matched, @src.matched.to_i]
 	  else @src.scan(/./)
 	    [:UNMATCHED, @src.rest]
 	  end
