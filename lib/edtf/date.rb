@@ -137,9 +137,12 @@ class Date
   end
   
   def edtf
-    s = FORMATS.take(values.length).join('-') % values
+		s = FORMATS.take(values.length).zip(values).map { |f,v| f % v }
+		s = unspecified.mask(s).join('-')
+		
 		s << SYMBOLS[:uncertain] if uncertain?
 		s << SYMBOLS[:approximate] if approximate?
+		
 		s
   end
 

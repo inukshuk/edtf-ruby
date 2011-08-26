@@ -29,3 +29,19 @@ Feature: Print Date/Time objects as Level 2 EDTF strings
 		When I parse the string "199u"
 		When I convert the date
 		Then the EDTF string should be "199u"
+
+		When I parse the string "19uu"
+		When I convert the date
+		Then the EDTF string should be "19uu"
+
+		When I parse the string "1999-uu"
+		When I convert the date
+		Then the EDTF string should be "1999-uu"
+
+		When I parse the string "1999-01-uu"
+		When I convert the date
+		Then the EDTF string should be "1999-01-uu"
+
+		When I parse the string "1999-uu-uu"
+		When I convert the date
+		Then the EDTF string should be "1999-uu-uu"
