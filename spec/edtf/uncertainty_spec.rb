@@ -108,6 +108,127 @@ module EDTF
       end
       
     end
+
+		describe '#mask' do
+			
+			context 'when passed an empty array' do
+				it 'should return an empty array' do
+					u.mask([]).should == []
+				end
+			end
+			
+			context 'when passed an array with a year string' do
+				let(:date) { ['1994'] }
+				
+				it 'should return the array with the year by default' do
+					u.mask(date).should == ['1994']
+				end
+				
+				context 'when the year is unspecified' do
+					before(:each) { u.year[3] = true }
+					
+					it 'should return the array with the year and the fourth digit masked' do
+						u.mask(date).should == ['199u']
+					end
+					
+				end
+
+				context 'when the decade is unspecified' do
+					before(:each) { u.year[2,2] = [true,true] }
+					
+					it 'should return the array with the year and the third and fourth digit masked' do
+						u.mask(date).should == ['19uu']
+					end
+					
+				end
+				
+			end
+			
+			context 'when passed an array with a year-month string' do
+				let(:date) { ['1994', '01'] }
+				
+				it 'should return the array with the year by default' do
+					u.mask(date).should == ['1994', '01']
+				end
+
+				context 'when the year is unspecified' do
+					before(:each) { u.year[3] = true }
+					
+					it 'should return the array with the year and the fourth digit masked' do
+						u.mask(date).should == ['199u', '01']
+					end
+					
+					context 'when the month is unspecified' do
+						before(:each) { u.unspecified! :month }
+
+						it 'should return the array with the month masked' do
+							u.mask(date).should == ['199u', 'uu']
+						end		
+					end
+				end
+
+				context 'when the decade is unspecified' do
+					before(:each) { u.year[2,2] = [true,true] }
+					
+					it 'should return the array with the year and the third and fourth digit masked' do
+						u.mask(date).should == ['19uu', '01']
+					end
+					
+					context 'when the month is unspecified' do
+						before(:each) { u.unspecified! :month }
+
+						it 'should return the array with the month masked' do
+							u.mask(date).should == ['19uu', 'uu']
+						end		
+					end			
+				end
+
+				context 'when the month is unspecified' do
+					before(:each) { u.unspecified! :month }
+					
+					it 'should return the array with the month masked' do
+						u.mask(date).should == ['1994', 'uu']
+					end		
+				end				
+
+			end
+			
+			context 'when passed an array with a year-month-day string' do
+				let(:date) { ['1994', '01', '27'] }
+				
+				it 'should return the array with the date by default' do
+					u.mask(date).should == ['1994', '01', '27']
+				end
+			
+				context 'when the year is unspecified' do
+					before(:each) { u.year[3] = true }
+					
+					it 'should return the array with the year and the fourth digit masked' do
+						u.mask(date).should == ['199u', '01', '27']
+					end
+					
+					context 'when the month is unspecified' do
+						before(:each) { u.unspecified! :month }
+
+						it 'should return the array with the month masked' do
+							u.mask(date).should == ['199u', 'uu', '27']
+						end		
+						
+						context 'when the day is unspecified' do
+							before(:each) { u.unspecified! :day }
+
+							it 'should return the array with the month masked' do
+								u.mask(date).should == ['199u', 'uu', 'uu']
+							end		
+						end
+					end
+				end
+			
+			
+			end
+			
+			
+		end
     
   end
   

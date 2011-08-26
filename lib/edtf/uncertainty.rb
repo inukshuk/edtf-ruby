@@ -22,6 +22,8 @@ module EDTF
   # year = []
   class Unspecified < Struct.new(:year, :month, :day)
     
+		U = 'u'.freeze
+		
     def initialize
       super year = Array.new(4), month = Array.new(2), day = Array.new(2)
     end
@@ -51,9 +53,14 @@ module EDTF
     private :year=, :month=, :day=
     
     def to_s
-      [year, month, day].map { |p| p.map { |i| i ? 'u' : 's' }.join }.join('-')
+			mask(%w{ ssss ss ss }).join('-')
     end
     
+		def mask(values)
+			values.zip(members.take(values.length)).map do |value, mask|
+				value.split(//).zip(send(mask)).map { |v,m| m ? U : v }.join
+			end
+		end
   end
   
 end
