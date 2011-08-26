@@ -72,3 +72,5 @@ Feature: EDTF parser parses date strings
 	 | 2004-(06-11)?   | no     | no     | no      | yes     | no    | yes   |
 	 | 2004?-06-(11)~  | no     | yes    | no      | no      | yes   | no    |
 	 | (2004-(06)~)?   | no     | yes    | yes     | yes     | no    | no    |
+	 | 2004-06-(01)~   | no     | no     | no      | no      | yes   | no    |
+
