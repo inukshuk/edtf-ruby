@@ -82,7 +82,7 @@ module EDTF
       '%04d-%2d%s' % [year, CODES[season], qualified? ? "^#{qualifier}" : '']
     end
 
-    alias to_edtf to_s
+    alias edtf to_s
     
     def <=>(other)
       case other

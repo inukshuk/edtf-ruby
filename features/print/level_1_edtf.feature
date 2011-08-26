@@ -98,3 +98,9 @@ Feature: Print Date/Time objects as Level 2 EDTF strings
 		When I convert the date
 		Then the EDTF string should be "y-170000002"
 
+	@105 @level1 @season
+	Scenario: Prints seasons
+		When I parse the string "2001-21"
+		When I convert the date
+		Then the EDTF string should be "2001-21"
+		
