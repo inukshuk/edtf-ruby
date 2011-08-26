@@ -8,20 +8,15 @@ Specification](http://www.loc.gov/standards/datetime/spec.html).
 Compatibility
 -------------
 
-As of EDTF Specification DRAFT, August 4, 2001:
-
-* Level 0: fully implemented
-* Level 1: fully implemented
-* Level 2: implemented features 202, 203, 204, 2041, 207, 208, and 209
+EDTF-Ruby parser fully implements all levels and features of EDTF
+Specification DRAFT, August 4, 2011.
 
 The level 2 list extensions (203 and 204) currently return simple Ruby arrays;
 therefore, advanced behavior (such as 'earlier' or 'later') is parsed correctly
 but not yet exposed by the Ruby API.
 
-The level 2 extensions 201 and 205 are currently _not_ supported.
-
 EDTF-Ruby has been confirmed to work on the following Ruby implementations:
-1.9.2, 1.8.7, rbx, jruby.
+1.9.2, 1.8.7, Rubinius, and JRuby.
 
 
 Quickstart
@@ -37,33 +32,35 @@ given a valid EDTF string the return value will either be an (extended) `Date`,
     > require 'edtf'
     > d = Date.edtf('1984?')
     > d.uncertain?
-     => true
+    => true
     > d.certain!
     > d.uncertain?               
-     => false
+    => false
     > d = Date.edtf('1999-03-uu')
     > d.unspecified?
-     => true
+    => true
     > d.unspecified? :year
-     => false
+    => false
     > d.unspecified? :day
-     => true
+    => true
     > Date.edtf('2003-24').winter?
-     => true
+    => true
     > Date.edtf('196x')
-     => #<Date: 1960-01-01>...#<Date: 1970-01-01>
+    => #<Date: 1960-01-01>...#<Date: 1970-01-01>
     > Date.edtf('y-17e7').year
-     => -170000000
+    => -170000000
     > d = Date.edtf('1984-06?/2004-08?')
     > d.from.uncertain?
-     => true
-    > d.each.to_a.length
-     => 7367 # days between 1984-06 and 2004-08
-    > Date.edtf('2004-01-01/open').open?
-     => true
+    => true
+    > d.to_a.length
+    => 7397 # days between 1984-06-01 and 2004-08-31
+		> Date.edtf('1582-10/1582-10').to_a.length
+    => true
+		=> 21 # number of days in October 1582 (Gregorian calendar)
+		> Date.edtf('2004/open').open?
     
 
-For additional features take a look at the rdoc, source, and rspec examples.
+For additional features take a look at the RDoc and RSpec examples.
 
 
 Development
@@ -72,16 +69,18 @@ Development
     $ git clone https://inukshuk@github.com/inukshuk/edtf-ruby.git
     $ cd edtf-ruby
     $ bundle install
-    $ bundle exec rake racc
+    $ bundle exec rake racc_debug
     $ bundle exec rspec spec
     $ bundle exec cucumber
 
-For extra credit, fork the project on github: pull requests welcome!
+For extra credit, fork the project on GitHub: pull requests welcome!
+
 
 Credits
 -------
 
-EDTF-Ruby was written by [Sylvester Keil](http://sylvester.keil.or.at).
+EDTF-Ruby was written by [Sylvester Keil](http://sylvester.keil.or.at) and
+[Namyra](https://github.com/namyra).
 
 Published under the terms and conditions of the FreeBSD License; see LICENSE
 for details.
