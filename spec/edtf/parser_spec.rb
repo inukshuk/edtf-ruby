@@ -176,6 +176,86 @@ module EDTF
         Parser.new.parse('1999-uu-01').unspecified.to_s.should == 'ssss-uu-ss'
       end
       
+			it 'parses "2004?-06-11": uncertain year; month, day known' do
+				d = Parser.new.parse('2004?-06-11')
+				d.uncertain?(:year).should be true
+				d.uncertain?([:month, :day]).should be false
+			end
+
+			it 'parses "2004-06~-11": year and month are approximate; day known' do
+				d = Parser.new.parse('2004-06~-11')
+				d.approximate?(:year).should be true
+				d.approximate?(:month).should be true
+				d.approximate?(:day).should be false
+			end
+			
+			it 'parses "2004-(06)?-11": uncertain month, year and day known' do
+				d = Parser.new.parse('2004-(06)?-11')
+				d.uncertain?(:year).should be false
+				d.uncertain?(:month).should be true
+				d.uncertain?(:day).should be false
+			end
+
+			it 'parses "2004-06-(11)~": day is approximate; year, month known' do
+				d = Parser.new.parse('2004-06-(11)~')
+				d.approximate?(:year).should be false
+				d.approximate?(:month).should be false
+				d.approximate?(:day).should be true
+			end
+
+			it 'parses "2004-(06)?~": year known, month within year is approximate and uncertain' do
+				d = Parser.new.parse('2004-(06)?~')
+				
+				d.approximate?(:year).should be false
+				d.uncertain?(:year).should be false
+				
+				d.approximate?(:month).should be true
+				d.uncertain?(:month).should be true
+				
+				d.approximate?(:day).should be false
+				d.uncertain?(:day).should be false
+			end
+
+			it 'parses "2004-(06-11)?": year known, month and day uncertain' do
+				d = Parser.new.parse('2004-(06-11)?')
+				
+				d.approximate?(:year).should be false
+				d.uncertain?(:year).should be false
+				
+				d.approximate?(:month).should be false
+				d.uncertain?(:month).should be true
+				
+				d.approximate?(:day).should be false
+				d.uncertain?(:day).should be true
+			end
+
+			it 'parses "2004?-06-(11)~": year uncertain, month known, day approximate' do
+				d = Parser.new.parse('2004?-06-(11)~')
+				
+				d.approximate?(:year).should be false
+				d.uncertain?(:year).should be true
+				
+				d.approximate?(:month).should be false
+				d.uncertain?(:month).should be false
+				
+				d.approximate?(:day).should be true
+				d.uncertain?(:day).should be false
+			end
+			
+			it 'parses "(2004-(06)~)?": year uncertain and month is both uncertain and approximate' do
+				d = Parser.new.parse('(2004-(06)~)?')
+				
+				d.approximate?(:year).should be false
+				d.uncertain?(:year).should be true
+				
+				d.approximate?(:month).should be true
+				d.uncertain?(:month).should be true
+				
+				d.approximate?(:day).should be false
+				d.uncertain?(:day).should be false
+			end
+
+
     end
   end
 end
