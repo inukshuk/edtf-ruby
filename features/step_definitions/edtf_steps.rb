@@ -109,3 +109,9 @@ end
 Then /^the unspecified string code be "([^"]*)"$/ do |arg1|
   @date.unspecified.to_s.should == arg1
 end
+
+When /^I parse the following strings an error should be raised:$/ do |table|
+	table.raw.each do |row|
+		expect { Date.edtf(row[0]) }.to raise_error(ArgumentError)
+	end
+end
