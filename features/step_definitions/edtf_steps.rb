@@ -137,5 +137,5 @@ When /^the month is approximate: "([^"]*)"$/ do |arg1|
 end
 
 When /^the day is approximate "([^"]*)"$/ do |arg1|
-	@date.approximate!(:date) if arg1 =~ /y(es)?/i
+	@date.approximate!(:day) if arg1 =~ /y(es)?/i
 end

@@ -13,8 +13,9 @@ Feature: Print uncertain or approximate dates
 		And the day is approximate "<~-day>"
 		When I convert the date
 		Then the EDTF string should be "<string>"
-		
-		Scenarios: Uncertain dates, day precision
+
+		@wip		
+		Scenarios: Uncertain or approximate dates, day precision
 			| date       | precision | string            | ?-year  | ?-month | ?-day   | ~-year  | ~-month | ~-day   |
 			| 2004-06-01 | day       | 2004-06-01?~      | yes     | yes     | yes     | yes     | yes     | yes     |
 			| 2004-06-01 | day       | 2004-06~-01?      | yes     | yes     | yes     | yes     | yes     | no      |
