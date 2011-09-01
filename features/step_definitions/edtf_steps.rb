@@ -115,3 +115,27 @@ When /^I parse the following strings an error should be raised:$/ do |table|
 		expect { Date.edtf(row[0]) }.to raise_error(ArgumentError)
 	end
 end
+
+When /^the year is uncertain: "([^"]*)"$/ do |arg1|
+	@date.uncertain!(:year) if arg1 =~ /y(es)?/i
+end
+
+When /^the month is uncertain: "([^"]*)"$/ do |arg1|
+	@date.uncertain!(:month) if arg1 =~ /y(es)?/i
+end
+
+When /^the day is uncertain: "([^"]*)"$/ do |arg1|
+	@date.uncertain!(:day) if arg1 =~ /y(es)?/i
+end
+
+When /^the year is approximate: "([^"]*)"$/ do |arg1|
+	@date.approximate!(:year) if arg1 =~ /y(es)?/i
+end
+
+When /^the month is approximate: "([^"]*)"$/ do |arg1|
+	@date.approximate!(:month) if arg1 =~ /y(es)?/i
+end
+
+When /^the day is approximate "([^"]*)"$/ do |arg1|
+	@date.approximate!(:date) if arg1 =~ /y(es)?/i
+end
