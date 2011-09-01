@@ -115,7 +115,7 @@ class Date
 
   alias precisely! precise!
   
-  def_delegators :unspecified, :unspecified?, :specified?, :unsepcific?, :specific?
+  def_delegators :unspecified, :unspecified?, :specified?, :unspecific?, :specific?
   
   def unspecified!(arguments = precision_filter)
     unspecified.unspecified!(arguments)
