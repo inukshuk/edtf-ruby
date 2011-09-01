@@ -9,7 +9,7 @@ module EDTF
     def_delegators :to_range, *(Range.instance_methods - Enumerable.instance_methods - Object.instance_methods)
 
     attr_reader :from, :to
-    
+
     def initialize(from = :open, to = :open)
       @from, @to = from, to
     end
@@ -39,7 +39,7 @@ module EDTF
       end
       
     end
-
+		
     def unknown_start?
       @from == :unknown
     end
@@ -72,7 +72,7 @@ module EDTF
       end
     end
    
-  	def edtf
+		def edtf
 			[
 				@from.send(@from.respond_to?(:edtf) ? :edtf : :to_s),
 				@to.send(@to.respond_to?(:edtf) ? :edtf : :to_s)

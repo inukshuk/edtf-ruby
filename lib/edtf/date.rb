@@ -143,10 +143,20 @@ class Date
 		return "y#{year}" if long_year?
 		
 		s = FORMATS.take(values.length).zip(values).map { |f,v| f % v }
-		s = unspecified.mask(s).join('-')
-		
-		s << SYMBOLS[:uncertain] if uncertain?
-		s << SYMBOLS[:approximate] if approximate?
+		s = unspecified.mask(s)
+
+		case
+		when uncertain? && !approximate?
+			s[-1] << SYMBOLS[:uncertain]
+		when !uncertain? && approximate?
+			s[-1] << SYMBOLS[:approximate]
+		when uncertain? && approximate?
+			s[-1] << SYMBOLS[:uncertain] << SYMBOLS[:approximate]
+		else
+			# nothing
+		end
+
+		s = s.join('-')
 		s << SYMBOLS[:calendar] << calendar if calendar?
 		
 		s
@@ -154,7 +164,7 @@ class Date
 
 	alias to_edtf edtf
 	
-	# Returns a the Date of the next day, month, or year depending on the
+	# Returns the Date of the next day, month, or year depending on the
 	# current Date/Time's precision.
   def next
     send("next_#{precision}")
@@ -186,7 +196,7 @@ class Date
   alias -@ negate
   
 	# Returns true if this Date/Time has year precision and the year exceeds four digits.
-  def long_year?
+	def long_year?
 		precision == :year && year.abs > 9999
 	end
 	
