@@ -79,3 +79,11 @@ Feature: EDTF parser parses date strings
 	 | 2004~-(06)?-01~   | yes    | no     | no      | yes     | yes   | no    |
 	 | 2004~-(06-(01)~)? | yes    | no     | no      | yes     | yes   | yes   |
 
+
+	Scenario: Invalid dates
+		When I parse the following strings an error should be raised:
+			| xyz           |
+			| x2009         |
+			| 2004-04-(1)?1 |
+		
+	

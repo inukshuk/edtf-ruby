@@ -454,7 +454,8 @@ require 'strscan'
   end
   
   def on_error(tid, val, vstack)
-    warn "failed to parse extended date time %s (%s) %s" % [val.inspect, token_to_str(tid) || '?', vstack.inspect]
+		raise ArgumentError, "invalid date"
+    # warn "failed to parse extended date time %s (%s) %s" % [val.inspect, token_to_str(tid) || '?', vstack.inspect]
   end
 
   def apply_uncertainty(date, uncertainty, scope = nil)
