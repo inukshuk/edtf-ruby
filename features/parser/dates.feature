@@ -63,14 +63,17 @@ Feature: EDTF parser parses date strings
 
   @201 @level2
   Scenarios: uncertain date examples from the specification
-   | string          | ~-year | ?-year | ~-month | ?-month | ~-day | ?-day |
-	 | 2004?-06-11     | no     | yes    | no      | no      | no    | no    |
-	 | 2004-06~-11     | yes    | no     | yes     | no      | no    | no    |
-	 | 2004-(06)?-11   | no     | no     | no      | yes     | no    | no    |
-	 | 2004-06-(11)~   | no     | no     | no      | no      | yes   | no    |
-	 | 2004-(06)?~     | no     | no     | yes     | yes     | no    | no    |
-	 | 2004-(06-11)?   | no     | no     | no      | yes     | no    | yes   |
-	 | 2004?-06-(11)~  | no     | yes    | no      | no      | yes   | no    |
-	 | (2004-(06)~)?   | no     | yes    | yes     | yes     | no    | no    |
-	 | 2004-06-(01)~   | no     | no     | no      | no      | yes   | no    |
+   | string          	| ~-year | ?-year | ~-month | ?-month | ~-day | ?-day |
+	 | 2004?-06-11     	| no     | yes    | no      | no      | no    | no    |
+	 | 2004-06~-11     	| yes    | no     | yes     | no      | no    | no    |
+	 | 2004-(06)?-11   	| no     | no     | no      | yes     | no    | no    |
+	 | 2004-06-(11)~   	| no     | no     | no      | no      | yes   | no    |
+	 | 2004-(06)?~     	| no     | no     | yes     | yes     | no    | no    |
+	 | 2004-(06-11)?   	| no     | no     | no      | yes     | no    | yes   |
+	 | 2004?-06-(11)~  	| no     | yes    | no      | no      | yes   | no    |
+	 | (2004-(06)~)?   	| no     | yes    | yes     | yes     | no    | no    |
+	 | 2004-06-(01)~   	| no     | no     | no      | no      | yes   | no    |
+	 | (2004-(06-01)~)?	| no     | yes    | yes     | yes     | yes   | yes   |
+	 | (2004-(06)?-01)~	| yes    | no     | yes     | yes     | yes   | no    |
+	 | 2004-06?-(01)~	  | no     | yes    | no      | yes     | yes   | no    |
 
