@@ -176,8 +176,8 @@ module EDTF
         Parser.new.parse('1999-uu-01').unspecified.to_s.should == 'ssss-uu-ss'
       end
 
-      it 'parses intern unspecified "1999-01-uu"' do
-        Parser.new.parse('1999-01-uu').unspecified.to_s.should == 'ssss-ss-uu'
+      it 'parses intern unspecified "2004-06-uu"' do
+        Parser.new.parse('2004-06-uu').unspecified.to_s.should == 'ssss-ss-uu'
       end
 
       
