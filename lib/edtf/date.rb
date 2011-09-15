@@ -10,6 +10,9 @@ class Date
 		:unspecified => 'u'
 	}.freeze
 	
+	UA = {
+	}.freeze
+	
   EXTENDED_ATTRIBUTES = %w{ calendar precision uncertain approximate
     unspecified }.map(&:to_sym).freeze
    	
@@ -144,7 +147,7 @@ class Date
 		
 		s = FORMATS.take(values.length).zip(values).map { |f,v| f % v }
 		s = unspecified.mask(s)
-		s = s.map { |v| "%s#{v}%s" }.join('-') % IUA[ua_values]
+		s = UA[ua_values] % s
 
 		s << SYMBOLS[:calendar] << calendar if calendar?
 		
