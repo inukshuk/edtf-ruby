@@ -220,7 +220,7 @@ module EDTF
 
 			it 'parses "2004-(06)?~": year known, month within year is approximate and uncertain' do
 				d = Parser.new.parse('2004-(06)?~')
-				
+								
 				d.approximate?(:year).should be false
 				d.uncertain?(:year).should be false
 				

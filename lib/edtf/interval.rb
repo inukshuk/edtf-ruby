@@ -6,7 +6,7 @@ module EDTF
 
     include Enumerable
     
-    def_delegators :to_range, *(Range.instance_methods - Enumerable.instance_methods - Object.instance_methods)
+    def_delegators :to_range, *(Range.instance_methods(false))
 
     attr_reader :from, :to
 

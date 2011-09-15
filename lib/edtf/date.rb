@@ -144,19 +144,8 @@ class Date
 		
 		s = FORMATS.take(values.length).zip(values).map { |f,v| f % v }
 		s = unspecified.mask(s)
+		s = s.map { |v| "%s#{v}%s" }.join('-') % IUA[ua_values]
 
-		case
-		when uncertain? && !approximate?
-			s[-1] << SYMBOLS[:uncertain]
-		when !uncertain? && approximate?
-			s[-1] << SYMBOLS[:approximate]
-		when uncertain? && approximate?
-			s[-1] << SYMBOLS[:uncertain] << SYMBOLS[:approximate]
-		else
-			# nothing
-		end
-
-		s = s.join('-')
 		s << SYMBOLS[:calendar] << calendar if calendar?
 		
 		s
@@ -202,6 +191,10 @@ class Date
 	
   private
 
+	def ua_values
+		uncertain?(precision_filter) + approximate?(precision_filter)
+	end
+	
   def precision_filter
     @precision_filter ||= update_precision_filter
   end
