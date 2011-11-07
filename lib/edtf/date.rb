@@ -61,10 +61,6 @@ class Date
     update_precision_filter[-1]
   end
   
-  def self.included(base)
-    base.extend(ClassMethods)
-  end
-  
   def uncertain
     @uncertain ||= EDTF::Uncertainty.new
   end
