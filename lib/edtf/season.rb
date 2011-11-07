@@ -28,7 +28,8 @@ module EDTF
     
     attr_accessor :qualifier
     
-    def_delegators :to_range, :each
+    def_delegators :to_range,
+      *Range.instance_methods(false).reject { |m| m.to_s =~ /^(each|eql?|hash)$/ }
     
     SEASONS.each_value do |s|
       define_method("#{s}?") { @season == s }
@@ -65,6 +66,15 @@ module EDTF
       end
     end
 
+    def each
+      if block_given?
+        to_range(&Proc.new)
+        self
+      else
+        to_enum
+      end
+    end
+    
     def year=(new_year)
       @year = new_year.to_i
     end
@@ -87,7 +97,7 @@ module EDTF
     def <=>(other)
       case other
       when Date
-        include?(other) ? 0 : to_date <=> other
+        cover?(other) ? 0 : to_date <=> other
       when Season
         [year, month, qualifier] <=> [other.year, other.month, other.qualifier]
       else
@@ -104,22 +114,13 @@ module EDTF
     end
     
     def to_date
-      Date.new(year, month)
+      Date.new(year, month, 1)
     end
 
-    # def include?(other)
-    #   case other
-    #   when Date
-    #     d = to_date
-    #     other >= d && other <= d.months_since(3).end_of_month
-    #   else
-    #     false
-    #   end
-    # end
-    
+    # Returns a Range that covers the season (a three month period).
     def to_range
       d = to_date
-      d .. d.months_since(3).end_of_month
+      d .. d.months_since(2).end_of_month
     end
     
     protected
