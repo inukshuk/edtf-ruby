@@ -9,10 +9,7 @@ class Date
 		:calendar    => '^',
 		:unspecified => 'u'
 	}.freeze
-	
-	UA = {
-	}.freeze
-	
+		
   EXTENDED_ATTRIBUTES = %w{ calendar precision uncertain approximate
     unspecified }.map(&:to_sym).freeze
    	

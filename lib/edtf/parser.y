@@ -2,7 +2,7 @@
 
 class EDTF::Parser
 
-token T Z E X U UNKNOWN OPEN LONGYEAR UNMATCHED DOTS IUA
+token T Z E X U UNKNOWN OPEN LONGYEAR UNMATCHED DOTS PUA
 
 expect 0
 
@@ -133,7 +133,7 @@ rule
     result = Interval.new(val[0], val[2])
   }
 
-  level_1_start : date | internal_uncertain_or_approximate_date | unspecified | internal_unspecified | UNKNOWN
+  level_1_start : date | partial_uncertain_or_approximate_date | unspecified | partial_unspecified | UNKNOWN
              
   level_1_end : level_1_start | OPEN
 
@@ -172,8 +172,8 @@ rule
 
   # NB: Level 2 Intervals are covered by the Level 1 Interval rules.
   level_2_expression : season_qualified
-                     | internal_uncertain_or_approximate_date
-                     | internal_unspecified
+                     | partial_uncertain_or_approximate_date
+                     | partial_unspecified
                      | choice_list
                      | inclusive_list
                      | masked_precision
@@ -239,7 +239,7 @@ rule
 								;
              
   list_element : date
-               | internal_uncertain_or_approximate_date
+               | partial_uncertain_or_approximate_date
                | unspecified
                | consecutives { result = val[0].map { |d| Date.new(*d) } }
 							 ;
@@ -256,7 +256,7 @@ rule
                | year DOTS year { result = (val[0]..val[2]).to_a.map }
 							 ;
 
-  internal_unspecified :
+  partial_unspecified :
     unspecified_year '-' month '-' d01_31
     {
       result = Date.new(val[0][0], val[2], val[4])
@@ -287,22 +287,22 @@ rule
     }
     ;
  
-  internal_uncertain_or_approximate_date : internal_uncertain_or_approximate
-    | '(' internal_uncertain_or_approximate ')' ua { result = uoa(val[1], val[3]) }
+  partial_uncertain_or_approximate_date : partial_uncertain_or_approximate
+    | '(' partial_uncertain_or_approximate ')' ua { result = uoa(val[1], val[3]) }
 
-  internal_uncertain_or_approximate :
-    iua_year             { result = val[0]; result.precision = :year }
-    | iua_year_month     { result = val[0]; result.precision = :month }
-    | iua_year_month_day
+  partial_uncertain_or_approximate :
+    pua_year             { result = val[0]; result.precision = :year }
+    | pua_year_month     { result = val[0]; result.precision = :month }
+    | pua_year_month_day
 
-  iua_year : year ua { result = uoa(Date.new(val[0]), val[1], :year) }
+  pua_year : year ua { result = uoa(Date.new(val[0]), val[1], :year) }
 
-  iua_year_month :
-    iua_year '-' month opt_ua
+  pua_year_month :
+    pua_year '-' month opt_ua
     {
       result = uoa(val[0].change(:month => val[2]), val[3], [:month, :year])
     }
-    | '(' iua_year IUA month opt_ua
+    | '(' pua_year PUA month opt_ua
     {
       result = uoa(uoa(val[1], val[2], :year).change(:month => val[3]), val[4], :month)
     }
@@ -316,20 +316,20 @@ rule
     }
     ;
 
-  iua_year_month_day :
-    iua_year_month '-' d01_31 opt_ua
+  pua_year_month_day :
+    pua_year_month '-' d01_31 opt_ua
     {
       result = uoa(val[0].change(:day => val[2]), val[3])
     }
-    | iua_year_month '-' '(' d01_31 ')' ua
+    | pua_year_month '-' '(' d01_31 ')' ua
     {
       result = uoa(val[0].change(:day => val[3]), val[5], [:day])
     }
-    | '(' iua_year_month IUA d01_31 opt_ua
+    | '(' pua_year_month PUA d01_31 opt_ua
     {
       result = uoa(uoa(val[1], val[2], [:year, :month]).change(:day => val[3]), val[4], :day)
     }
-    | year '-' '(' month IUA d01_31 opt_ua
+    | year '-' '(' month PUA d01_31 opt_ua
     {
       result = uoa(uoa(Date.new(val[0], val[3], val[5]), val[4], :month), val[6], :day)
     }
@@ -476,11 +476,11 @@ require 'strscan'
     when @src.scan(/\(/)
       ['(', @src.matched] 
     when @src.scan(/\)\?~-/)
-      [:IUA, [:uncertain!, :approximate!]]
+      [:PUA, [:uncertain!, :approximate!]]
     when @src.scan(/\)\?-/)
-      [:IUA, [:uncertain!]]
+      [:PUA, [:uncertain!]]
     when @src.scan(/\)~-/)
-      [:IUA, [:approximate!]]
+      [:PUA, [:approximate!]]
     when @src.scan(/\)/)
       [')', @src.matched]
     when @src.scan(/\[/)
