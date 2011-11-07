@@ -155,17 +155,15 @@ class Date
     send("next_#{precision}")
   end
   
-  # def succ
-  # end
+  def succ
+		send("next_#{precision}")
+  end
 
-  # def ==(other)
-  # end
+  def <=>(other)
+		return nil unless other.is_a?(::Date)
+		values <=> other.values
+  end
 
-  # def <=>(other)
-  # end
-
-  # def ===(other)
-  # end
   
 	# Returns an array of the current year, month, and day values filtered by
 	# the Date/Time's precision.
