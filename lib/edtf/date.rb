@@ -1,6 +1,8 @@
 class Date
   
-  PRECISIONS = [:year, :month, :day].freeze
+  PRECISION = [:year, :month, :day].freeze
+  PRECISIONS = Hash[*PRECISION.map { |p| [p, "#{p}s".to_sym] }.flatten].freeze
+  
 	FORMATS = %w{ %04d %02d %02d }.freeze
 
 	SYMBOLS = {
@@ -23,19 +25,23 @@ class Date
   
   attr_accessor :calendar
   
-  PRECISIONS.each do |p|
+  PRECISION.each do |p|
     define_method("#{p}_precision?") { @precision == p }
     define_method("#{p}_precision!") { @precision =  p }
   end
   
-  def dup
-    d = super
-    d.uncertain = uncertain.dup
-    d.approximate = approximate.dup
-    d.unspecified = unspecified.dup
-    d
+  def initialize_copy(other)
+		super
+		copy_extended_attributes(other)
   end
   
+  # Alias change method from Active Support.
+  alias original_advance advance
+
+  def advance(options)
+    original_advance(options).copy_extended_attributes(self)
+  end
+
   # Alias change method from Active Support.
   alias original_change change
   
@@ -56,8 +62,9 @@ class Date
 	# Sets this Date/Time's precision to the passed-in value.
   def precision=(precision)
     precision = precision.to_sym
-    raise ArgumentError, "invalid precision #{precision.inspect}" unless PRECISIONS.include?(precision)
+    raise ArgumentError, "invalid precision #{precision.inspect}" unless PRECISION.include?(precision)
     @precision = precision
+  ensure
     update_precision_filter[-1]
   end
   
@@ -140,7 +147,7 @@ class Date
 		
 		s = FORMATS.take(values.length).zip(values).map { |f,v| f % v }
 		s = unspecified.mask(s)
-		s = UA[ua_values] % s
+    # s = UA[ua_values] % s
 
 		s << SYMBOLS[:calendar] << calendar if calendar?
 		
@@ -151,14 +158,26 @@ class Date
 	
 	# Returns the Date of the next day, month, or year depending on the
 	# current Date/Time's precision.
-  def next
-    send("next_#{precision}")
-  end
-  
-  def succ
-		send("next_#{precision}")
+  def next(n = 1)
+    if n > 1
+      1.upto(n).map { |by| advance(PRECISIONS[precision] => by) }
+    else
+      advance(PRECISIONS[precision] => 1)
+    end
   end
 
+  alias succ next
+
+	# Returns the Date of the previous day, month, or year depending on the
+	# current Date/Time's precision.
+  def prev(n = 1)
+    if n > 1
+      1.upto(n).map { |by| advance(PRECISIONS[precision] => -by) }
+    else
+      advance(PRECISIONS[precision] => -1)
+    end
+  end
+  
   def <=>(other)
 		return nil unless other.is_a?(::Date)
 		values <=> other.values
@@ -207,5 +226,17 @@ class Date
   protected
   
   attr_writer :uncertain, :unspecified, :approximate
-  
+
+  def copy_extended_attributes(other)
+    @uncertain   = other.uncertain.dup
+    @approximate = other.approximate.dup
+    @unspecified = other.unspecified.dup
+
+    @calendar    = other.calendar.dup if other.calendar?
+
+    @precision   = other.precision
+
+    self
+  end
+
 end

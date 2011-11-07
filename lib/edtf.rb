@@ -34,6 +34,7 @@ require 'time'
 autoload :Rational, 'rational'
 
 require 'forwardable'
+require 'enumerator'
 
 require 'active_support/core_ext/date/calculations'
 require 'active_support/core_ext/date_time/calculations'

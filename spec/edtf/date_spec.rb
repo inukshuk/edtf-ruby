@@ -42,25 +42,64 @@ describe 'Date/DateTime' do
 	describe '#negate' do
     let(:date) { Date.edtf('2004?') }
 		
-		it 'should return a new date with the negated year' do
+		it 'returns a new date with the negated year' do
 			date.negate.year.should == (date.year * -1)
 		end
 		
-		it 'should return a new date with the same month and day' do
+		it 'returns a new date with the same month' do
 			date.negate.month.should == date.month
+		end
+		
+		it 'returns a new date with the same day' do
 			date.negate.day.should == date.day
 		end
 		
-		it 'should return a new date with the same precision' do
+		it 'returns a new date with the same precision' do
 			date.negate.precision.should == date.precision
 		end
 	end
+	
+	describe '#succ' do
+		
+		it 'the successor of 2004 is 2005' do
+			Date.edtf('2004').succ.year.should == 2005
+		end
+
+		it 'the successor of 2004-03 is 2004-04' do
+			Date.edtf('2004-03').succ.strftime('%Y-%m').should == '2004-04'
+		end
+
+		it 'the successor of 2004-03-01 is 2004-03-02' do
+			Date.edtf('2004-03-01').succ.strftime('%Y-%m-%d').should == '2004-03-02'
+		end
+
+		it "the successor of 1999 has year precision" do
+			Date.edtf('1999').succ.should be_year_precision
+		end
+
+	end
+	
+	describe '#next' do
+	  
+	  it 'returns the successor when given no argument' do
+			Date.edtf('1999').next.year.should == 2000
+	  end
+	  
+	  it 'returns an array of the next 3 elements when passed 3 as an argument' do
+	    Date.edtf('1999').next(3).map(&:year) == [2000, 2001, 2002]
+	  end
+	  
+	end
+	
 	
   describe '#change' do
     let(:date) { Date.edtf('2004-09?~') }
 
     it 'returns a copy of the date if given empty option hash' do
       date.change({}).should == date
+		end
+		
+    it 'the returned copy is not identical at object level' do
       date.change({}).should_not equal(date)
     end
     

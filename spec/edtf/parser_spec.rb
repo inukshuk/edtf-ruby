@@ -23,9 +23,7 @@ module EDTF
       end
       
       it 'parses simple intervals like "2007/2008"' do
-        Parser.new.parse('2007/2008').should include(Date.new(2007,12,24))
-        Parser.new.parse('2007/2008').should include(Date.new(2008,1,2))
-        Parser.new.parse('2007/2008').should_not include(Date.new(2009,1,2))
+        Parser.new.parse('2007/2008').should be_a(Interval)
       end
    
       it 'parses uncertain dates' do
@@ -67,34 +65,34 @@ module EDTF
         Parser.new.parse('1984-06-02?/2004-08-08~').to.should be_approximate
       end
       
-      it 'should parse positive long years' do
+      it 'parses positive long years' do
         Parser.new.parse('y170000002').year.should == 170000002
       end
       
-      it 'should parse negative long years' do
+      it 'parses negative long years' do
         Parser.new.parse('y-170000002').year.should == -170000002
       end
       
-      it 'should parse season codes' do
+      it 'parses season codes' do
         Parser.new.parse('2003-23').should be_autumn
       end
 
-      it 'should parse calendar names' do
+      it 'parses calendar names' do
         Parser.new.parse('2001-02-03^xyz').calendar.should == 'xyz'
       end
       
-      it 'should parse season qualifiers' do
+      it 'parses season qualifiers' do
         d = Parser.new.parse('2003-23^european')
         d.should be_autumn
         d.should be_qualified
         d.qualifier.should == 'european'
       end
       
-      it 'should parse positive scientific long years' do
+      it 'parses positive scientific long years' do
         Parser.new.parse('y17e7').year.should == 170000000
       end
       
-      it 'should parse negative scientific long years' do
+      it 'parses negative scientific long years' do
         Parser.new.parse('y-17e7').year.should == -170000000        
       end
       
