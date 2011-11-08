@@ -8,13 +8,18 @@ Specification](http://www.loc.gov/standards/datetime/spec.html).
 Compatibility
 -------------
 
-EDTF-Ruby parser implements all levels and features of the EDTF Specification
+EDTF-Ruby parser implements all levels and features of the EDTF specification
 (version September 16, 2011). With the following known caveats:
 
 * Uncertain/approximate seasons will be parsed, but the Season class does
   not implement attributes.
 * Some complex L2 partial uncertain/approximate date strings may currently
   fail to parse.
+* In the latest revision of the EDTF specification alternative version of
+  partial uncertain/approximate strings was introduced (with or without nested
+  parentheses); curiously, EDTF-Ruby currently parses nested parentheses
+  but uses the alternative version for printing as we find that one easier
+  to read. Parser support for this version will be added in the future.
 
 The level 2 list extensions (203 and 204) currently return simple Ruby arrays;
 therefore, advanced behavior (such as 'earlier' or 'later') is parsed correctly
@@ -79,6 +84,8 @@ a Date, you can print the corresponding EDTF string using the `#edtf` method.
     => true
     > Date.edtf('2004/open').cover?(Date.today)
     => true # an open ended interval covers today
+    > Date.edtf("(1999-(02)~-23)?").edtf
+    => "1999?-(02)?~-23?" # when printing, EDTF-Ruby reduces nested parentheses
 
 For additional features take a look at the documentation or the extensive
 list of rspec examples.
