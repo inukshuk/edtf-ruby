@@ -133,7 +133,7 @@ rule
     result = Interval.new(val[0], val[2])
   }
 
-  level_1_start : date | partial_uncertain_or_approximate_date | unspecified | partial_unspecified | UNKNOWN
+  level_1_start : date | partial_uncertain_or_approximate | unspecified | partial_unspecified | UNKNOWN
              
   level_1_end : level_1_start | OPEN
 
@@ -159,7 +159,7 @@ rule
     ;
 
 
-  season : year '-' season_number { result = Season.new(val[0], val[2]) }
+  season : year '-' season_number opt_ua { result = Season.new(val[0], val[2]) }
 
   season_number : '2' '1' { result = 21 }
                 | '2' '2' { result = 22 }
@@ -172,7 +172,7 @@ rule
 
   # NB: Level 2 Intervals are covered by the Level 1 Interval rules.
   level_2_expression : season_qualified
-                     | partial_uncertain_or_approximate_date
+                     | partial_uncertain_or_approximate
                      | partial_unspecified
                      | choice_list
                      | inclusive_list
@@ -239,7 +239,7 @@ rule
 								;
              
   list_element : date
-               | partial_uncertain_or_approximate_date
+               | partial_uncertain_or_approximate
                | unspecified
                | consecutives { result = val[0].map { |d| Date.new(*d) } }
 							 ;
@@ -287,16 +287,17 @@ rule
     }
     ;
  
-  partial_uncertain_or_approximate_date : partial_uncertain_or_approximate
-    | '(' partial_uncertain_or_approximate ')' ua { result = uoa(val[1], val[3]) }
 
-  partial_uncertain_or_approximate :
+  partial_uncertain_or_approximate : pua_base
+    | '(' pua_base ')' ua { result = uoa(val[1], val[3]) }
+  
+  pua_base :
     pua_year             { result = val[0]; result.precision = :year }
     | pua_year_month     { result = val[0]; result.precision = :month }
     | pua_year_month_day
-
+  
   pua_year : year ua { result = uoa(Date.new(val[0]), val[1], :year) }
-
+  
   pua_year_month :
     pua_year '-' month opt_ua
     {
@@ -315,7 +316,7 @@ rule
       result = uoa(Date.new(val[0], val[3]), val[5], [:month])
     }
     ;
-
+  
   pua_year_month_day :
     pua_year_month '-' d01_31 opt_ua
     {
@@ -447,15 +448,22 @@ require 'strscan'
     @options = Parser.defaults.merge(options)
   end
   
-  def parse(input)
+	def parse(input)
+		parse!(input)
+	rescue => e
+		warn e.message if options[:debug]
+		nil
+	end
+	
+  def parse!(input)
     @yydebug = @options[:debug] || ENV['DEBUG']
     @src = StringScanner.new(input)
     do_parse
   end
   
   def on_error(tid, val, vstack)
-		raise ArgumentError, "invalid date"
-    # warn "failed to parse extended date time %s (%s) %s" % [val.inspect, token_to_str(tid) || '?', vstack.inspect]
+    raise ArgumentError,
+			"failed to parse extended date time %s [%s]: %s" % [val.inspect, token_to_str(tid) || '?', vstack.inspect]
   end
 
   def apply_uncertainty(date, uncertainty, scope = nil)

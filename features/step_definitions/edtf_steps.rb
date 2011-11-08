@@ -12,7 +12,7 @@ Then /^the EDTF String should be "([^"]*)"$/i do |edtf|
 end
 
 When /^I parse the string "([^"]*)"$/ do |string|
-  @date = EDTF.parse(string)
+  @date = EDTF.parse!(string)
 end
 
 Then /^the year should be "([^"]*)"$/ do |year|
@@ -116,7 +116,7 @@ end
 
 When /^I parse the following strings an error should be raised:$/ do |table|
 	table.raw.each do |row|
-		expect { Date.edtf(row[0]) }.to raise_error(ArgumentError)
+		expect { Date.edtf!(row[0]) }.to raise_error(ArgumentError)
 	end
 end
 

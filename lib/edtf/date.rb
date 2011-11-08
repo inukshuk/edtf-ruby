@@ -18,8 +18,15 @@ class Date
   extend Forwardable  
   
   class << self
+    
     def edtf(input, options = {})
-      ::EDTF::Parser.new(options).parse(input)
+      edtf!(input, options)
+    rescue
+      nil
+    end
+    
+    def edtf!(input, options = {})
+      ::EDTF::Parser.new(options).parse!(input)
     end
   end
   

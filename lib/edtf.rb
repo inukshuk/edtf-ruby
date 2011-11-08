@@ -68,11 +68,17 @@ require 'edtf/extensions'
 # To parse EDTF strings use either `Date.edtf` of `EDTF.parse`.
 #
 module EDTF
-  
+
+  module_function
+
   def parse(input, options = {})
-    ::Date.edtf(input, options)
+    parse!(input, options)
+  rescue
+    nil
   end
   
-  module_function :parse
-  
+  def parse!(input, options = {})
+    ::Date.edtf!(input, options)
+  end
+    
 end
