@@ -38,6 +38,21 @@ describe 'Date/DateTime' do
     end
     
   end
+
+	describe 'precisions' do
+		let(:date) { Date.today }
+		
+		it 'has day precision by default' do
+			date.should be_day_precision
+		end
+		
+		it '#day_precison returns a new date object' do
+			date.day_precision.should_not equal(date)
+			date.day_precision.should == date
+		end
+		
+	end
+	
   
 	describe '#negate' do
     let(:date) { Date.edtf('2004?') }
@@ -153,5 +168,78 @@ describe 'Date/DateTime' do
     end
     
   end
+  
+  describe 'uncertain/approximate hash' do
+    
+    it 'is 0 by default' do
+      Date.new().send(:ua_hash).should == 0
+    end
+    
+    it 'is 8 for approximate year' do
+      Date.new.approximate!(:year).send(:ua_hash).should == 8
+    end
+    
+  end
+  
+	describe 'sorting and comparisons' do
+		let(:xmas) { Date.new(2011, 12, 24) }
+		let(:new_years_eve) { Date.new(2011, 12, 31) }
+		
+		describe '#values' do
+			
+			it 'returns [2011,12,24] for christmas' do
+				xmas.values.should == [2011,12,24]
+			end
+
+			it 'returns [2011,12] for christmas with month precision' do
+				xmas.month_precision!.values.should == [2011,12]
+			end
+
+			it 'returns [2011] for christmas with year precision' do
+				xmas.year_precision!.values.should == [2011]
+			end
+			
+		end
+		
+		describe '#<=>' do
+			
+			it '2009-12-24 should be less than 2011-12-31' do
+				Date.new(2009,12,24).should < Date.new(2011,12,31)
+			end
+
+			it '2009-12-24 should be less than 2011-12' do
+				Date.new(2009,12,24).should < Date.edtf('2011-12')
+			end
+
+			it '2009-12-24 should be less than 2011' do
+				Date.new(2009,12,24).should < Date.edtf('2011')
+			end
+			
+			
+		end
+		
+		describe '#==' do
+			
+			it "xmas and new year's eve are not equal" do
+				xmas.should_not == new_years_eve
+			end
+
+			it "xmas and new year's eve are equal using month percision" do
+				xmas.month_precision!.should == new_years_eve.month_precision!
+			end
+
+			it "xmas and january 24 are not equal using month percision" do
+				xmas.month_precision!.should_not == xmas.month_precision!.next
+			end
+			
+
+			it "xmas and new year's eve are equal using year percision" do
+				xmas.year_precision!.should == new_years_eve.year_precision!
+			end
+			
+		end
+		
+	end
+	
     
 end

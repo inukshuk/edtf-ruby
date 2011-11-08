@@ -89,8 +89,8 @@ Feature: Print uncertain or approximate dates
 			| 2004-06-01 | day       | 2004~-06-(01)?~   | no      | no      | yes     | yes     | no      | yes     |
 			| 2004-06-01 | day       | 2004~-06-(01)?    | no      | no      | yes     | yes     | no      | no      |
 #			| 2004-06-01 | day       | 2004-(06-(01)?)~  | no      | no      | yes     | no      | yes     | yes     |
-			| 2004-06-01 | day       | 2004-06~-(01)?~   | no      | no      | yes     | no      | yes     | yes     |
-			| 2004-06-01 | day       | 2004-(06)~-(01)?  | no      | no      | yes     | no      | yes     | no      |
+			| 2004-06-01 | day       | 2004-(06)~-01?~   | no      | no      | yes     | no      | yes     | yes     |
+			| 2004-06-01 | day       | 2004-(06)~-01?    | no      | no      | yes     | no      | yes     | no      |
 			| 2004-06-01 | day       | 2004-06-(01)?~    | no      | no      | yes     | no      | no      | yes     |
 			| 2004-06-01 | day       | 2004-06-(01)?     | no      | no      | yes     | no      | no      | no      |
 			| 2004-06-01 | day       | 2004-06-01~       | no      | no      | no      | yes     | yes     | yes     |
@@ -106,9 +106,9 @@ Feature: Print uncertain or approximate dates
 		Scenarios: Uncertain or approximate dates, month precision
 			| date       | precision | string            | ?-year  | ?-month | ?-day   | ~-year  | ~-month | ~-day   |
 			| 2004-06-01 | month     | 2004-06?~         | yes     | yes     | no      | yes     | yes     | no      |
-			| 2004-06-01 | month     | 2004~-06?         | yes     | yes     | no      | yes     | no      | no      |
-#			| 2004-06-01 | month     | (2004-(06)~)?     | yes     | yes     | no      | no      | yes     | no      |
-			| 2004-06-01 | month     | 2004?-(06)?~      | yes     | yes     | no      | no      | yes     | no      |
+			| 2004-06-01 | month     | 2004~-06?         | yes     | yes     | no      | yes     | no      | no      | 
+#     | 2004-06-01 | month     | (2004-(06)~)?     | yes     | yes     | no      | no      | yes     | no      |
+      | 2004-06-01 | month     | 2004?-(06)?~      | yes     | yes     | no      | no      | yes     | no      |
 			| 2004-06-01 | month     | 2004-06?          | yes     | yes     | no      | no      | no      | no      |
 			| 2004-06-01 | month     | 2004?-06~         | yes     | no      | no      | yes     | yes     | no      |
 			| 2004-06-01 | month     | 2004?~-06         | yes     | no      | no      | yes     | no      | no      |

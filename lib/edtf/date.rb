@@ -26,18 +26,30 @@ class Date
   attr_accessor :calendar
   
   PRECISION.each do |p|
-    define_method("#{p}_precision?") { @precision == p }
-    define_method("#{p}_precision!") { @precision =  p }
+    define_method("#{p}_precision?") { precision == p }
+    
+    define_method("#{p}_precision!") do
+      self.precision = p
+      self
+    end
+    
+    define_method("#{p}_precision") do
+      change(:precision => p)
+    end
   end
+  
   
   def initialize_copy(other)
 		super
 		copy_extended_attributes(other)
   end
   
-  # Alias change method from Active Support.
+  
+  # Alias advance method from Active Support.
   alias original_advance advance
 
+  # Provides precise Date calculations for years, months, and days.  The +options+ parameter takes a hash with
+  # any of these keys: <tt>:years</tt>, <tt>:months</tt>, <tt>:weeks</tt>, <tt>:days</tt>.
   def advance(options)
     original_advance(options).copy_extended_attributes(self)
   end
@@ -54,6 +66,7 @@ class Date
     d
   end
   
+  
   # Returns this Date's precision.
   def precision
     @precision ||= :day
@@ -64,7 +77,6 @@ class Date
     precision = precision.to_sym
     raise ArgumentError, "invalid precision #{precision.inspect}" unless PRECISION.include?(precision)
     @precision = precision
-  ensure
     update_precision_filter[-1]
   end
   
@@ -73,7 +85,7 @@ class Date
   end
 
   def approximate
-    @approximate ||= EDTF::Uncertainty.new
+    @approximate ||= EDTF::Uncertainty.new(nil, nil, nil, 8)
   end
 
   def unspecified
@@ -134,23 +146,71 @@ class Date
 
   alias specific! specified!
   
+  # Returns false for Dates.
   def season?; false; end
   
+  # Returns true if the Date has an EDTF calendar string attached.
 	def calendar?; !!@calendar; end
 
+  # Converts the Date into a season.
   def season
     Season.new(self)
   end
   
+  # Returns the Date's EDTF string.
   def edtf
 		return "y#{year}" if long_year?
 		
 		s = FORMATS.take(values.length).zip(values).map { |f,v| f % v }
 		s = unspecified.mask(s)
-    # s = UA[ua_values] % s
 
+    unless (h = ua_hash).zero?
+      #
+      # To efficiently calculate the uncertain/approximate state we use
+      # the bitmask. The primary flags are:
+      #
+      # Uncertain:    1 - year,  2 - month,  4 - day
+      # Approximate:  8 - year, 16 - month, 32 - day
+      #
+      # Invariant: assumes that uncertain/approximate are not set for values
+      # not covered by precision!
+      #
+      y, m, d = s
+      
+      # ?/~ if true-false or true-true and other false-true
+      y << SYMBOLS[:uncertain]   if  3&h==1 || 27&h==19
+      y << SYMBOLS[:approximate] if 24&h==8 || 27&h==26
+      
+
+      # combine if false-true-true and other m == d 
+      if 7&h==6 && (48&h==48 || 48&h==0)  || 56&h==48 && (6&h==6 || 6&h==0)
+        m[0,0] = '('
+        d << ')'
+      else
+        case
+        # false-true
+        when 3&h==2 || 24&h==16
+          m[0,0] = '('
+          m << ')'
+      
+        # *-false-true
+        when 6&h==4 || 48&h==32
+          d[0,0] = '('
+          d << ')'
+        end
+      
+        # ?/~ if *-true-false or *-true-true and other m != d 
+        m << SYMBOLS[:uncertain]   if h!=31 && (6&h==2  ||  6&h==6  && (48&h==16 || 48&h==32))
+        m << SYMBOLS[:approximate] if h!=59 && (48&h==16 || 48&h==48 && (6&h==2 || 6&h==4))
+      end
+      
+      # ?/~ if *-*-true
+      d << SYMBOLS[:uncertain]   if  4&h==4
+      d << SYMBOLS[:approximate] if 32&h==32      
+    end
+
+    s = s.join('-')
 		s << SYMBOLS[:calendar] << calendar if calendar?
-		
 		s
   end
 
@@ -190,7 +250,7 @@ class Date
     precision_filter.map { |p| send(p) }
   end
   
-  # Returns the same date with negated year        
+  # Returns the same date but with negated year.
   def negate
 		change(:year => year * -1)
   end
@@ -203,9 +263,9 @@ class Date
 	end
 	
   private
-
-	def ua_values
-		uncertain?(precision_filter) + approximate?(precision_filter)
+	
+	def ua_hash
+	  uncertain.hash + approximate.hash
 	end
 	
   def precision_filter
@@ -233,10 +293,9 @@ class Date
     @unspecified = other.unspecified.dup
 
     @calendar    = other.calendar.dup if other.calendar?
-
     @precision   = other.precision
 
     self
-  end
+  end  
 
 end

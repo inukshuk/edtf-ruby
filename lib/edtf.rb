@@ -28,6 +28,11 @@
 # policies, either expressed or implied, of the copyright holder.
 #++
 
+if ENV['DEBUG']
+  require 'ruby-debug'
+  Debugger.start
+end
+
 require 'date'
 require 'time'
 

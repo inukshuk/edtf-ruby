@@ -52,28 +52,41 @@ given a valid EDTF string the return value will either be an (extended) `Date`,
     > d = Date.edtf('1984-06?/2004-08?')
     > d.from.uncertain?
     => true
+    > d.include?(Date.new(1987,04,13))
+    => false # the day is not included because interval has month precision    
+    > d.cover?(Date.new(1987,04,13))
+    => true # but the day is still covered by the interval
     > d.to_a.length
-    => 7397 # days between 1984-06-01 and 2004-08-31
-    > Date.edtf('1582-10/1582-10').to_a.length
+    => 243 # months between 1984-06-01 and 2004-08-31
+    > Date.edtf('1582-10-01/1582-10-31').to_a.length
     => 21 # number of days in October 1582 (Gregorian calendar)
     > Date.edtf('2004/open').open?
     => true
     
 
-For additional features take a look at the RDoc and RSpec examples.
+For additional features take a look at the RDoc and the RSpec examples.
 
 
-Development
------------
+Contributing
+------------
 
-    $ git clone https://inukshuk@github.com/inukshuk/edtf-ruby.git
+The EDTF-Ruby source code is [hosted on GitHub](https://github.com/inukshuk/edtf-ruby).
+You can check out a copy of the latest code using Git:
+
+    $ git clone https://github.com/inukshuk/edtf-ruby.git
+    
+To get started, generate the parser and run all tests:
+
     $ cd edtf-ruby
     $ bundle install
     $ bundle exec rake racc_debug
     $ bundle exec rspec spec
     $ bundle exec cucumber
 
-For extra credit, fork the project on GitHub: pull requests welcome!
+If you've found a bug or have a question, please open an issue on the
+[EDTF-Ruby issue tracker](https://github.com/inukshuk/edtf-ruby). Or, for extra
+credit, clone the EDTF-Ruby repository, write a failing example, fix the bug
+and submit a pull request.
 
 
 Credits

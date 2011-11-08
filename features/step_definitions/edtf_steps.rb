@@ -72,6 +72,10 @@ Then /^the interval should include the date "([^"]*)"$/ do |date|
   @date.should include(Date.parse(date))
 end
 
+Then /^the interval should cover the date "([^"]*)"$/ do |date|
+  @date.should cover(Date.parse(date))
+end
+
 
 Then /^the date should be uncertain\? "([^"]*)"$/ do |arg1|
   @date.uncertain?.should == !!(arg1 =~ /y(es)?/i)

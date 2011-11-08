@@ -13,14 +13,15 @@ module EDTF
       end
 
       it 'should not be uncertain if all parts are certain' do
-        Uncertainty.new(false, false, false, false, false, false).should be_certain
+        Uncertainty.new(false, false, false).should be_certain
       end
 
       it 'should be uncertain if all parts are uncertain' do
-        Uncertainty.new(true, true, true, true, true, true).should be_uncertain
+        Uncertainty.new(true, true, true).should be_uncertain
       end
 
-      [:year, :month, :day, :hour, :minute, :second].each do |part|
+      # [:year, :month, :day, :hour, :minute, :second].each do |part|
+      [:year, :month, :day].each do |part|
         it "#{ part } should not be uncertain by default" do
           uncertainty.uncertain?(part).should be false
         end
@@ -30,11 +31,52 @@ module EDTF
           uncertainty.uncertain?(part).should be true
         end
         
-        ([:year, :month, :day, :hour, :minute, :second] - [part]).each do |other|
+        # ([:year, :month, :day, :hour, :minute, :second] - [part]).each do |other|
+        ([:year, :month, :day] - [part]).each do |other|
           it "#{other} should not be uncertain if #{part} is uncertain" do
             uncertainty.send("#{part}=", true)
             uncertainty.uncertain?(other).should be false
           end
+        end
+
+      end
+
+      describe '#hash' do
+        
+        describe 'with the default hash base (1)' do
+
+          it 'returns 0 by default' do
+            Uncertainty.new.hash.should == 0
+          end
+          
+          it 'returns 1 for uncertain year' do
+            Uncertainty.new.hash.should == 0
+          end
+
+          it 'returns 2 for uncertain month' do
+            Uncertainty.new.hash.should == 0
+          end
+
+          it 'returns 4 for uncertain day' do
+            Uncertainty.new.hash.should == 0
+          end
+
+          it 'returns 3 for uncertain year, month' do
+            Uncertainty.new(true, true).hash.should == 3
+          end
+
+          it 'returns 7 for uncertain year, month, day' do
+            Uncertainty.new(true, true, true).hash.should == 7
+          end
+
+          it 'returns 5 for uncertain year, day' do
+            Uncertainty.new(true, nil, true).hash.should == 5
+          end
+
+          it 'returns 6 for uncertain month, day' do
+            Uncertainty.new(nil, true, true).hash.should == 6
+          end
+          
         end
         
       end

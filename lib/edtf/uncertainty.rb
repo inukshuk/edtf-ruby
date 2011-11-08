@@ -1,7 +1,21 @@
 module EDTF
 
-  class Uncertainty < Struct.new(:year, :month, :day, :hour, :minute, :second)
+  # TODO use bitmasks instead of arrays
 
+  class Uncertainty < Struct.new(:year, :month, :day)
+
+    attr_reader :hash_base
+    
+    def initialize(year = nil, month = nil, day = nil, hash_base = 1)
+      @hash_base = hash_base
+      super(year, month, day)
+    end
+    
+    def hash_base=(base)
+      @hash_map = false
+      @hash_base = base
+    end
+    
     def uncertain?(parts = members)
       [*parts].any? { |p| !!send(p) }
     end
@@ -17,9 +31,24 @@ module EDTF
       [*parts].each { |p| send("#{p}=", false) }
       self
     end
+    
+    def eql?(other)
+      hash == other.hash
+    end
+    
+    def hash
+      values.zip(hash_map).reduce(0) { |s, (v, h)|  s + (v ? h : 0) }
+    end
+    
+    private 
+    
+    def hash_map
+      @hash_map ||= (0...length).map { |i| hash_base << i }
+    end
+    
   end
 
-  # year = []
+
   class Unspecified < Struct.new(:year, :month, :day)
 
     U = 'u'.freeze
