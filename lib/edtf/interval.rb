@@ -1,60 +1,122 @@
 module EDTF
   
+  # An interval behaves like a regular Range but is dedicated to EDTF dates.
+  # Most importantly, intervals use the date's precision when generating
+  # the set of contained values and for membership tests. All tests are
+  # implemented without iteration and should therefore be considerably faster
+  # than if you were to use a regular Range.
+  #
+  # For example, the interval "2003/2006" covers the years 2003, 2004, 2005
+  # and 2006. Converting the interval to an array would result in a an array
+  # containing exactly four dates with year precision. This is also reflected
+  # in membership tests.
+  #
+  #     Date.edtf('2003/2006').length                           -> 4
+  #
+  #     Date.edtf('2003/2006').include? Date.edtf('2004')       -> true
+  #     Date.edtf('2003/2006').include? Date.edtf('2004-03')    -> false
+  #
+  #     Date.edtf('2003/2006').cover? Date.edtf('2004-03')      -> true
+  #
   class Interval
 
     extend Forwardable
-    include Enumerable
     
-    def_delegators :to_range,
-      *Range.instance_methods(false).reject { |m| m.to_s =~ /^(each|first|last|min|max|inspect)$/ }
+    include Comparable
+    include Enumerable
 
-    attr_reader :from, :to
+    # Intervals delegate hash calculation to Ruby Range
+    def_delegators :to_range, :eql?, :hash
+    def_delegators :to_a, :length, :empty?
+    
+    attr_accessor :from, :to
 
-    def initialize(from = :open, to = :open)
+    def initialize(from = Date.today, to = :open)
       @from, @to = from, to
     end
     
-    def from=(from)
-      @from = from || :open
-    end
-
-    def to=(to)
-      @to = to || :open
-    end
-
     [:open, :unknown].each do |method_name|
-      
-      define_method("#{method_name}?") do
-        @to == method_name || @from == method_name
-      end
-
-      define_method("#{method_name}!") do
+      define_method("#{method_name}_end!") do
         @to = method_name
+        self
       end
 
-      alias_method("#{method_name}_end!", "#{method_name}!")
-      
       define_method("#{method_name}_end?") do
         @to == method_name
       end
-      
     end
     
+    alias open! open_end!
+    alias open? open_end?
+    
     def unknown_start?
-      @from == :unknown
+      from == :unknown
     end
     
     def unknown_start!
       @from = :unknown
+      self
     end
     
-    def each
+    def unknown?
+      unknown_start? || unknown_end?
+    end
+    
+    # Returns the intervals precision. Mixed precisions are currently not
+    # supported; in that case, the start date's precision takes precedence.
+    def precision
+      min.precision || max.precision
+    end
+    
+    # Returns true if the precisions of start and end date are not the same.
+    def mixed_precision?
+      min.precsion != max.precision
+    end
+    
+    def each(&block)
+      step(1, &block)
+    end
+
+
+    # call-seq:
+    #     interval.step(by=1) { |date| block }  -> self
+    #     interval.step(by=1)                   -> Enumerator
+    #
+    # Iterates over the interval by passing by elements at each step and
+    # yielding each date to the passed-in block. Note that the semantics
+    # of by are precision dependent: e.g., a value of 2 can mean 2 days,
+    # 2 months, or 2 years.
+    #
+    # If not block is given, returns an enumerator instead.
+    #
+    def step(by = 1)
+      raise ArgumentError unless by.respond_to?(:to_i) 
+      
       if block_given?
-        to_range.each(&Proc.new)
+        f, t, by = min, max, by.to_i
+
+        unless f.nil? || t.nil? || by < 1
+          by = { Date::PRECISIONS[precision] => by }
+          
+          until f > t do
+            yield f
+            f = f.advance(by)
+          end
+        end
+        
+        self
       else
-        to_enum
+        enum_for(:step, by)
       end
     end
+
+    
+    # This method always returns false for Range compatibility. EDTF intervals
+    # always include the last date.
+    def exclude_end?
+      false
+    end
+    
     
     # TODO how to handle +/- Infinity for Dates?
     # TODO we can't delegate to Ruby range for mixed precision intervals
@@ -62,12 +124,38 @@ module EDTF
     # Returns the Interval as a Range.
     def to_range
       case
-      when open?
-        nil
-      when unknown_end?
+      when open?, unknown?
         nil
       else
         Range.new(unknown_start? ? Date.new : @from, max)
+      end
+    end
+    
+    # Returns true if other is an element of the Interval, false otherwise.
+    # Comparision is done according to the Interval's min/max date and
+    # precision.
+    def include?(other)
+      cover?(other) && precision == other.precision
+    end
+    alias member? include?
+    
+    # Returns true if other is an element of the Interval, false otherwise.
+    # In contrast to #include? and #member? this method does not take into
+    # account the date's precision.    
+    def cover?(other)
+      return false unless other.is_a?(Date)
+      
+      other = other.day_precision
+      
+      case
+      when unknown_start?
+        max.day_precision! == other
+      when unknown_end?
+        min.day_precision! == other
+      when open_end?
+        min.day_precision! <= other
+      else
+        min.day_precision! <= other && other <= max.day_precision!
       end
     end
     
@@ -110,7 +198,7 @@ module EDTF
         to_a.min(&Proc.new)
       else
         case
-        when unknown_start?, to < from
+        when unknown_start?, !open? && to < from
           nil
         when from.day_precision?
           from
@@ -120,6 +208,10 @@ module EDTF
           from.beginning_of_year
         end
       end
+    end
+    
+    def begin
+      min
     end
     
     # call-seq:
@@ -139,9 +231,9 @@ module EDTF
         to_a.max(&Proc.new)
       else
         case
-        when !unknown_start? && from > to
+        when open_end?, unknown_end?, !unknown_start? && to < from
           nil
-        when open_end?, to.day_precision? 
+        when to.day_precision? 
           to
         when to.month_precision?
           to.end_of_month
@@ -150,6 +242,33 @@ module EDTF
         end
       end
     end
+    
+    def end
+      max
+    end
+    
+    def <=>(other)
+      case other
+      when Interval
+        [min, max] <=> [other.min, other.max]
+      when Date
+        cover?(other) ? min <=> other : 0
+      else
+        nil
+      end
+    end
+    
+    def ===(other)
+      case other
+      when Interval
+        cover?(other.min) && cover?(other.max)
+      when Date
+        cover?(other)
+      else
+        false
+      end
+    end
+    
     
     # Returns the Interval as an EDTF string.
     def edtf
