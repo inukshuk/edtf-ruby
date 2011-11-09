@@ -10,7 +10,7 @@ Gem::Specification.new do |s|
   s.platform    = Gem::Platform::RUBY
   s.authors     = ['Sylvester Keil']
   s.email       = ['http://sylvester.keil.or.at']
-  s.homepage    = 'http://inukshuk.github.com/edtf-ruby'
+  s.homepage    = 'http://github.com/inukshuk/edtf-ruby'
   s.summary     = 'Extended Date/Time Format for Ruby.'
   s.description = 'A Ruby implementation of the Extended Date/Time Format (EDTF).'
   s.license     = 'FreeBSD'
