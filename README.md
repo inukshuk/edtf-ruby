@@ -35,8 +35,9 @@ You can access parse EDTF strings either using `Date.edtf` or `EDTF.parse`
 (both methods come with an alternative bang! version, that will raise an error
 if the string cannot be parsed instead of silently returning nil); if
 given a valid EDTF string the return value will either be an (extended) `Date`,
-`EDTF::Interval` or `Range` (for masked precision strings) instance. Given
-a Date, you can print the corresponding EDTF string using the `#edtf` method.
+`EDTF::Interval`, `EDTF::Set`, or `Range` (for masked precision strings)
+instance. Given a Date, you can print the corresponding EDTF string using the
+`#edtf` method.
 
     $ [sudo] gem install edtf
     $ irb
@@ -82,6 +83,21 @@ a Date, you can print the corresponding EDTF string using the `#edtf` method.
     => true # an open ended interval covers today
     > Date.edtf("(1999-(02)~-23)?").edtf
     => "1999?-(02)?~-23?" # when printing, EDTF-Ruby reduces nested parentheses
+    > s = Date.edtf('{1667,1668, 1670..1672}')
+    > s.include?(Date.edtf('1669'))
+    => false
+    > s.include?(Date.edtf('1671'))
+    => true # the range is enumerated for membership tests
+    > s.length
+    => 3 # but we're still aware that there were only three elements
+    > s.map(&:year)
+    => [1667, 1668, 1670, 1671, 1672] # when enumerated there are 5 elements
+    > s.earlier?
+    => false # the original list was not vague
+    > s.earlier! # but we can make it so
+    > s.edtf
+    => "{..1667, 1668, 1670..1672}"
+
 
 For additional features take a look at the documentation or the extensive
 list of rspec examples.
