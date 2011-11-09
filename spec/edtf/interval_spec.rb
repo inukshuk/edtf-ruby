@@ -39,7 +39,7 @@ module EDTF
       end
       
       it 'does not include christmas day 2009' do
-        interval.should_not include(Date.new(2009,12,24))
+        interval.should_not be_include(Date.new(2009,12,24))
       end
 
  			it 'christmas day 2009 is less than max' do
@@ -51,11 +51,11 @@ module EDTF
 			end
      
       it 'covers christmas day 2009' do
-        interval.should cover(Date.new(2009,12,24))
+        interval.should be_cover(Date.new(2009,12,24))
       end
 			
       it 'covers 2011-12-31' do
-        interval.should cover(Date.new(2011,12,31))
+        interval.should be_cover(Date.new(2011,12,31))
       end
 
     end
@@ -64,15 +64,15 @@ module EDTF
       let(:interval) { Date.edtf('2008-08-23/2011-07-01') }
       
       it 'includes christmas day 2009' do
-        interval.should include(Date.new(2009,12,24))
+        interval.should be_include(Date.new(2009,12,24))
       end
       
       it 'covers christmas day 2009' do
-        interval.should cover(Date.new(2009,12,24))
+        interval.should be_cover(Date.new(2009,12,24))
       end
 
       it 'does not cover 2011-07-02' do
-        interval.should_not cover(Date.new(2011,07,02))
+        interval.should_not be_cover(Date.new(2011,07,02))
       end
     end
 
@@ -94,15 +94,15 @@ module EDTF
 			end
 			
       it 'includes christmas day 2009' do
-        interval.should include(Date.new(2009,12,24))
+        interval.should be_include(Date.new(2009,12,24))
       end
       
       it 'covers christmas day 2009' do
-        interval.should cover(Date.new(2009,12,24))
+        interval.should be_cover(Date.new(2009,12,24))
       end
 
       it 'covers 2023-07-02' do
-        interval.should cover(Date.new(2023,07,02))
+        interval.should be_cover(Date.new(2023,07,02))
       end
 			
 		end    

@@ -21,10 +21,6 @@ EDTF-Ruby parser implements all levels and features of the EDTF specification
   nested expressions (the parser will not accept some of the more complex
   examples, though).
 
-The level 2 list extensions (203 and 204) currently return simple Ruby arrays;
-therefore, advanced behavior (such as 'earlier' or 'later') is parsed correctly
-but not yet exposed by the Ruby API.
-
 EDTF-Ruby has been confirmed to work on the following Ruby implementations:
 1.9.3, 1.9.2, 1.8.7, Rubinius, and JRuby. Active Support's date extensions
 are currently listed as a dependency, because of a number of many functional
