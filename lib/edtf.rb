@@ -40,6 +40,7 @@ autoload :Rational, 'rational'
 
 require 'forwardable'
 require 'enumerator'
+require 'set'
 
 require 'active_support/core_ext/date/calculations'
 require 'active_support/core_ext/date_time/calculations'
@@ -56,6 +57,7 @@ require 'edtf/date_time'
 require 'edtf/epoch'
 require 'edtf/season'
 require 'edtf/interval'
+require 'edtf/set'
 require 'edtf/parser'
 require 'edtf/extensions'
 
