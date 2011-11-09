@@ -344,11 +344,11 @@ rule
         result = uoa(result, val[6], [:day])
         result = uoa(result, val[8], [:month, :day])
     }
-    | '(' pua_year '-(' month ')' UA ')' UA '-' day ua {
-        result = val[1].change(:month => val[3], :day => val[9])
-        result = uoa(result, val[5], [:month])
-        result = [uoa(result, val[7], [:year]), true]
-    }
+    # | '(' pua_year '-(' month ')' UA ')' UA '-' day ua {
+    #     result = val[1].change(:month => val[3], :day => val[9])
+    #     result = uoa(result, val[5], [:month])
+    #     result = [uoa(result, val[7], [:year]), true]
+    # }
     ;
  
   ua : { result = [] } | UA
