@@ -219,28 +219,31 @@ rule
     ;
 
 
-  choice_list : '[' list ']' { result = val[1] }
+  choice_list : '[' list ']'   { result = val[1].choice! }
 
   inclusive_list : '{' list '}' { result = val[1] }
 
-  list : earlier                              { result = val }
-       | earlier ',' list_elements ',' later  { result = [val[0]] + val[2] + [val[4]] }
-       | earlier ',' list_elements            { result = [val[0]] + val[2] }
-       | earlier ',' later                    { result = [val[0]] + [val[2]] }
-       | list_elements ',' later              { result = val[0] + [val[2]] }
-       | list_elements
-       | later                                { result = val }
+  list : earlier                              { result = EDTF::Set.new(val[0]).earlier! }
+       | earlier ',' list_elements ',' later  { result = EDTF::Set.new([val[0]] + val[2] + [val[4]]).earlier!.later! }
+       | earlier ',' list_elements            { result = EDTF::Set.new([val[0]] + val[2]).earlier! }
+       | earlier ',' later                    { result = EDTF::Set.new([val[0]] + [val[2]]).earlier!.later! }
+       | list_elements ',' later              { result = EDTF::Set.new(val[0] + [val[2]]).later! }
+       | list_elements                        { result = EDTF::Set.new(*val[0]) }
+       | later                                { result = EDTF::Set.new(val[0]).later! }
        ;
         
   list_elements : list_element                   { result = [val[0]].flatten }
                 | list_elements ',' list_element { result = val[0] + [val[2]].flatten }
                 ;
-             
-  list_element : date
-               | partial_uncertain_or_approximate
-               | unspecified
-               | consecutives { result = val[0].map { |d| Date.new(*d) } }
+     
+  list_element : atomic
+               | consecutives
                ;
+
+  atomic : date
+         | partial_uncertain_or_approximate
+         | unspecified
+         ;
 
   earlier : DOTS date { result = val[1] }
 
@@ -249,9 +252,9 @@ rule
         | year DOTS           { result = Date.new(val[0]).year_precision! }
         ;
 
-  consecutives : year_month_day DOTS year_month_day
-               | year_month DOTS year_month
-               | year DOTS year { result = (val[0]..val[2]).to_a.map }
+  consecutives : year_month_day DOTS year_month_day { result = (Date.new(val[0]).day_precision! .. Date.new(val[2]).day_precision!) }
+               | year_month DOTS year_month         { result = (Date.new(val[0]).month_precision! .. Date.new(val[2]).month_precision!) }
+               | year DOTS year                     { result = (Date.new(val[0]).year_precision! .. Date.new(val[2]).year_precision!) }
                ;
 
   partial_unspecified :

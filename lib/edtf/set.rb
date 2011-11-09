@@ -13,7 +13,7 @@ module EDTF
 		
 		
 		def initialize(*dates)
-			@dates = [*dates].to_set
+			@dates = ::Set.new(dates.flatten)
 			@choice, @later, @earlier = false, false, false
 		end
 		
