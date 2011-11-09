@@ -2,7 +2,7 @@
 
 class EDTF::Parser
 
-token T Z E X U UNKNOWN OPEN LONGYEAR UNMATCHED DOTS PUA
+token T Z E X U UNKNOWN OPEN LONGYEAR UNMATCHED DOTS UA PUA
 
 expect 0
 
@@ -25,9 +25,9 @@ rule
        ;
 
   positive_date :
-    year             { result = Date.new(val[0]); result.precision = :year }
-    | year_month     { result = Date.new(*val.flatten); result.precision = :month }
-    | year_month_day { result = Date.new(*val.flatten); result.precision = :day }
+    year             { result = Date.new(val[0]).year_precision! }
+    | year_month     { result = Date.new(*val.flatten).month_precision! }
+    | year_month_day { result = Date.new(*val.flatten).day_precision! }
     ;
 
   negative_date :  '-' positive_date { result = -val[1] }
@@ -65,6 +65,7 @@ rule
   }
 
   month : d01_12
+  day : d01_31
    
   year_month : year '-' month { result = [val[0], val[2]] }
 
@@ -72,7 +73,7 @@ rule
   # do not consider leap years, as the EDTF BNF did not either.
   # NB: an exception will be raised regardless, because the Ruby Date
   # implementation calculates leap years.
-  year_month_day : year_month '-' d01_31 {
+  year_month_day : year_month '-' day {
     result = val[0] << val[2]
     if result[2] > 31 || (result[2] > 30 && [2,4,6,9,11].include?(result[1])) || (result[2] > 29 && result[1] == 2)
       raise ArgumentError, "invalid date (invalid days #{result[2]} for month #{result[1]})"
@@ -92,13 +93,12 @@ rule
   # NB: Uncertain/approximate Dates are covered by the Level 2 rules
   level_1_expression : unspecified | level_1_interval | long_year_simple | season
 
-  # uncertain_or_approximate_date : date ua { result = uoa(val[0], val[1]) }
+  # uncertain_or_approximate_date : date UA { result = uoa(val[0], val[1]) }
 
   unspecified : unspecified_year
               {
-                result = Date.new(val[0][0])
+                result = Date.new(val[0][0]).year_precision!
                 result.unspecified.year[2,2] = val[0][1]
-                result.precision = :year
               }
               | unspecified_month
               | unspecified_day
@@ -159,7 +159,8 @@ rule
     ;
 
 
-  season : year '-' season_number opt_ua { result = Season.new(val[0], val[2]) }
+  # TODO uncertain/approximate seasons
+  season : year '-' season_number ua { result = Season.new(val[0], val[2]) }
 
   season_number : '2' '1' { result = 21 }
                 | '2' '2' { result = 22 }
@@ -186,39 +187,36 @@ rule
 
 
   long_year_scientific :
-		long_year_simple E integer
-		{
-			result = Date.new(val[0].year * 10 ** val[2])
-			result.precision = :year
-		}
-		| LONGYEAR int1_4 E integer
-		{
-			result = Date.new(val[1] * 10 ** val[3])
-			result.precision = :year
-		}
+    long_year_simple E integer
+    {
+      result = Date.new(val[0].year * 10 ** val[2]).year_precision!
+    }
+    | LONGYEAR int1_4 E integer
+    {
+      result = Date.new(val[1] * 10 ** val[3]).year_precision!
+    }
     | LONGYEAR '-' int1_4 E integer
-		{
-			result = Date.new(-1 * val[2] * 10 ** val[4])
-			result.precision = :year
-		}
-		;
+    {
+      result = Date.new(-1 * val[2] * 10 ** val[4]).year_precision!
+    }
+    ;
 
 
   date_and_calendar : date '^' { result = val[0]; result.calendar = val[1] }
 
 
   masked_precision :
-		digit digit digit X
-		{
-			d = val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }
-			result = Date.new(d) ... Date.new(d+10)
-		}
+    digit digit digit X
+    {
+      d = val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }
+      result = Date.new(d) ... Date.new(d+10)
+    }
     | digit digit X X
-		{
-			d = val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }
-			result = Date.new(d) ... Date.new(d+100)
-		}
-		;
+    {
+      d = val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }
+      result = Date.new(d) ... Date.new(d+100)
+    }
+    ;
 
 
   choice_list : '[' list ']' { result = val[1] }
@@ -232,37 +230,37 @@ rule
        | list_elements ',' later              { result = val[0] + [val[2]] }
        | list_elements
        | later                                { result = val }
-			 ;
+       ;
         
   list_elements : list_element                   { result = [val[0]].flatten }
                 | list_elements ',' list_element { result = val[0] + [val[2]].flatten }
-								;
+                ;
              
   list_element : date
                | partial_uncertain_or_approximate
                | unspecified
                | consecutives { result = val[0].map { |d| Date.new(*d) } }
-							 ;
+               ;
 
   earlier : DOTS date { result = val[1] }
 
-  later : year_month_day DOTS { result = Date.new(*val[0]); result.precision = :day }
-        | year_month DOTS     { result = Date.new(*val[0]); result.precision = :month }
-        | year DOTS           { result = Date.new(val[0]); result.precision = :year }
-				;
+  later : year_month_day DOTS { result = Date.new(*val[0]).year_precision! }
+        | year_month DOTS     { result = Date.new(*val[0]).month_precision! }
+        | year DOTS           { result = Date.new(val[0]).year_precision! }
+        ;
 
   consecutives : year_month_day DOTS year_month_day
                | year_month DOTS year_month
                | year DOTS year { result = (val[0]..val[2]).to_a.map }
-							 ;
+               ;
 
   partial_unspecified :
-    unspecified_year '-' month '-' d01_31
+    unspecified_year '-' month '-' day
     {
       result = Date.new(val[0][0], val[2], val[4])
       result.unspecified.year[2,2] = val[0][1]
     }
-    | unspecified_year '-' U U '-' d01_31
+    | unspecified_year '-' U U '-' day
     {
       result = Date.new(val[0][0], 1, val[5])
       result.unspecified.year[2,2] = val[0][1]
@@ -280,7 +278,7 @@ rule
       result.unspecified.year[2,2] = val[0][1]
       result.unspecified!(:day)
     }
-    | year '-' U U '-' d01_31
+    | year '-' U U '-' day
     {
       result = Date.new(val[0], 1, val[5])
       result.unspecified!(:month)
@@ -289,71 +287,71 @@ rule
  
 
   partial_uncertain_or_approximate : pua_base
-    | '(' pua_base ')' ua { result = uoa(val[1], val[3]) }
+    | '(' pua_base ')' UA { result = uoa(val[1], val[3]) }
   
   pua_base :
-    pua_year             { result = val[0]; result.precision = :year }
-    | pua_year_month     { result = val[0]; result.precision = :month }
-    | pua_year_month_day
+    pua_year             { result = val[0].year_precision! }
+    | pua_year_month     { result = val[0][0].month_precision! }
+    | pua_year_month_day { result = val[0].day_precision! }
   
-  pua_year : year ua { result = uoa(Date.new(val[0]), val[1], :year) }
+  pua_year : year UA { result = uoa(Date.new(val[0]), val[1], :year) }
   
   pua_year_month :
-    pua_year '-' month opt_ua
-    {
-      result = uoa(val[0].change(:month => val[2]), val[3], [:month, :year])
+    pua_year '-' month ua {
+      result = [uoa(val[0].change(:month => val[2]), val[3], [:month, :year])]
     }
-    | '(' pua_year PUA month opt_ua
-    {
-      result = uoa(uoa(val[1], val[2], :year).change(:month => val[3]), val[4], :month)
+    | year '-' month UA {
+        result = [uoa(Date.new(val[0], val[2]), val[3], [:year, :month])]
     }
-    | year '-' month ua
-    {
-      result = uoa(Date.new(val[0], val[2]), val[3], [:year, :month])
+    | year '-(' month ')' UA {
+        result = [uoa(Date.new(val[0], val[2]), val[4], [:month]), true]
     }
-    | year '-' '(' month ')' ua
-    {
-      result = uoa(Date.new(val[0], val[3]), val[5], [:month])
+    | pua_year '-(' month ')' UA {
+        result = [uoa(val[0].change(:month => val[2]), val[4], [:month]), true]
     }
     ;
   
   pua_year_month_day :
-    pua_year_month '-' d01_31 opt_ua
-    {
-      result = uoa(val[0].change(:day => val[2]), val[3])
+    pua_year_month '-' day ua {
+      result = uoa(val[0][0].change(:day => val[2]), val[3], val[0][1] ? [:day] : nil)
     }
-    | pua_year_month '-' '(' d01_31 ')' ua
-    {
-      result = uoa(val[0].change(:day => val[3]), val[5], [:day])
+    | pua_year_month '-(' day ')' UA {
+        result = uoa(val[0][0].change(:day => val[2]), val[4], [:day])
     }
-    | '(' pua_year_month PUA d01_31 opt_ua
-    {
-      result = uoa(uoa(val[1], val[2], [:year, :month]).change(:day => val[3]), val[4], :day)
+    | year '-(' month ')' UA day ua {
+        result = uoa(uoa(Date.new(val[0], val[2], val[5]), val[4], :month), val[6], :day)
     }
-    | year '-' '(' month PUA d01_31 opt_ua
-    {
-      result = uoa(uoa(Date.new(val[0], val[3], val[5]), val[4], :month), val[6], :day)
+    | year_month '-' day UA {
+        result = uoa(Date.new(val[0][0], val[0][1], val[2]), val[3])
     }
-    | year_month '-' d01_31 ua
-    {
-      result = uoa(Date.new(val[0][0], val[0][1], val[2]), val[3])
+    | year_month '-(' day ')' UA {
+        result = uoa(Date.new(val[0][0], val[0][1], val[2]), val[4], [:day])
     }
-    | year_month '-' '(' d01_31 ')' ua
-    {
-      result = uoa(Date.new(val[0][0], val[0][1], val[3]), val[5], [:day])
+    | year '-(' month '-' day ')' UA {
+        result = uoa(Date.new(val[0], val[2], val[4]), val[6], [:month, :day])
     }
-    | year '-' '(' month '-' d01_31 ')' ua
-    {
-      result = uoa(Date.new(val[0], val[3], val[5]), val[7], [:month, :day])
+    | year '-(' month '-(' day ')' UA ')' UA {
+        result = Date.new(val[0], val[2], val[4])
+        result = uoa(result, val[6], [:day])
+        result = uoa(result, val[8], [:month, :day])
+    }
+    | pua_year '-(' month '-' day ')' UA {
+        result = val[0].change(:month => val[2], :day => val[4])
+        result = uoa(result, val[6], [:month, :day])
+    }
+    | pua_year '-(' month '-(' day ')' UA ')' UA {
+        result = val[0].change(:month => val[2], :day => val[4])
+        result = uoa(result, val[6], [:day])
+        result = uoa(result, val[8], [:month, :day])
+    }
+    | '(' pua_year '-(' month ')' UA ')' UA '-' day ua {
+        result = val[1].change(:month => val[3], :day => val[9])
+        result = uoa(result, val[5], [:month])
+        result = [uoa(result, val[7], [:year]), true]
     }
     ;
  
-  opt_ua : { result = [] } | ua
-
-  ua : '?'
-     | '~'
-     | '?' '~'  { result = val.flatten }
-     ;
+  ua : { result = [] } | UA
 
   # ---- Auxiliary Rules ----
 
@@ -438,7 +436,7 @@ require 'strscan'
   @defaults = {
     :level => 2,
     :debug => false
-  }
+  }.freeze
   
   class << self; attr_reader :defaults; end
   
@@ -448,22 +446,26 @@ require 'strscan'
     @options = Parser.defaults.merge(options)
   end
   
-	def parse(input)
-		parse!(input)
-	rescue => e
-		warn e.message if options[:debug]
-		nil
-	end
-	
+  def debug?
+    !!(options[:debug] || ENV['DEBUG'])
+  end
+  
+  def parse(input)
+    parse!(input)
+  rescue => e
+    warn e.message if debug?
+    nil
+  end
+  
   def parse!(input)
-    @yydebug = @options[:debug] || ENV['DEBUG']
+    @yydebug = debug?
     @src = StringScanner.new(input)
     do_parse
   end
   
-  def on_error(tid, val, vstack)
+  def on_error(tid, value, stack)
     raise ArgumentError,
-			"failed to parse extended date time %s [%s]: %s" % [val.inspect, token_to_str(tid) || '?', vstack.inspect]
+      "failed to parse date: unexpected '#{value}' at #{stack.inspect}"
   end
 
   def apply_uncertainty(date, uncertainty, scope = nil)
@@ -483,12 +485,12 @@ require 'strscan'
       # ignore whitespace
     when @src.scan(/\(/)
       ['(', @src.matched] 
-    when @src.scan(/\)\?~-/)
-      [:PUA, [:uncertain!, :approximate!]]
-    when @src.scan(/\)\?-/)
-      [:PUA, [:uncertain!]]
-    when @src.scan(/\)~-/)
-      [:PUA, [:approximate!]]
+    # when @src.scan(/\)\?~-/)
+    #   [:PUA, [:uncertain!, :approximate!]]
+    # when @src.scan(/\)\?-/)
+    #   [:PUA, [:uncertain!]]
+    # when @src.scan(/\)~-/)
+    #   [:PUA, [:approximate!]]
     when @src.scan(/\)/)
       [')', @src.matched]
     when @src.scan(/\[/)
@@ -503,10 +505,12 @@ require 'strscan'
       [:T, @src.matched]
     when @src.scan(/Z/)
       [:Z, @src.matched]
+    when @src.scan(/\?~/)
+      [:UA, [:uncertain!, :approximate!]]
     when @src.scan(/\?/)
-      ['?', [:uncertain!]]
+      [:UA, [:uncertain!]]
     when @src.scan(/~/)
-      ['~', [:approximate!]]
+      [:UA, [:approximate!]]
     when @src.scan(/open/i)
       [:OPEN, :open]
     when @src.scan(/unkn?own/i) # matches 'unkown' typo too
@@ -521,6 +525,8 @@ require 'strscan'
       [:E, @src.matched]
     when @src.scan(/\+/)
       ['+', @src.matched]
+    when @src.scan(/-\(/)
+      ['-(', @src.matched]
     when @src.scan(/-/)
       ['-', @src.matched]
     when @src.scan(/:/)

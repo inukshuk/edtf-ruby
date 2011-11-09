@@ -270,14 +270,69 @@ module EDTF
 
 			it 'parses "2004~-(06)?-01~": year and day approximate, month uncertain' do
 				d = Parser.new.parse!("2004~-(06)?-01~")
+				
+				d.approximate?(:year).should be true
+				d.uncertain?(:year).should be false
+				
+				d.approximate?(:month).should be false
+				d.uncertain?(:month).should be true
+				
+				d.approximate?(:day).should be true
+				d.uncertain?(:day).should be false
 			end
 
 			it 'parses "2004~-(06-(01)~)?": year and day approximate, month and day uncertain' do
 				d = Parser.new.parse!("2004~-(06-(01)~)?")
+
+				d.approximate?(:year).should be true
+				d.uncertain?(:year).should be false
+				
+				d.approximate?(:month).should be false
+				d.uncertain?(:month).should be true
+				
+				d.approximate?(:day).should be true
+				d.uncertain?(:day).should be true
 			end
 
 			it 'parses "2004~-(06)?-01?~": year and day approximate, month and day uncertain' do
 				d = Parser.new.parse!("2004~-(06)?-01?~")
+
+				d.approximate?(:year).should be true
+				d.uncertain?(:year).should be false
+				
+				d.approximate?(:month).should be false
+				d.uncertain?(:month).should be true
+				
+				d.approximate?(:day).should be true
+				d.uncertain?(:day).should be true
+			end
+
+			it 'parses "2004~-(06)?": year approximate, month uncertain' do
+				d = Parser.new.parse!("2004~-(06)?")
+
+				d.approximate?(:year).should be true
+				d.uncertain?(:year).should be false
+				
+				d.approximate?(:month).should be false
+				d.uncertain?(:month).should be true
+				
+				d.approximate?(:day).should be false
+				d.uncertain?(:day).should be false
+			end
+
+
+			it 'parses "2004~-06?": year approximate, year and month uncertain' do
+				d = Parser.new.parse!("2004~-06?")
+
+				d.approximate?(:year).should be true
+				d.uncertain?(:year).should be true
+				
+				d.approximate?(:month).should be false
+				d.uncertain?(:month).should be true
+				
+				d.approximate?(:day).should be false
+				d.uncertain?(:day).should be false
+
 			end
 
 		 

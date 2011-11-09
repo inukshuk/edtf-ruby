@@ -14,7 +14,6 @@ Feature: Print uncertain or approximate dates
 		When I convert the date
 		Then the EDTF string should be "<string>"
 
-		@wip		
 		Scenarios: Uncertain or approximate dates, day precision
 			| date       | precision | string            | ?-year  | ?-month | ?-day   | ~-year  | ~-month | ~-day   |
 			| 2004-06-01 | day       | 2004-06-01?~      | yes     | yes     | yes     | yes     | yes     | yes     |
@@ -102,7 +101,6 @@ Feature: Print uncertain or approximate dates
 			| 2004-06-01 | day       | 2004-06-(01)~     | no      | no      | no      | no      | no      | yes     |
 			| 2004-06-01 | day       | 2004-06-01        | no      | no      | no      | no      | no      | no      |
 
-		@wip		
 		Scenarios: Uncertain or approximate dates, month precision
 			| date       | precision | string            | ?-year  | ?-month | ?-day   | ~-year  | ~-month | ~-day   |
 			| 2004-06-01 | month     | 2004-06?~         | yes     | yes     | no      | yes     | yes     | no      |
@@ -125,7 +123,6 @@ Feature: Print uncertain or approximate dates
 			| 2004-06-01 | month     | 2004-06           | no      | no      | no      | no      | no      | no      |
 
 
-		@wip		
 		Scenarios: Uncertain or approximate dates, year precision
 			| date       | precision | string            | ?-year  | ?-month | ?-day   | ~-year  | ~-month | ~-day   |
 			| 2004-06-01 | year      | 2004?~            | yes     | no      | no      | yes     | no      | no      |

@@ -266,8 +266,9 @@ class Date
   
 	# Returns true if this Date/Time has year precision and the year exceeds four digits.
 	def long_year?
-		precision == :year && year.abs > 9999
+		year_precision? && year.abs > 9999
 	end
+	
 	
   private
 	

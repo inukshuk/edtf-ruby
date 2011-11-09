@@ -13,13 +13,13 @@ EDTF-Ruby parser implements all levels and features of the EDTF specification
 
 * Uncertain/approximate seasons will be parsed, but the Season class does
   not implement attributes.
-* Some complex L2 partial uncertain/approximate date strings may currently
-  fail to parse.
-* In the latest revision of the EDTF specification alternative version of
-  partial uncertain/approximate strings was introduced (with or without nested
-  parentheses); curiously, EDTF-Ruby currently parses nested parentheses
-  but uses the alternative version for printing as we find that one easier
-  to read. Parser support for this version will be added in the future.
+* In the latest revision of the EDTF specification alternative versions of
+  partial uncertain/approximate strings were introduced (with or without nested
+  parentheses); EDTF-Ruby currently uses the version that tries to reduce
+  parentheses for printing as we find that one easier to read; the
+  parser accepts all valid dates using this approach, plus some dates using
+  nested expressions (the parser will not accept some of the more complex
+  examples, though).
 
 The level 2 list extensions (203 and 204) currently return simple Ruby arrays;
 therefore, advanced behavior (such as 'earlier' or 'later') is parsed correctly
