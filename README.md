@@ -37,7 +37,7 @@ given a valid EDTF string the return value will either be an (extended) `Date`,
 Given any of these instances, you can print the corresponding EDTF string
 using the `#edtf` method.
 
-=== Dates
+### Dates
 
 Most of the EDTF features deal with dates; EDTF-Ruby implements these by
 extending Active Support's version of the regular Ruby Date class. The library
@@ -155,7 +155,7 @@ When printing date strings, EDTF-Ruby will try to avoid nested parentheses:
     => "1999?-(02)?~-23?"
 
 
-=== Intervals
+### Intervals
 
 If you parse an EDTF interval, the EDTF-Ruby parser will return an instance
 of `EDTF::Interval`; intervals mimic regular Ruby ranges, but offer additional
@@ -200,7 +200,7 @@ Intervals can be open or have unknown start or end dates.
     > Date.edtf('2004/open').cover?(Date.today)
     => true
     
-=== Sets
+### Sets
 
 EDTF supports two kind of sets: choice lists (meaning one date out of a list),
 or inclusive lists. In EDTF-Ruby, these are covered by the class `EDTF::Set`
@@ -242,7 +242,7 @@ EDTF sets also feature an `#earlier?` and `#later?` attribute:
     => "[..1667, 1668, 1670..1672]"
 
 
-=== Decades and Centuries
+### Decades and Centuries
 
 The EDTF specification supports so called masked precision strings to define
 decades or centuries. EDTF-Ruby maps these to dedicated intervals which
@@ -261,7 +261,7 @@ always cover 10 or 100 years, respectively.
     > d.map(&:year)
     => [1960, 1961, 1962, 1963, 1964, 1965, 1966, 1967, 1968, 1969]
 
-=== Seasons
+### Seasons
 
 Finally, EDTF covers seasons. Again, EDTF-Ruby provides a dedicated class
 for this. Note that EDTF does not make any assumption about the specifics
