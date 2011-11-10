@@ -279,7 +279,7 @@ class Date
   end
   
   def update_precision_filter
-    case @precision
+    @precision_filter = case precision
     when :year
       [:year]
     when :month

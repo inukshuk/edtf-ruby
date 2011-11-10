@@ -73,7 +73,7 @@ Then /^the interval should include the date "([^"]*)"$/ do |date|
 end
 
 Then /^the interval should cover the date "([^"]*)"$/ do |date|
-  @date.should cover(Date.parse(date))
+  @date.should be_cover(Date.parse(date))
 end
 
 

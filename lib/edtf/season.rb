@@ -54,7 +54,7 @@ module EDTF
         when Date
           @year, @season = arguments[0].year, NORTHERN_MONTHS[arguments[0]]
         when Symbol, String
-          @year, @season = Date.today.year, SEASONS[CODES[arguments[0].intern]]
+          @year, @season = Date.today.year, SEASONS[CODES[arguments[0].to_sym]]
         else
           self.year = arguments[0]
           @season = NORTHERN_MONTHS[Date.today.month]
@@ -108,7 +108,7 @@ module EDTF
 		
     def each
       if block_given?
-        to_range(&Proc.new)
+        to_range.each(&Proc.new)
         self
       else
         to_enum

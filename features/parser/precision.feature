@@ -10,5 +10,5 @@ Feature: Parse masked precision strings
   @level2 @2041
   Scenarios: decades and centuries
     | string | start | end  |
-    | 196x   | 1960  | 1970 |
-    | 19xx   | 1900  | 2000 |
+    | 196x   | 1960  | 1969 |
+    | 19xx   | 1900  | 1999 |
