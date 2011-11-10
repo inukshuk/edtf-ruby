@@ -88,6 +88,20 @@ module EDTF
         d.qualifier.should == 'european'
       end
       
+			it 'parses uncertain seasons' do
+        Parser.new.parse!('2003-23?').should be_uncertain
+			end
+
+			it 'parses approximate seasons' do
+        Parser.new.parse!('2003-23~').should be_approximate
+			end
+
+			it 'parses uncertain and approximate seasons' do
+        Parser.new.parse!('2003-23?~').should be_uncertain
+        Parser.new.parse!('2003-23?~').should be_approximate
+			end
+			
+			
       it 'parses positive scientific long years' do
         Parser.new.parse('y17e7').year.should == 170000000
       end

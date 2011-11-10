@@ -11,8 +11,6 @@ Compatibility
 EDTF-Ruby parser implements all levels and features of the EDTF specification
 (version September 16, 2011). With the following known caveats:
 
-* Uncertain/approximate seasons will be parsed, but the Season class does
-  not implement attributes.
 * In the latest revision of the EDTF specification alternative versions of
   partial uncertain/approximate strings were introduced (with or without nested
   parentheses); EDTF-Ruby currently uses the version that tries to reduce
@@ -23,8 +21,7 @@ EDTF-Ruby parser implements all levels and features of the EDTF specification
 
 EDTF-Ruby has been confirmed to work on the following Ruby implementations:
 1.9.3, 1.9.2, 1.8.7, Rubinius, and JRuby. Active Support's date extensions
-are currently listed as a dependency, because of a number of many functional
-overlaps.
+are currently listed as a dependency, because of many functional overlaps.
 
 
 Quickstart

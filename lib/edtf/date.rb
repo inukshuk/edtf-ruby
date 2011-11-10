@@ -223,17 +223,15 @@ class Date
 
 	alias to_edtf edtf
 	
-	# Returns the Date of the next day, month, or year depending on the
+	# Returns an array of the next n days, months, or years depending on the
 	# current Date/Time's precision.
   def next(n = 1)
-    if n > 1
-      1.upto(n).map { |by| advance(PRECISIONS[precision] => by) }
-    else
-      advance(PRECISIONS[precision] => 1)
-    end
+  	1.upto(n).map { |by| advance(PRECISIONS[precision] => by) }
   end
 
-  alias succ next
+	def succ
+		advance(PRECISIONS[precision] => 1)
+	end
 
 	# Returns the Date of the previous day, month, or year depending on the
 	# current Date/Time's precision.

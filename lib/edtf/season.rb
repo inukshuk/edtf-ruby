@@ -1,6 +1,7 @@
 module EDTF
 
   class Season
+    extend Forwardable
     
     SEASONS = Hash[21, :spring, 22, :summer, 23, :autumn, 24, :winter].freeze
     
@@ -13,7 +14,6 @@ module EDTF
     NORTHERN_MONTHS = Hash[*NORTHERN.map { |s,ms| ms.map { |m| [m,s] } }.flatten].freeze
     SOUTHERN_MONTHS = Hash[*SOUTHERN.map { |s,ms| ms.map { |m| [m,s] } }.flatten].freeze
     
-    extend Forwardable
     
     include Comparable
     include Enumerable
@@ -26,10 +26,10 @@ module EDTF
 
     attr_reader :season, :year
     
-    attr_accessor :qualifier
+    attr_accessor :qualifier, :uncertain, :approximate
     
     def_delegators :to_range,
-      *Range.instance_methods(false).reject { |m| m.to_s =~ /^(each|eql?|hash)$/ }
+      *Range.instance_methods(false).reject { |m| m.to_s =~ /^(each|eql?|hash)$|^\W/ }
     
     SEASONS.each_value do |s|
       define_method("#{s}?") { @season == s }
@@ -44,7 +44,7 @@ module EDTF
       alias_method("#{quarter}!", "#{season}!")
     end
 
-    
+
     def initialize(*arguments)
       arguments.flatten!
       raise ArgumentError, "wrong number of arguments (#{arguments.length} for 0..3)" if arguments.length > 3
@@ -65,6 +65,40 @@ module EDTF
         self.qualifier = qualifier
       end
     end
+
+
+		[:uncertain, :approximate].each do |m|
+			
+			define_method("#{m}?") { !!send(m) }
+			
+			define_method("#{m}!") do
+				send("#{m}=", true)
+				self
+			end
+		end
+
+		def certain?; !uncertain; end
+		def precise?; !approximate; end
+		
+		def certain!
+			@uncertain = false
+			self
+		end
+		
+		def precise!
+			@approximate = false
+		end
+		
+		# Returns the next season.
+		def succ
+			s = dup
+			s.season = next_season_code
+			s.year = year + 1 if s.first?
+			s
+		end
+		
+		# def next(n = 1)
+		# end
 
     def each
       if block_given?
@@ -88,15 +122,16 @@ module EDTF
     
     def qualified?; !!@qualifier; end
     
-    def to_s
+    def edtf
       '%04d-%2d%s' % [year, CODES[season], qualified? ? "^#{qualifier}" : '']
     end
 
-    alias edtf to_s
+    alias to_s edtf
+
     
     def <=>(other)
       case other
-      when Date
+      when Date, Interval
         cover?(other) ? 0 : to_date <=> other
       when Season
         [year, month, qualifier] <=> [other.year, other.month, other.qualifier]
@@ -129,6 +164,14 @@ module EDTF
       NORTHERN[@season][0]
     end
     
+		def season_code
+			CODES[season]
+		end
+		
+		def next_season_code(by = 1)
+			((season_code + by) % 4) + 20
+		end
+		
   end
   
 end

@@ -97,7 +97,7 @@ describe 'Date/DateTime' do
 	describe '#next' do
 	  
 	  it 'returns the successor when given no argument' do
-			Date.edtf('1999').next.year.should == 2000
+			Date.edtf('1999').next[0].year.should == 2000
 	  end
 	  
 	  it 'returns an array of the next 3 elements when passed 3 as an argument' do

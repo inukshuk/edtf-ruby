@@ -159,8 +159,10 @@ rule
     ;
 
 
-  # TODO uncertain/approximate seasons
-  season : year '-' season_number ua { result = Season.new(val[0], val[2]) }
+  season : year '-' season_number ua {
+    result = Season.new(val[0], val[2])
+    val[3].each { |ua| result.send(ua) }
+  }
 
   season_number : '2' '1' { result = 21 }
                 | '2' '2' { result = 22 }
