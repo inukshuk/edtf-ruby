@@ -211,12 +211,12 @@ rule
     digit digit digit X
     {
       d = val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }
-      result = Date.new(d) ... Date.new(d+10)
+      result = EDTF::Decade.new(d)
     }
     | digit digit X X
     {
       d = val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }
-      result = Date.new(d) ... Date.new(d+100)
+      result = EDTF::Century.new(d)
     }
     ;
 

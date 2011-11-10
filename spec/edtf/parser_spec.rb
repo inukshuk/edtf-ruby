@@ -112,14 +112,14 @@ module EDTF
       
       it 'parses masked precision date strings (decades)' do
         d = Parser.new.parse!('198x')
-        d.should include(Date.new(1983,3,12))
-        d.should_not include(Date.new(1990,1,1))
+        d.should be_cover(Date.new(1983,3,12))
+        d.should_not be_cover(Date.new(1990,1,1))
       end
 
       it 'parses masked precision date strings (centuries)' do
         d = Parser.new.parse!('18xx')
-        d.should include(Date.new(1848,1,14))
-        d.should_not include(Date.new(1799,12,31))
+        d.should be_cover(Date.new(1848,1,14))
+        d.should_not be_cover(Date.new(1799,12,31))
       end
       
       it 'parses multiple dates (years)' do

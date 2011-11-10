@@ -29,7 +29,7 @@ module EDTF
     attr_accessor :qualifier, :uncertain, :approximate
     
     def_delegators :to_range,
-      *Range.instance_methods(false).reject { |m| m.to_s =~ /^(each|eql?|hash)$|^\W/ }
+      *Range.instance_methods(false).reject { |m| m.to_s =~ /^(each|min|max|cover?|inspect)$|^\W/ }
     
     SEASONS.each_value do |s|
       define_method("#{s}?") { @season == s }
@@ -100,6 +100,12 @@ module EDTF
 		# def next(n = 1)
 		# end
 
+		def cover?(other)
+			return false unless other.respond_to?(:day_precision)
+			other = other.day_precision
+			min.day_precision! <= other && other <= max.day_precision!
+		end
+		
     def each
       if block_given?
         to_range(&Proc.new)
@@ -131,8 +137,10 @@ module EDTF
     
     def <=>(other)
       case other
-      when Date, Interval
+      when Date
         cover?(other) ? 0 : to_date <=> other
+			when Interval, Epoch
+				[min, max] <=> [other.min, other.max]
       when Season
         [year, month, qualifier] <=> [other.year, other.month, other.qualifier]
       else
@@ -152,12 +160,17 @@ module EDTF
       Date.new(year, month, 1)
     end
 
+		alias min to_date
+		
+		def max
+			to_date.months_since(2).end_of_month
+		end
+		
     # Returns a Range that covers the season (a three month period).
     def to_range
-      d = to_date
-      d .. d.months_since(2).end_of_month
+			min .. max
     end
-    
+			
     protected
     
     def month

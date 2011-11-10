@@ -249,7 +249,7 @@ module EDTF
     
     def <=>(other)
       case other
-      when Interval
+      when Interval, Season, Epoch
         [min, max] <=> [other.min, other.max]
       when Date
         cover?(other) ? min <=> other : 0

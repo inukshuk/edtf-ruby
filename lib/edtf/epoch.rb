@@ -1,57 +1,106 @@
 module EDTF
-  class Epoch
-    
-    extend Forwardable
-    
-    include Enumerable
-    include Comparable
-    
-    attr_accessor :year
-    
-    alias get year
-    alias set year=
 
-    private_class_method :new
-    
-    def initialize(year = 0)
-    end
-        
-    def <=>(other)
-    end
-    
-    
-    def to_date
-      Date.new(year)
-    end
-    
-  end
-  
-  class Century < Epoch
+	class Epoch 
+		extend Forwardable
 
-    def_delegator :to_range, :each
-    
-    def to_range
-      d = to_date
-      d .. d.years_since(100).end_of_year
-    end
-    
-    def to_edtf
-      '%02dxx' % (year / 100)
-    end
-    
-  end
-  
-  class Decade < Epoch
+		include Enumerable
+		include Comparable
 
-    def_delegator :to_range, :each
+		class << self
+			attr_reader :duration, :format
+
+			def current
+				new(Date.today.year)
+			end
+
+			private :new, :current
+		end
+
+		attr_reader :year
+
+		def_delegators :to_range,
+      *Range.instance_methods(false).reject { |m| m.to_s =~ /^(each|min|max|cover|inspect)$|^\W/ }
     
-    def to_range
-      d = to_date
-      d .. d.years_since(10).end_of_year
-    end
-        
-    def to_edtf
-      '%03dx' % (year / 10)
-    end
-  end
+
+		def initialize(year = 0)
+			self.year = year
+		end
+
+		def year=(year)
+			@year = (year / self.class.duration) * self.class.duration
+		end
+		
+		alias get year
+		alias set year=
+		
+		def cover?(other)
+			return false unless other.respond_to?(:day_precision)
+			other = other.day_precision
+			min.day_precision! <= other && other <= max.day_precision!
+		end
+		
+		def <=>(other)
+			case other
+			when Date
+				cover?(other) ? 0 : to_date <=> other
+			when Interval, Season
+				[min, max] <=> [other.min, other.max]
+			when Epoch
+				[year, self.class.duration] <=> [other.year, other.class.duration]
+			else
+				nil
+			end
+		rescue
+			nil
+		end
+
+		def ===(other)
+			(self <=> other) == 0
+		rescue
+			false
+		end
+
+		def each
+			if block_given?
+				to_range.each(&Proc.new)
+			else
+				to_enum
+			end
+		end
+
+		def to_date
+			Date.new(year).year_precision!
+		end
+
+		alias min to_date
+
+		def max
+			to_date.advance(:years => self.class.duration - 1).end_of_year
+		end
+
+		def to_range
+			min..max
+		end
+
+		def edtf
+			self.class.format % (year / self.class.duration)
+		end
+
+		alias to_s edtf
+
+	end
+
+	class Century < Epoch
+		@duration = 100.freeze
+		@format = '%02dxx'.freeze
+		
+		public_class_method :current, :new
+	end
+
+	class Decade < Epoch
+		@duration = 10.freeze
+		@format = '%03dx'.freeze
+
+		public_class_method :current, :new
+	end
 end
