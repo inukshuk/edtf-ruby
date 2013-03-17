@@ -12,16 +12,17 @@ EDTF-Ruby parser implements all levels and features of the EDTF specification
 (version September 16, 2011). With the following known caveats:
 
 * In the latest revision of the EDTF specification alternative versions of
-  partial uncertain/approximate strings were introduced (with or without nested
-  parentheses); EDTF-Ruby currently uses the version that tries to reduce
-  parentheses for printing as we find that one easier to read; the
+  partial uncertain/approximate strings were introduced (with or without
+  nested parentheses); EDTF-Ruby currently uses the version that tries to
+  reduce parentheses for printing as we find that one easier to read; the
   parser accepts all valid dates using this approach, plus some dates using
   nested expressions (the parser will not accept some of the more complex
   examples, though).
 
 EDTF-Ruby has been confirmed to work on the following Ruby implementations:
-1.9.3, 1.9.2, 1.8.7, Rubinius, and JRuby. Active Support's date extensions
-are currently listed as a dependency, because of many functional overlaps.
+2.0, 1.9.3, 1.9.2, 1.8.7, Rubinius, and JRuby. Active Support's date
+extensions are currently listed as a dependency, because of many functional
+overlaps.
 
 
 Quickstart

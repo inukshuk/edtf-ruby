@@ -132,8 +132,6 @@ module EDTF
 			it '2007/2009 should be equal to 2007/2009' do
 				Date.edtf('2007/2009').should == Date.edtf('2007/2009')
 			end
-
-
 			
 		end
   end

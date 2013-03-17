@@ -244,8 +244,14 @@ class Date
   end
   
   def <=>(other)
-		return nil unless other.is_a?(::Date)
-		values <=> other.values
+    case other
+    when ::Date
+  		values <=> other.values
+    when Range, EDTF::Interval, EDTF::Season, EDTF::Epoch
+      other.cover?(self) ? other.min <=> self : 0
+    else
+      nil
+    end
   end
 
   
