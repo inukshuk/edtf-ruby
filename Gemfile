@@ -12,6 +12,9 @@ group :development do
   gem 'racc'
   gem 'cucumber'
   gem 'rspec'
+end
+
+group :extra do
   gem 'ZenTest'
 end
 
