@@ -52,6 +52,7 @@ end
 
 task :release => [:build] do
   system "git tag #{EDTF::VERSION}"
+  system "git push --tags"
   system "gem push edtf-#{EDTF::VERSION}.gem"
 end
 
