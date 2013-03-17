@@ -13,5 +13,6 @@ rvm:
 notifications:
   email:
     - sk@semicolon.at
+    - namyra@gmail.com
   on_success: change
   on_failure: always
