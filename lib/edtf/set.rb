@@ -13,7 +13,7 @@ module EDTF
 		
 		
 		def initialize(*dates)
-			@dates = ::SortedSet.new(dates.flatten)
+			@dates = ::Set.new(dates.flatten)
 			@choice, @later, @earlier = false, false, false
 		end
 		
@@ -44,11 +44,11 @@ module EDTF
 		end
 		
 		def edtf
-			parenthesize(dates.map { |d| d.respond_to?(:edtf) ? d.edtf : d.to_s }.join(', '))
+			parenthesize(dates.map { |d| d.respond_to?(:edtf) ? d.edtf : d.to_s }.sort.join(', '))
 		end
 		
 		def to_a
-			dates.map { |d| Array(d) }.flatten
+			dates.map { |d| Array(d) }.flatten.sort
 		end
 		
 		def to_set

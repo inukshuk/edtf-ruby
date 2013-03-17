@@ -39,7 +39,7 @@ module EDTF
     alias fall? autumn?
     alias fall! autumn!
     
-    [:first, :second, :third, :fourth].zip(SEASONS.values).each do |quarter, season|
+    [:first, :second, :third, :fourth].zip([:spring, :summer, :autumn, :winter]).each do |quarter, season|
       alias_method("#{quarter}?", "#{season}?")
       alias_method("#{quarter}!", "#{season}!")
     end

@@ -3,3 +3,4 @@ lib/edtf/parser.rb
 lib/edtf/parser.output
 *.rbc
 .rbx
+.ruby-version

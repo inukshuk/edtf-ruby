@@ -247,7 +247,7 @@ class Date
     case other
     when ::Date
       values <=> other.values
-    when ::Range, EDTF::Interval, EDTF::Season, EDTF::Epoch
+    when EDTF::Interval, EDTF::Season, EDTF::Epoch
       other.cover?(self) ? other.min <=> self : 0
     else
       nil

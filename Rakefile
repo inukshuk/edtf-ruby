@@ -16,7 +16,7 @@ require 'rake/clean'
 task :default => [:racc, :spec, :cucumber]
 
 desc 'Run an IRB session with CiteProc loaded'
-task({ :console => [:racc] }, [:script]) do |t,args|
+task :console, [:script] do |t,args|
   ARGV.clear
 
   require 'irb'
