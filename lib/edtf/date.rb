@@ -3,18 +3,18 @@ class Date
   PRECISION = [:year, :month, :day].freeze
   PRECISIONS = Hash[*PRECISION.map { |p| [p, "#{p}s".to_sym] }.flatten].freeze
   
-	FORMATS = %w{ %04d %02d %02d }.freeze
+  FORMATS = %w{ %04d %02d %02d }.freeze
 
-	SYMBOLS = {
-		:uncertain   => '?',
-		:approximate => '~',
-		:calendar    => '^',
-		:unspecified => 'u'
-	}.freeze
-		
+  SYMBOLS = {
+    :uncertain   => '?',
+    :approximate => '~',
+    :calendar    => '^',
+    :unspecified => 'u'
+  }.freeze
+    
   EXTENDED_ATTRIBUTES = %w{ calendar precision uncertain approximate
     unspecified }.map(&:to_sym).freeze
-   	
+    
   extend Forwardable  
   
   class << self
@@ -47,8 +47,8 @@ class Date
   
   
   def initialize_copy(other)
-		super
-		copy_extended_attributes(other)
+    super
+    copy_extended_attributes(other)
   end
   
   
@@ -79,7 +79,7 @@ class Date
     @precision ||= :day
   end
   
-	# Sets this Date/Time's precision to the passed-in value.
+  # Sets this Date/Time's precision to the passed-in value.
   def precision=(precision)
     precision = precision.to_sym
     raise ArgumentError, "invalid precision #{precision.inspect}" unless PRECISION.include?(precision)
@@ -157,7 +157,7 @@ class Date
   def season?; false; end
   
   # Returns true if the Date has an EDTF calendar string attached.
-	def calendar?; !!@calendar; end
+  def calendar?; !!@calendar; end
 
   # Converts the Date into a season.
   def season
@@ -166,10 +166,10 @@ class Date
   
   # Returns the Date's EDTF string.
   def edtf
-		return "y#{year}" if long_year?
-		
-		s = FORMATS.take(values.length).zip(values).map { |f,v| f % v }
-		s = unspecified.mask(s)
+    return "y#{year}" if long_year?
+    
+    s = FORMATS.take(values.length).zip(values).map { |f,v| f % v }
+    s = unspecified.mask(s)
 
     unless (h = ua_hash).zero?
       #
@@ -217,24 +217,24 @@ class Date
     end
 
     s = s.join('-')
-		s << SYMBOLS[:calendar] << calendar if calendar?
-		s
+    s << SYMBOLS[:calendar] << calendar if calendar?
+    s
   end
 
-	alias to_edtf edtf
-	
-	# Returns an array of the next n days, months, or years depending on the
-	# current Date/Time's precision.
+  alias to_edtf edtf
+  
+  # Returns an array of the next n days, months, or years depending on the
+  # current Date/Time's precision.
   def next(n = 1)
-  	1.upto(n).map { |by| advance(PRECISIONS[precision] => by) }
+    1.upto(n).map { |by| advance(PRECISIONS[precision] => by) }
   end
 
-	def succ
-		advance(PRECISIONS[precision] => 1)
-	end
+  def succ
+    advance(PRECISIONS[precision] => 1)
+  end
 
-	# Returns the Date of the previous day, month, or year depending on the
-	# current Date/Time's precision.
+  # Returns the Date of the previous day, month, or year depending on the
+  # current Date/Time's precision.
   def prev(n = 1)
     if n > 1
       1.upto(n).map { |by| advance(PRECISIONS[precision] => -by) }
@@ -246,8 +246,14 @@ class Date
   def <=>(other)
     case other
     when ::Date
-  		values <=> other.values
-    when Range, EDTF::Interval, EDTF::Season, EDTF::Epoch
+      values <=> other.values
+    when ::Range
+      if other.respond_to?(:cover?)
+        other.cover?(self) ? other.min <=> self : 0
+      else
+        other.include?(self) ? other.min <=> self : 0
+      end
+    when EDTF::Interval, EDTF::Season, EDTF::Epoch
       other.cover?(self) ? other.min <=> self : 0
     else
       nil
@@ -255,31 +261,31 @@ class Date
   end
 
   
-	# Returns an array of the current year, month, and day values filtered by
-	# the Date/Time's precision.
+  # Returns an array of the current year, month, and day values filtered by
+  # the Date/Time's precision.
   def values
     precision_filter.map { |p| send(p) }
   end
   
   # Returns the same date but with negated year.
   def negate
-		change(:year => year * -1)
+    change(:year => year * -1)
   end
   
   alias -@ negate
   
-	# Returns true if this Date/Time has year precision and the year exceeds four digits.
-	def long_year?
-		year_precision? && year.abs > 9999
-	end
-	
-	
+  # Returns true if this Date/Time has year precision and the year exceeds four digits.
+  def long_year?
+    year_precision? && year.abs > 9999
+  end
+  
+  
   private
-	
-	def ua_hash
-	  uncertain.hash + approximate.hash
-	end
-	
+  
+  def ua_hash
+    uncertain.hash + approximate.hash
+  end
+  
   def precision_filter
     @precision_filter ||= update_precision_filter
   end
