@@ -2,4 +2,4 @@ Gemfile.lock
 lib/edtf/parser.rb
 lib/edtf/parser.output
 *.rbc
-
+.rbx
