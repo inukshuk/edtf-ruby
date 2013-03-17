@@ -7,7 +7,7 @@ end
 
 class Object
   def <=>(other)
-    self === other ? 0 : nil
+    self == other ? 0 : nil
   end unless method_defined?(:'<=>')
 end
 
