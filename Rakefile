@@ -13,7 +13,7 @@ require 'edtf/version'
 
 require 'rake/clean'
 
-task :default => [:racc, :spec, :cucumber]
+task :default => [:spec, :cucumber]
 
 desc 'Run an IRB session with CiteProc loaded'
 task :console, [:script] do |t,args|
@@ -21,7 +21,7 @@ task :console, [:script] do |t,args|
 
   require 'irb'
   require 'edtf'
-  
+
   IRB.conf[:SCRIPT] = args.script
   IRB.start
 end
