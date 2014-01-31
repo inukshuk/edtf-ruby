@@ -1,5 +1,7 @@
 EDTF-Ruby
 =========
+[![Build Status](https://travis-ci.org/inukshuk/edtf-ruby.png?branch=master)](https://travis-ci.org/inukshuk/edtf-ruby)
+[![Coverage Status](https://coveralls.io/repos/inukshuk/edtf-ruby/badge.png)](https://coveralls.io/r/inukshuk/edtf-ruby)
 
 EDTF-Ruby comprises a parser and an API implementation of the [Extended
 Date/Time Format standard](http://www.loc.gov/standards/datetime/spec.html).
@@ -7,7 +9,6 @@ Date/Time Format standard](http://www.loc.gov/standards/datetime/spec.html).
 
 Compatibility
 -------------
-
 EDTF-Ruby parser implements all levels and features of the EDTF specification
 (version September 16, 2011). With the following known caveats:
 
@@ -20,14 +21,14 @@ EDTF-Ruby parser implements all levels and features of the EDTF specification
   examples, though).
 
 EDTF-Ruby has been confirmed to work on the following Ruby implementations:
-2.0, 1.9.3, 1.9.2, 1.8.7, Rubinius, and JRuby. Active Support's date
+2.1, 2.0, 1.9.3, Rubinius, and JRuby (1.8.7 and 1.9.2 were originally
+we are not testing compatibility actively anymore). Active Support's date
 extensions are currently listed as a dependency, because of many functional
-overlaps.
+overlaps (version 3.x and 4.x are supported).
 
 
 Quickstart
 ----------
-
 EDTF Ruby is implemented as an extension to the regular Ruby date/time classes.
 You can parse EDTF strings either using `Date.edtf` or `EDTF.parse`
 (both methods come with an alternative bang! version, that will raise an error
@@ -56,7 +57,7 @@ subtle difference that determines how many other methods work. For instance:
     => Fri, 11 Nov 2011
     > Date.today.month_precision!.succ
     => Sat, 10 Dec 2011
-    
+
 As you can see, dates have day precision by default; after setting the date's
 precision to month, however, the natural successor is not the next day, but
 a day a month from now. Always keep precision in mind when comparing dates,
@@ -64,7 +65,7 @@ too:
 
     > Date.new(1666).year_precision! == Date.new(1966)
     => false
-    
+
 The year 1666 is not equal to the January 1st, 1966. You can set a date's
 precision directly, or else use the dedicated bang! methods:
 
@@ -167,30 +168,30 @@ functionality.
     => true
     > d.include?(Date.new(1987,04,13))
     => false
-    
+
 The day is not included because interval has month precision. However:
 
     > d.cover?(Date.new(1987,04,13))
     => true
-    
+
 The day is still covered by the interval. In general, optimized in the
 same way that Ruby optimizes numeric ranges. Additionally, precision
 plays into the way intervals are enumerated:
 
     > d.length
     => 243
-    
+
 There are 243 months between 1984-06-01 and 2004-08-31.
 
     > d.step(36).map(&:year)
     => [1984, 1987, 1990, 1993, 1996, 1999, 2002]
-    
+
 Here we iterate through the interval in 36-month steps and map each date to
 the year.
 
     > Date.edtf('1582-10-01/1582-10-31').length
     => 21
-    
+
 This interval has day precision, so 21 is the number of days in October 1582,
 which was cut short because of the Gregorian calendar reform.
 
@@ -200,7 +201,7 @@ Intervals can be open or have unknown start or end dates.
     => true
     > Date.edtf('2004/open').cover?(Date.today)
     => true
-    
+
 ### Sets
 
 EDTF supports two kind of sets: choice lists (meaning one date out of a list),
@@ -213,7 +214,7 @@ and the `choice` attribute.
     > s.choice!
     > s.edtf
     => "[1667, 1668, 1670..1672]"
-    
+
 As you can see above, EDTF-Ruby remembers which parts of the set were
 specified as a range; ranges are however enumerated for membership tests:
 
@@ -221,19 +222,19 @@ specified as a range; ranges are however enumerated for membership tests:
     => false
     > s.include?(Date.edtf('1671'))
     => true
-    
+
 Even though we're still aware that the year 1671 was is not directly an
 element of the set:
 
     > s.length
     => 3
-    
+
 When in doubt, you can always map the set to an array. This will also
 enumerate all ranges:
 
     > s.map(&:year)
     => [1667, 1668, 1670, 1671, 1672] # when enumerated there are 5 elements
-    
+
 EDTF sets also feature an `#earlier?` and `#later?` attribute:
 
     > s.earlier?
@@ -308,17 +309,15 @@ extensive list of rspec examples.
 
 Contributing
 ------------
-
 The EDTF-Ruby source code is [hosted on GitHub](https://github.com/inukshuk/edtf-ruby).
 You can check out a copy of the latest code using Git:
 
     $ git clone https://github.com/inukshuk/edtf-ruby.git
-    
+
 To get started, generate the parser and run all tests:
 
     $ cd edtf-ruby
     $ bundle install
-    $ bundle exec rake racc_debug
     $ bundle exec rspec spec
     $ bundle exec cucumber
 
@@ -330,7 +329,6 @@ and submit a pull request.
 
 Credits
 -------
-
 EDTF-Ruby was written by [Sylvester Keil](http://sylvester.keil.or.at) and
 [Namyra](https://github.com/namyra).
 

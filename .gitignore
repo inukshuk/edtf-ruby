@@ -5,3 +5,4 @@ lib/edtf/parser.output
 .ruby-version
 *.swp
 .bundle
+coverage

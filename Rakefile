@@ -46,11 +46,21 @@ require 'cucumber/rake/task'
 Cucumber::Rake::Task.new(:cucumber)
 
 desc 'Builds the gem file'
-task :build => [:racc] do
+task :build => [:check_warnings] do
   system 'gem build edtf.gemspec'
 end
 
-task :release => [:build] do
+require 'coveralls/rake/task'
+Coveralls::RakeTask.new
+task :test_with_coveralls => [:spec, :cucumber, 'coveralls:push']
+
+task :check_warnings do
+  $VERBOSE = true
+  require 'edtf'
+  puts EDTF::VERSION
+end
+
+task :release => [ :build] do
   system "git tag #{EDTF::VERSION}"
   system "git push --tags"
   system "gem push edtf-#{EDTF::VERSION}.gem"
