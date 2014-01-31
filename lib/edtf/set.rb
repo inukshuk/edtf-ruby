@@ -62,9 +62,11 @@ module EDTF
       to_a <=> other.to_a
     end
 
-    private
+    protected
 
     attr_reader :dates
+
+    private
 
     def parenthesize(string)
       p = choice? ? %w([ ]) : %w({ })
