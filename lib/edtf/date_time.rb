@@ -4,6 +4,6 @@ class DateTime
   alias to_edtf edtf
 
   def values
-    super().cocat([hour,minute,second,offset])
+    super().concat([hour,minute,second,offset])
   end
 end
