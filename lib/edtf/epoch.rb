@@ -18,8 +18,9 @@ module EDTF
 
     attr_reader :year
 
-    def_delegators :to_range,
-      *Range.instance_methods(false).reject { |m| m.to_s =~ /^(each|min|max|cover|inspect)$|^\W/ }
+    def_delegators :to_range, *Range.instance_methods(false).reject { |m|
+        m.to_s =~ /^(each|min|max|cover\?|inspect|to_s)$|^\W/
+    }
 
 
     def initialize(year = 0)
