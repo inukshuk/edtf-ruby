@@ -12,8 +12,9 @@ class Date
     :unspecified => 'u'
   }.freeze
 
-  EXTENDED_ATTRIBUTES = %w{ calendar precision uncertain approximate
-    unspecified }.map(&:to_sym).freeze
+  EXTENDED_ATTRIBUTES = %w{
+    calendar precision uncertain approximate unspecified
+  }.map(&:to_sym).freeze
 
   extend Forwardable
 
@@ -46,8 +47,10 @@ class Date
   end
 
 
+  alias original_initialize_copy initialize_copy
+
   def initialize_copy(other)
-    super
+    original_initialize_copy(other)
     copy_extended_attributes(other)
   end
 
@@ -223,11 +226,15 @@ class Date
 
   alias to_edtf edtf
 
+  remove_method :next
+
   # Returns an array of the next n days, months, or years depending on the
   # current Date/Time's precision.
   def next(n = 1)
     1.upto(n).map { |by| advance(PRECISIONS[precision] => by) }
   end
+
+  remove_method :succ
 
   def succ
     advance(PRECISIONS[precision] => 1)

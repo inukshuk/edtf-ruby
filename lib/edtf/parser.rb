@@ -807,7 +807,7 @@ Racc_token_to_s_table = [
   "d01_29",
   "d01_30" ]
 
-Racc_debug_parser = false
+Racc_debug_parser = true
 
 ##### State transition tables end #####
 
@@ -1790,4 +1790,4 @@ def _reduce_none(val, _values, result)
 end
 
   end   # class Parser
-end   # module EDTF
+  end   # module EDTF
