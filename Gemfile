@@ -10,7 +10,7 @@ end
 
 group :development do
   gem 'rake'
-  gem 'racc'
+  gem 'racc', :platform => :ruby
   gem 'cucumber'
   gem 'rspec'
   gem 'simplecov', '~>0.8', :require => false
