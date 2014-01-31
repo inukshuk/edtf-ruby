@@ -21,8 +21,8 @@ EDTF-Ruby parser implements all levels and features of the EDTF specification
   examples, though).
 
 EDTF-Ruby has been confirmed to work on the following Ruby implementations:
-2.1, 2.0, 1.9.3, Rubinius, and JRuby (1.8.7 and 1.9.2 were originally
-we are not testing compatibility actively anymore). Active Support's date
+2.1, 2.0, 1.9.3, Rubinius, and JRuby (1.8.7 and 1.9.2 were originally supported
+but we are not testing compatibility actively anymore). Active Support's date
 extensions are currently listed as a dependency, because of many functional
 overlaps (version 3.x and 4.x are supported).
 
