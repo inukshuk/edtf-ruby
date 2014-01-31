@@ -28,8 +28,9 @@ module EDTF
 
     attr_accessor :qualifier, :uncertain, :approximate
 
-    def_delegators :to_range,
-      *Range.instance_methods(false).reject { |m| m.to_s =~ /^(each|min|max|cover?|inspect)$|^\W/ }
+    def_delegators :to_range, *Range.instance_methods(false).reject { |m|
+      m.to_s =~ /^(each|min|max|cover\?|inspect|to_s)$|^\W/
+    }
 
     SEASONS.each_value do |s|
       define_method("#{s}?") { @season == s }

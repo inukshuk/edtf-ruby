@@ -17,32 +17,32 @@ module_eval(<<'...end parser.y/module_eval...', 'parser.y', 440)
     :level => 2,
     :debug => false
   }.freeze
-  
+
   class << self; attr_reader :defaults; end
-  
+
   attr_reader :options
-  
+
   def initialize(options = {})
     @options = Parser.defaults.merge(options)
   end
-  
+
   def debug?
     !!(options[:debug] || ENV['DEBUG'])
   end
-  
+
   def parse(input)
     parse!(input)
   rescue => e
     warn e.message if debug?
     nil
   end
-  
+
   def parse!(input)
     @yydebug = debug?
     @src = StringScanner.new(input)
     do_parse
   end
-  
+
   def on_error(tid, value, stack)
     raise ArgumentError,
       "failed to parse date: unexpected '#{value}' at #{stack.inspect}"
@@ -54,9 +54,9 @@ module_eval(<<'...end parser.y/module_eval...', 'parser.y', 440)
     end
     date
   end
-  
+
   alias uoa apply_uncertainty
-  
+
   def next_token
     case
     when @src.eos?
@@ -64,7 +64,7 @@ module_eval(<<'...end parser.y/module_eval...', 'parser.y', 440)
     # when @src.scan(/\s+/)
       # ignore whitespace
     when @src.scan(/\(/)
-      ['(', @src.matched] 
+      ['(', @src.matched]
     # when @src.scan(/\)\?~-/)
     #   [:PUA, [:uncertain!, :approximate!]]
     # when @src.scan(/\)\?-/)
@@ -829,28 +829,28 @@ Racc_debug_parser = true
 
 module_eval(<<'.,.,', 'parser.y', 27)
   def _reduce_8(val, _values, result)
-     result = Date.new(val[0]).year_precision! 
+     result = Date.new(val[0]).year_precision!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 28)
   def _reduce_9(val, _values, result)
-     result = Date.new(*val.flatten).month_precision! 
+     result = Date.new(*val.flatten).month_precision!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 29)
   def _reduce_10(val, _values, result)
-     result = Date.new(*val.flatten).day_precision! 
+     result = Date.new(*val.flatten).day_precision!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 32)
   def _reduce_11(val, _values, result)
-     result = -val[1] 
+     result = -val[1]
     result
   end
 .,.,
@@ -858,7 +858,7 @@ module_eval(<<'.,.,', 'parser.y', 32)
 module_eval(<<'.,.,', 'parser.y', 36)
   def _reduce_12(val, _values, result)
        result = DateTime.new(val[0].year, val[0].month, val[0].day, *val[2])
-  
+
     result
   end
 .,.,
@@ -867,14 +867,14 @@ module_eval(<<'.,.,', 'parser.y', 36)
 
 module_eval(<<'.,.,', 'parser.y', 40)
   def _reduce_14(val, _values, result)
-     result = val.flatten 
+     result = val.flatten
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 42)
   def _reduce_15(val, _values, result)
-     result = val.values_at(0, 2, 4) 
+     result = val.values_at(0, 2, 4)
     result
   end
 .,.,
@@ -883,28 +883,28 @@ module_eval(<<'.,.,', 'parser.y', 42)
 
 module_eval(<<'.,.,', 'parser.y', 45)
   def _reduce_17(val, _values, result)
-     result = [24, 0, 0] 
+     result = [24, 0, 0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 47)
   def _reduce_18(val, _values, result)
-     result = 0 
+     result = 0
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 48)
   def _reduce_19(val, _values, result)
-     result = -1 * val[1] 
+     result = -1 * val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 49)
   def _reduce_20(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
@@ -913,28 +913,28 @@ module_eval(<<'.,.,', 'parser.y', 49)
 
 module_eval(<<'.,.,', 'parser.y', 53)
   def _reduce_22(val, _values, result)
-     result = 0 
+     result = 0
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 57)
   def _reduce_23(val, _values, result)
-     result = Rational(val[0] * 60 + val[2], 1440) 
+     result = Rational(val[0] * 60 + val[2], 1440)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 58)
   def _reduce_24(val, _values, result)
-     result = Rational(840, 1440) 
+     result = Rational(840, 1440)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 59)
   def _reduce_25(val, _values, result)
-     result = Rational(val[3], 1440) 
+     result = Rational(val[3], 1440)
     result
   end
 .,.,
@@ -942,7 +942,7 @@ module_eval(<<'.,.,', 'parser.y', 59)
 module_eval(<<'.,.,', 'parser.y', 63)
   def _reduce_26(val, _values, result)
         result = val.zip([1000,100,10,1]).reduce(0) { |s,(a,b)| s += a * b }
-  
+
     result
   end
 .,.,
@@ -953,7 +953,7 @@ module_eval(<<'.,.,', 'parser.y', 63)
 
 module_eval(<<'.,.,', 'parser.y', 69)
   def _reduce_29(val, _values, result)
-     result = [val[0], val[2]] 
+     result = [val[0], val[2]]
     result
   end
 .,.,
@@ -964,7 +964,7 @@ module_eval(<<'.,.,', 'parser.y', 76)
     if result[2] > 31 || (result[2] > 30 && [2,4,6,9,11].include?(result[1])) || (result[2] > 29 && result[1] == 2)
       raise ArgumentError, "invalid date (invalid days #{result[2]} for month #{result[1]})"
     end
-  
+
     result
   end
 .,.,
@@ -987,7 +987,7 @@ module_eval(<<'.,.,', 'parser.y', 99)
   def _reduce_38(val, _values, result)
                     result = Date.new(val[0][0]).year_precision!
                 result.unspecified.year[2,2] = val[0][1]
-              
+
     result
   end
 .,.,
@@ -1001,7 +1001,7 @@ module_eval(<<'.,.,', 'parser.y', 99)
 module_eval(<<'.,.,', 'parser.y', 110)
   def _reduce_42(val, _values, result)
           result = [val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }, [false,true]]
-    
+
     result
   end
 .,.,
@@ -1009,7 +1009,7 @@ module_eval(<<'.,.,', 'parser.y', 110)
 module_eval(<<'.,.,', 'parser.y', 114)
   def _reduce_43(val, _values, result)
           result = [val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }, [true, true]]
-    
+
     result
   end
 .,.,
@@ -1018,7 +1018,7 @@ module_eval(<<'.,.,', 'parser.y', 118)
   def _reduce_44(val, _values, result)
         result = Date.new(val[0]).unspecified!(:month)
     result.precision = :month
-  
+
     result
   end
 .,.,
@@ -1026,7 +1026,7 @@ module_eval(<<'.,.,', 'parser.y', 118)
 module_eval(<<'.,.,', 'parser.y', 123)
   def _reduce_45(val, _values, result)
         result = Date.new(*val[0]).unspecified!(:day)
-  
+
     result
   end
 .,.,
@@ -1034,7 +1034,7 @@ module_eval(<<'.,.,', 'parser.y', 123)
 module_eval(<<'.,.,', 'parser.y', 127)
   def _reduce_46(val, _values, result)
         result = Date.new(val[0]).unspecified!([:day,:month])
-  
+
     result
   end
 .,.,
@@ -1042,7 +1042,7 @@ module_eval(<<'.,.,', 'parser.y', 127)
 module_eval(<<'.,.,', 'parser.y', 132)
   def _reduce_47(val, _values, result)
         result = Interval.new(val[0], val[2])
-  
+
     result
   end
 .,.,
@@ -1065,7 +1065,7 @@ module_eval(<<'.,.,', 'parser.y', 143)
   def _reduce_55(val, _values, result)
           result = Date.new(val[1])
       result.precision = :year
-    
+
     result
   end
 .,.,
@@ -1074,7 +1074,7 @@ module_eval(<<'.,.,', 'parser.y', 148)
   def _reduce_56(val, _values, result)
           result = Date.new(-1 * val[2])
       result.precision = :year
-    
+
     result
   end
 .,.,
@@ -1082,14 +1082,14 @@ module_eval(<<'.,.,', 'parser.y', 148)
 module_eval(<<'.,.,', 'parser.y', 155)
   def _reduce_57(val, _values, result)
           result = val.zip([10000,1000,100,10,1]).reduce(0) { |s,(a,b)| s += a * b }
-    
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 157)
   def _reduce_58(val, _values, result)
-     result = 10 * val[0] + val[1] 
+     result = 10 * val[0] + val[1]
     result
   end
 .,.,
@@ -1098,35 +1098,35 @@ module_eval(<<'.,.,', 'parser.y', 162)
   def _reduce_59(val, _values, result)
         result = Season.new(val[0], val[2])
     val[3].each { |ua| result.send(ua) }
-  
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 166)
   def _reduce_60(val, _values, result)
-     result = 21 
+     result = 21
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 167)
   def _reduce_61(val, _values, result)
-     result = 22 
+     result = 22
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 168)
   def _reduce_62(val, _values, result)
-     result = 23 
+     result = 23
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 169)
   def _reduce_63(val, _values, result)
-     result = 24 
+     result = 24
     result
   end
 .,.,
@@ -1149,7 +1149,7 @@ module_eval(<<'.,.,', 'parser.y', 169)
 
 module_eval(<<'.,.,', 'parser.y', 187)
   def _reduce_72(val, _values, result)
-     result = val[0]; result.qualifier = val[1] 
+     result = val[0]; result.qualifier = val[1]
     result
   end
 .,.,
@@ -1157,7 +1157,7 @@ module_eval(<<'.,.,', 'parser.y', 187)
 module_eval(<<'.,.,', 'parser.y', 193)
   def _reduce_73(val, _values, result)
           result = Date.new(val[0].year * 10 ** val[2]).year_precision!
-    
+
     result
   end
 .,.,
@@ -1165,7 +1165,7 @@ module_eval(<<'.,.,', 'parser.y', 193)
 module_eval(<<'.,.,', 'parser.y', 197)
   def _reduce_74(val, _values, result)
           result = Date.new(val[1] * 10 ** val[3]).year_precision!
-    
+
     result
   end
 .,.,
@@ -1173,14 +1173,14 @@ module_eval(<<'.,.,', 'parser.y', 197)
 module_eval(<<'.,.,', 'parser.y', 201)
   def _reduce_75(val, _values, result)
           result = Date.new(-1 * val[2] * 10 ** val[4]).year_precision!
-    
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 206)
   def _reduce_76(val, _values, result)
-     result = val[0]; result.calendar = val[1] 
+     result = val[0]; result.calendar = val[1]
     result
   end
 .,.,
@@ -1189,7 +1189,7 @@ module_eval(<<'.,.,', 'parser.y', 212)
   def _reduce_77(val, _values, result)
           d = val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }
       result = EDTF::Decade.new(d)
-    
+
     result
   end
 .,.,
@@ -1198,84 +1198,84 @@ module_eval(<<'.,.,', 'parser.y', 217)
   def _reduce_78(val, _values, result)
           d = val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }
       result = EDTF::Century.new(d)
-    
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 223)
   def _reduce_79(val, _values, result)
-     result = val[1].choice! 
+     result = val[1].choice!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 225)
   def _reduce_80(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 227)
   def _reduce_81(val, _values, result)
-     result = EDTF::Set.new(val[0]).earlier! 
+     result = EDTF::Set.new(val[0]).earlier!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 228)
   def _reduce_82(val, _values, result)
-     result = EDTF::Set.new([val[0]] + val[2] + [val[4]]).earlier!.later! 
+     result = EDTF::Set.new([val[0]] + val[2] + [val[4]]).earlier!.later!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 229)
   def _reduce_83(val, _values, result)
-     result = EDTF::Set.new([val[0]] + val[2]).earlier! 
+     result = EDTF::Set.new([val[0]] + val[2]).earlier!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 230)
   def _reduce_84(val, _values, result)
-     result = EDTF::Set.new([val[0]] + [val[2]]).earlier!.later! 
+     result = EDTF::Set.new([val[0]] + [val[2]]).earlier!.later!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 231)
   def _reduce_85(val, _values, result)
-     result = EDTF::Set.new(val[0] + [val[2]]).later! 
+     result = EDTF::Set.new(val[0] + [val[2]]).later!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 232)
   def _reduce_86(val, _values, result)
-     result = EDTF::Set.new(*val[0]) 
+     result = EDTF::Set.new(*val[0])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 233)
   def _reduce_87(val, _values, result)
-     result = EDTF::Set.new(val[0]).later! 
+     result = EDTF::Set.new(val[0]).later!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 236)
   def _reduce_88(val, _values, result)
-     result = [val[0]].flatten 
+     result = [val[0]].flatten
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 237)
   def _reduce_89(val, _values, result)
-     result = val[0] + [val[2]].flatten 
+     result = val[0] + [val[2]].flatten
     result
   end
 .,.,
@@ -1292,49 +1292,49 @@ module_eval(<<'.,.,', 'parser.y', 237)
 
 module_eval(<<'.,.,', 'parser.y', 249)
   def _reduce_95(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 251)
   def _reduce_96(val, _values, result)
-     result = Date.new(*val[0]).year_precision! 
+     result = Date.new(*val[0]).year_precision!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 252)
   def _reduce_97(val, _values, result)
-     result = Date.new(*val[0]).month_precision! 
+     result = Date.new(*val[0]).month_precision!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 253)
   def _reduce_98(val, _values, result)
-     result = Date.new(val[0]).year_precision! 
+     result = Date.new(val[0]).year_precision!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 256)
   def _reduce_99(val, _values, result)
-     result = (Date.new(val[0]).day_precision! .. Date.new(val[2]).day_precision!) 
+     result = (Date.new(val[0]).day_precision! .. Date.new(val[2]).day_precision!)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 257)
   def _reduce_100(val, _values, result)
-     result = (Date.new(val[0]).month_precision! .. Date.new(val[2]).month_precision!) 
+     result = (Date.new(val[0]).month_precision! .. Date.new(val[2]).month_precision!)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 258)
   def _reduce_101(val, _values, result)
-     result = (Date.new(val[0]).year_precision! .. Date.new(val[2]).year_precision!) 
+     result = (Date.new(val[0]).year_precision! .. Date.new(val[2]).year_precision!)
     result
   end
 .,.,
@@ -1343,7 +1343,7 @@ module_eval(<<'.,.,', 'parser.y', 264)
   def _reduce_102(val, _values, result)
           result = Date.new(val[0][0], val[2], val[4])
       result.unspecified.year[2,2] = val[0][1]
-    
+
     result
   end
 .,.,
@@ -1353,7 +1353,7 @@ module_eval(<<'.,.,', 'parser.y', 269)
           result = Date.new(val[0][0], 1, val[5])
       result.unspecified.year[2,2] = val[0][1]
       result.unspecified!(:month)
-    
+
     result
   end
 .,.,
@@ -1363,7 +1363,7 @@ module_eval(<<'.,.,', 'parser.y', 275)
           result = Date.new(val[0][0], 1, 1)
       result.unspecified.year[2,2] = val[0][1]
       result.unspecified!([:month, :day])
-    
+
     result
   end
 .,.,
@@ -1373,7 +1373,7 @@ module_eval(<<'.,.,', 'parser.y', 281)
           result = Date.new(val[0][0], val[2], 1)
       result.unspecified.year[2,2] = val[0][1]
       result.unspecified!(:day)
-    
+
     result
   end
 .,.,
@@ -1382,7 +1382,7 @@ module_eval(<<'.,.,', 'parser.y', 287)
   def _reduce_106(val, _values, result)
           result = Date.new(val[0], 1, val[5])
       result.unspecified!(:month)
-    
+
     result
   end
 .,.,
@@ -1391,35 +1391,35 @@ module_eval(<<'.,.,', 'parser.y', 287)
 
 module_eval(<<'.,.,', 'parser.y', 294)
   def _reduce_108(val, _values, result)
-     result = uoa(val[1], val[3]) 
+     result = uoa(val[1], val[3])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 297)
   def _reduce_109(val, _values, result)
-     result = val[0].year_precision! 
+     result = val[0].year_precision!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 298)
   def _reduce_110(val, _values, result)
-     result = val[0][0].month_precision! 
+     result = val[0][0].month_precision!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 299)
   def _reduce_111(val, _values, result)
-     result = val[0].day_precision! 
+     result = val[0].day_precision!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 301)
   def _reduce_112(val, _values, result)
-     result = uoa(Date.new(val[0]), val[1], :year) 
+     result = uoa(Date.new(val[0]), val[1], :year)
     result
   end
 .,.,
@@ -1427,7 +1427,7 @@ module_eval(<<'.,.,', 'parser.y', 301)
 module_eval(<<'.,.,', 'parser.y', 305)
   def _reduce_113(val, _values, result)
           result = [uoa(val[0].change(:month => val[2]), val[3], [:month, :year])]
-    
+
     result
   end
 .,.,
@@ -1435,7 +1435,7 @@ module_eval(<<'.,.,', 'parser.y', 305)
 module_eval(<<'.,.,', 'parser.y', 308)
   def _reduce_114(val, _values, result)
             result = [uoa(Date.new(val[0], val[2]), val[3], [:year, :month])]
-    
+
     result
   end
 .,.,
@@ -1443,7 +1443,7 @@ module_eval(<<'.,.,', 'parser.y', 308)
 module_eval(<<'.,.,', 'parser.y', 311)
   def _reduce_115(val, _values, result)
             result = [uoa(Date.new(val[0], val[2]), val[4], [:month]), true]
-    
+
     result
   end
 .,.,
@@ -1451,7 +1451,7 @@ module_eval(<<'.,.,', 'parser.y', 311)
 module_eval(<<'.,.,', 'parser.y', 314)
   def _reduce_116(val, _values, result)
             result = [uoa(val[0].change(:month => val[2]), val[4], [:month]), true]
-    
+
     result
   end
 .,.,
@@ -1459,7 +1459,7 @@ module_eval(<<'.,.,', 'parser.y', 314)
 module_eval(<<'.,.,', 'parser.y', 320)
   def _reduce_117(val, _values, result)
           result = uoa(val[0][0].change(:day => val[2]), val[3], val[0][1] ? [:day] : nil)
-    
+
     result
   end
 .,.,
@@ -1467,7 +1467,7 @@ module_eval(<<'.,.,', 'parser.y', 320)
 module_eval(<<'.,.,', 'parser.y', 323)
   def _reduce_118(val, _values, result)
             result = uoa(val[0][0].change(:day => val[2]), val[4], [:day])
-    
+
     result
   end
 .,.,
@@ -1475,7 +1475,7 @@ module_eval(<<'.,.,', 'parser.y', 323)
 module_eval(<<'.,.,', 'parser.y', 326)
   def _reduce_119(val, _values, result)
             result = uoa(uoa(Date.new(val[0], val[2], val[5]), val[4], :month), val[6], :day)
-    
+
     result
   end
 .,.,
@@ -1483,7 +1483,7 @@ module_eval(<<'.,.,', 'parser.y', 326)
 module_eval(<<'.,.,', 'parser.y', 329)
   def _reduce_120(val, _values, result)
             result = uoa(Date.new(val[0][0], val[0][1], val[2]), val[3])
-    
+
     result
   end
 .,.,
@@ -1491,7 +1491,7 @@ module_eval(<<'.,.,', 'parser.y', 329)
 module_eval(<<'.,.,', 'parser.y', 332)
   def _reduce_121(val, _values, result)
             result = uoa(Date.new(val[0][0], val[0][1], val[2]), val[4], [:day])
-    
+
     result
   end
 .,.,
@@ -1499,7 +1499,7 @@ module_eval(<<'.,.,', 'parser.y', 332)
 module_eval(<<'.,.,', 'parser.y', 335)
   def _reduce_122(val, _values, result)
             result = uoa(Date.new(val[0], val[2], val[4]), val[6], [:month, :day])
-    
+
     result
   end
 .,.,
@@ -1509,7 +1509,7 @@ module_eval(<<'.,.,', 'parser.y', 338)
             result = Date.new(val[0], val[2], val[4])
         result = uoa(result, val[6], [:day])
         result = uoa(result, val[8], [:month, :day])
-    
+
     result
   end
 .,.,
@@ -1518,7 +1518,7 @@ module_eval(<<'.,.,', 'parser.y', 343)
   def _reduce_124(val, _values, result)
             result = val[0].change(:month => val[2], :day => val[4])
         result = uoa(result, val[6], [:month, :day])
-    
+
     result
   end
 .,.,
@@ -1528,14 +1528,14 @@ module_eval(<<'.,.,', 'parser.y', 347)
             result = val[0].change(:month => val[2], :day => val[4])
         result = uoa(result, val[6], [:day])
         result = uoa(result, val[8], [:month, :day])
-    
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 358)
   def _reduce_126(val, _values, result)
-     result = [] 
+     result = []
     result
   end
 .,.,
@@ -1544,7 +1544,7 @@ module_eval(<<'.,.,', 'parser.y', 358)
 
 module_eval(<<'.,.,', 'parser.y', 362)
   def _reduce_128(val, _values, result)
-     result = 0 
+     result = 0
     result
   end
 .,.,
@@ -1571,28 +1571,28 @@ module_eval(<<'.,.,', 'parser.y', 362)
 
 module_eval(<<'.,.,', 'parser.y', 368)
   def _reduce_139(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 369)
   def _reduce_140(val, _values, result)
-     result = 10 
+     result = 10
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 370)
   def _reduce_141(val, _values, result)
-     result = 11 
+     result = 11
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 371)
   def _reduce_142(val, _values, result)
-     result = 12 
+     result = 12
     result
   end
 .,.,
@@ -1601,49 +1601,49 @@ module_eval(<<'.,.,', 'parser.y', 371)
 
 module_eval(<<'.,.,', 'parser.y', 375)
   def _reduce_144(val, _values, result)
-     result = 13 
+     result = 13
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 378)
   def _reduce_145(val, _values, result)
-     result = val[1] 
+     result = val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 379)
   def _reduce_146(val, _values, result)
-     result = 10 + val[1] 
+     result = 10 + val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 380)
   def _reduce_147(val, _values, result)
-     result = 20 
+     result = 20
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 381)
   def _reduce_148(val, _values, result)
-     result = 21 
+     result = 21
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 382)
   def _reduce_149(val, _values, result)
-     result = 22 
+     result = 22
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 383)
   def _reduce_150(val, _values, result)
-     result = 23 
+     result = 23
     result
   end
 .,.,
@@ -1656,42 +1656,42 @@ module_eval(<<'.,.,', 'parser.y', 383)
 
 module_eval(<<'.,.,', 'parser.y', 391)
   def _reduce_154(val, _values, result)
-     result = 24 
+     result = 24
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 392)
   def _reduce_155(val, _values, result)
-     result = 25 
+     result = 25
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 393)
   def _reduce_156(val, _values, result)
-     result = 26 
+     result = 26
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 394)
   def _reduce_157(val, _values, result)
-     result = 27 
+     result = 27
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 395)
   def _reduce_158(val, _values, result)
-     result = 28 
+     result = 28
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 396)
   def _reduce_159(val, _values, result)
-     result = 29 
+     result = 29
     result
   end
 .,.,
@@ -1700,7 +1700,7 @@ module_eval(<<'.,.,', 'parser.y', 396)
 
 module_eval(<<'.,.,', 'parser.y', 400)
   def _reduce_161(val, _values, result)
-     result = 30 
+     result = 30
     result
   end
 .,.,
@@ -1709,7 +1709,7 @@ module_eval(<<'.,.,', 'parser.y', 400)
 
 module_eval(<<'.,.,', 'parser.y', 404)
   def _reduce_163(val, _values, result)
-     result = 31 
+     result = 31
     result
   end
 .,.,
@@ -1718,21 +1718,21 @@ module_eval(<<'.,.,', 'parser.y', 404)
 
 module_eval(<<'.,.,', 'parser.y', 408)
   def _reduce_165(val, _values, result)
-     result = 30 + val[1] 
+     result = 30 + val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 409)
   def _reduce_166(val, _values, result)
-     result = 40 + val[1] 
+     result = 40 + val[1]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 410)
   def _reduce_167(val, _values, result)
-     result = 50 + val[1] 
+     result = 50 + val[1]
     result
   end
 .,.,
@@ -1743,14 +1743,14 @@ module_eval(<<'.,.,', 'parser.y', 410)
 
 module_eval(<<'.,.,', 'parser.y', 417)
   def _reduce_170(val, _values, result)
-     result = val[0] 
+     result = val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 418)
   def _reduce_171(val, _values, result)
-     result = 10 * val[0] + val[1] 
+     result = 10 * val[0] + val[1]
     result
   end
 .,.,
@@ -1758,7 +1758,7 @@ module_eval(<<'.,.,', 'parser.y', 418)
 module_eval(<<'.,.,', 'parser.y', 421)
   def _reduce_172(val, _values, result)
                result = val.zip([100,10,1]).reduce(0) { |s,(a,b)| s += a * b }
-         
+
     result
   end
 .,.,
@@ -1766,21 +1766,21 @@ module_eval(<<'.,.,', 'parser.y', 421)
 module_eval(<<'.,.,', 'parser.y', 425)
   def _reduce_173(val, _values, result)
                result = val.zip([1000,100,10,1]).reduce(0) { |s,(a,b)| s += a * b }
-         
+
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 429)
   def _reduce_174(val, _values, result)
-     result = val[0] 
+     result = val[0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 430)
   def _reduce_175(val, _values, result)
-     result = 10 * val[0] + val[1] 
+     result = 10 * val[0] + val[1]
     result
   end
 .,.,
@@ -1790,4 +1790,4 @@ def _reduce_none(val, _values, result)
 end
 
   end   # class Parser
-  end   # module EDTF
+end   # module EDTF
