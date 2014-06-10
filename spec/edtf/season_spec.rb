@@ -81,6 +81,7 @@ module EDTF
 
     describe '#summer!' do
       it 'sets the season to :summer' do
+        subject.season = :spring
         lambda { subject.summer! }.should change { subject.season }.to(:summer)
       end
     end

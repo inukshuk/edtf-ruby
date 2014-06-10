@@ -2,11 +2,11 @@ language: ruby
 bundler_args: --without debug extra
 script: bundle exec rake test_with_coveralls
 rvm:
+  - 2.1.0
   - 2.0.0
   - 1.9.3
   - jruby-19mode
-  - rbx-2.1.1
-  - rbx
+  - rbx2
 notifications:
   email:
     - sk@semicolon.at
