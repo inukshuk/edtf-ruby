@@ -6,36 +6,36 @@ module EDTF
     
     describe '#uncertain?' do
       
-      it { should be_certain }
+      it { is_expected.to be_certain }
 
       it 'should be uncertain if at least one part is uncertain' do
-        Uncertainty.new(false, false, true).should be_uncertain
+        expect(Uncertainty.new(false, false, true)).to be_uncertain
       end
 
       it 'should not be uncertain if all parts are certain' do
-        Uncertainty.new(false, false, false).should be_certain
+        expect(Uncertainty.new(false, false, false)).to be_certain
       end
 
       it 'should be uncertain if all parts are uncertain' do
-        Uncertainty.new(true, true, true).should be_uncertain
+        expect(Uncertainty.new(true, true, true)).to be_uncertain
       end
 
       # [:year, :month, :day, :hour, :minute, :second].each do |part|
       [:year, :month, :day].each do |part|
         it "#{ part } should not be uncertain by default" do
-          uncertainty.uncertain?(part).should be false
+          expect(uncertainty.uncertain?(part)).to be false
         end
 
         it "#{ part } should be uncertain if set to uncertain" do
           uncertainty.send("#{part}=", true)
-          uncertainty.uncertain?(part).should be true
+          expect(uncertainty.uncertain?(part)).to be true
         end
         
         # ([:year, :month, :day, :hour, :minute, :second] - [part]).each do |other|
         ([:year, :month, :day] - [part]).each do |other|
           it "#{other} should not be uncertain if #{part} is uncertain" do
             uncertainty.send("#{part}=", true)
-            uncertainty.uncertain?(other).should be false
+            expect(uncertainty.uncertain?(other)).to be false
           end
         end
 
@@ -46,35 +46,35 @@ module EDTF
         describe 'with the default hash base (1)' do
 
           it 'returns 0 by default' do
-            Uncertainty.new.hash.should == 0
+            expect(Uncertainty.new.hash).to eq(0)
           end
           
           it 'returns 1 for uncertain year' do
-            Uncertainty.new.hash.should == 0
+            expect(Uncertainty.new.hash).to eq(0)
           end
 
           it 'returns 2 for uncertain month' do
-            Uncertainty.new.hash.should == 0
+            expect(Uncertainty.new.hash).to eq(0)
           end
 
           it 'returns 4 for uncertain day' do
-            Uncertainty.new.hash.should == 0
+            expect(Uncertainty.new.hash).to eq(0)
           end
 
           it 'returns 3 for uncertain year, month' do
-            Uncertainty.new(true, true).hash.should == 3
+            expect(Uncertainty.new(true, true).hash).to eq(3)
           end
 
           it 'returns 7 for uncertain year, month, day' do
-            Uncertainty.new(true, true, true).hash.should == 7
+            expect(Uncertainty.new(true, true, true).hash).to eq(7)
           end
 
           it 'returns 5 for uncertain year, day' do
-            Uncertainty.new(true, nil, true).hash.should == 5
+            expect(Uncertainty.new(true, nil, true).hash).to eq(5)
           end
 
           it 'returns 6 for uncertain month, day' do
-            Uncertainty.new(nil, true, true).hash.should == 6
+            expect(Uncertainty.new(nil, true, true).hash).to eq(6)
           end
           
         end
@@ -85,7 +85,7 @@ module EDTF
     
     describe '#uncertain!' do
       it 'should make all parts certain when no part given' do
-        lambda { uncertainty.uncertain! }.should change { uncertainty.certain? }
+        expect { uncertainty.uncertain! }.to change { uncertainty.certain? }
       end
     end
     
@@ -97,56 +97,56 @@ module EDTF
     
     describe '#unspecified?' do
       it 'should return false by default' do
-        u.should_not be_unspecified
+        expect(u).not_to be_unspecified
       end
       
       it 'should return true if the day is unspecified' do
-        u.unspecified!(:day).should be_unspecified
+        expect(u.unspecified!(:day)).to be_unspecified
       end
 
       it 'should return true if the month is unspecified' do
-        u.unspecified!(:month).should be_unspecified
+        expect(u.unspecified!(:month)).to be_unspecified
       end
 
       it 'should return true if the year is unspecified' do
-        u.unspecified!(:year).should be_unspecified
+        expect(u.unspecified!(:year)).to be_unspecified
       end
     end
     
     describe '#year' do
       it 'returns the year values' do
-        u.year.should == [nil,nil,nil,nil]
+        expect(u.year).to eq([nil,nil,nil,nil])
       end
       
       it 'allows you to set individual offsets' do
         u.year[1] = true
-        u.to_s.should == 'suss-ss-ss'
+        expect(u.to_s).to eq('suss-ss-ss')
       end
     end
     
     describe '#to_s' do
       it 'should be return "ssss-ss-ss" by default' do
-        u.to_s.should == 'ssss-ss-ss'
+        expect(u.to_s).to eq('ssss-ss-ss')
       end
       
       it 'should return "ssss-ss-uu" if the day is unspecified' do
-        u.unspecified!(:day).to_s.should == 'ssss-ss-uu'
+        expect(u.unspecified!(:day).to_s).to eq('ssss-ss-uu')
       end
 
       it 'should return "ssss-uu-ss" if the month is unspecified' do
-        u.unspecified!(:month).to_s.should == 'ssss-uu-ss'
+        expect(u.unspecified!(:month).to_s).to eq('ssss-uu-ss')
       end
 
       it 'should return "ssss-uu-uu" if month and day are unspecified' do
-        u.unspecified!([:day, :month]).to_s.should == 'ssss-uu-uu'
+        expect(u.unspecified!([:day, :month]).to_s).to eq('ssss-uu-uu')
       end
 
       it 'should return "uuuu-ss-ss" if the year is unspecified' do
-        u.unspecified!(:year).to_s.should == 'uuuu-ss-ss'
+        expect(u.unspecified!(:year).to_s).to eq('uuuu-ss-ss')
       end
 
       it 'should return "uuuu-uu-uu" if the date is unspecified' do
-        u.unspecified!.to_s.should == 'uuuu-uu-uu'
+        expect(u.unspecified!.to_s).to eq('uuuu-uu-uu')
       end
       
     end
@@ -155,7 +155,7 @@ module EDTF
 			
 			context 'when passed an empty array' do
 				it 'should return an empty array' do
-					u.mask([]).should == []
+					expect(u.mask([])).to eq([])
 				end
 			end
 			
@@ -163,14 +163,14 @@ module EDTF
 				let(:date) { ['1994'] }
 				
 				it 'should return the array with the year by default' do
-					u.mask(date).should == ['1994']
+					expect(u.mask(date)).to eq(['1994'])
 				end
 				
 				context 'when the year is unspecified' do
 					before(:each) { u.year[3] = true }
 					
 					it 'should return the array with the year and the fourth digit masked' do
-						u.mask(date).should == ['199u']
+						expect(u.mask(date)).to eq(['199u'])
 					end
 					
 				end
@@ -179,7 +179,7 @@ module EDTF
 					before(:each) { u.year[2,2] = [true,true] }
 					
 					it 'should return the array with the year and the third and fourth digit masked' do
-						u.mask(date).should == ['19uu']
+						expect(u.mask(date)).to eq(['19uu'])
 					end
 					
 				end
@@ -190,21 +190,21 @@ module EDTF
 				let(:date) { ['1994', '01'] }
 				
 				it 'should return the array with the year by default' do
-					u.mask(date).should == ['1994', '01']
+					expect(u.mask(date)).to eq(['1994', '01'])
 				end
 
 				context 'when the year is unspecified' do
 					before(:each) { u.year[3] = true }
 					
 					it 'should return the array with the year and the fourth digit masked' do
-						u.mask(date).should == ['199u', '01']
+						expect(u.mask(date)).to eq(['199u', '01'])
 					end
 					
 					context 'when the month is unspecified' do
 						before(:each) { u.unspecified! :month }
 
 						it 'should return the array with the month masked' do
-							u.mask(date).should == ['199u', 'uu']
+							expect(u.mask(date)).to eq(['199u', 'uu'])
 						end		
 					end
 				end
@@ -213,14 +213,14 @@ module EDTF
 					before(:each) { u.year[2,2] = [true,true] }
 					
 					it 'should return the array with the year and the third and fourth digit masked' do
-						u.mask(date).should == ['19uu', '01']
+						expect(u.mask(date)).to eq(['19uu', '01'])
 					end
 					
 					context 'when the month is unspecified' do
 						before(:each) { u.unspecified! :month }
 
 						it 'should return the array with the month masked' do
-							u.mask(date).should == ['19uu', 'uu']
+							expect(u.mask(date)).to eq(['19uu', 'uu'])
 						end		
 					end			
 				end
@@ -229,7 +229,7 @@ module EDTF
 					before(:each) { u.unspecified! :month }
 					
 					it 'should return the array with the month masked' do
-						u.mask(date).should == ['1994', 'uu']
+						expect(u.mask(date)).to eq(['1994', 'uu'])
 					end		
 				end				
 
@@ -239,28 +239,28 @@ module EDTF
 				let(:date) { ['1994', '01', '27'] }
 				
 				it 'should return the array with the date by default' do
-					u.mask(date).should == ['1994', '01', '27']
+					expect(u.mask(date)).to eq(['1994', '01', '27'])
 				end
 			
 				context 'when the year is unspecified' do
 					before(:each) { u.year[3] = true }
 					
 					it 'should return the array with the year and the fourth digit masked' do
-						u.mask(date).should == ['199u', '01', '27']
+						expect(u.mask(date)).to eq(['199u', '01', '27'])
 					end
 					
 					context 'when the month is unspecified' do
 						before(:each) { u.unspecified! :month }
 
 						it 'should return the array with the month masked' do
-							u.mask(date).should == ['199u', 'uu', '27']
+							expect(u.mask(date)).to eq(['199u', 'uu', '27'])
 						end		
 						
 						context 'when the day is unspecified' do
 							before(:each) { u.unspecified! :day }
 
 							it 'should return the array with the month masked' do
-								u.mask(date).should == ['199u', 'uu', 'uu']
+								expect(u.mask(date)).to eq(['199u', 'uu', 'uu'])
 							end		
 						end
 					end

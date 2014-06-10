@@ -4,7 +4,7 @@ module EDTF
 		describe 'constructor' do
 			
 			it 'creates a new empty set by default' do
-				Set.new.should be_empty
+				expect(Set.new).to be_empty
 			end
 			
 		end
@@ -12,34 +12,34 @@ module EDTF
 		describe '#edtf' do
 			
 			it 'returns {} by default' do
-				Set.new.edtf.should == '{}'
+				expect(Set.new.edtf).to eq('{}')
 			end
 
 			it 'returns [] for empty choice lists' do
-				Set.new.choice!.edtf.should == '[]'
+				expect(Set.new.choice!.edtf).to eq('[]')
 			end
 			
 			it 'returns {1984} if the set contains the year 1984' do
-				Set.new(Date.edtf('1984')).edtf.should == '{1984}'
+				expect(Set.new(Date.edtf('1984')).edtf).to eq('{1984}')
 			end
 			
 			it 'returns {1984, 1985-10} for the set containing these dates' do
-				Set.new(Date.edtf('1984'), Date.new(1984,10).month_precision).edtf.should == '{1984, 1984-10}'
+				expect(Set.new(Date.edtf('1984'), Date.new(1984,10).month_precision).edtf).to eq('{1984, 1984-10}')
 			end
 
 			it 'returns {..1984, 1985-10} for the set containing these dates and earlier == true' do
-				Set.new(Date.edtf('1984'), Date.new(1984,10).month_precision).earlier!.edtf.should == '{..1984, 1984-10}'
+				expect(Set.new(Date.edtf('1984'), Date.new(1984,10).month_precision).earlier!.edtf).to eq('{..1984, 1984-10}')
 			end
 
 			it 'returns {1984, 1985-10..} for the set containing these dates and later == true' do
-				Set.new(Date.edtf('1984'), Date.new(1984,10).month_precision).later!.edtf.should == '{1984, 1984-10..}'
+				expect(Set.new(Date.edtf('1984'), Date.new(1984,10).month_precision).later!.edtf).to eq('{1984, 1984-10..}')
 			end
 
 			it 'returns [1667, 1668, 1670..1672] for the years 1667, 1668 and the interval 1670..1672' do
 				s = Set.new.choice!
 				s << Date.edtf('1667') << Date.edtf('1668')
 				s << (Date.edtf('1670') .. Date.edtf('1672'))
-				s.edtf.should == '[1667, 1668, 1670..1672]'
+				expect(s.edtf).to eq('[1667, 1668, 1670..1672]')
 			end
 			
 		end
@@ -48,23 +48,23 @@ module EDTF
 			let(:set) { Set.new(Date.edtf('1667'), Date.edtf('1668'), Date.edtf('1670')..Date.edtf('1672')).choice! }
 		
 			it 'includes the year 1671' do
-				set.should include(Date.new(1671).year_precision!)
+				expect(set).to include(Date.new(1671).year_precision!)
 			end
 
 			it 'does not include the date 1671-01-01' do
-				set.should_not include(Date.new(1671))
+				expect(set).not_to include(Date.new(1671))
 			end
 
 			it 'does not include the year 1669' do
-				set.should_not include(Date.new(1669).year_precision!)
+				expect(set).not_to include(Date.new(1669).year_precision!)
 			end
 			
 			it 'has a length of 3' do
-				set.should have(3).elements
+				expect(set.size).to eq(3)
 			end
 			
 			it 'maps to the year array [1667, 1668, 1670, 1671, 1672]' do
-				set.map(&:year).should == [1667, 1668, 1670, 1671, 1672]
+				expect(set.map(&:year)).to eq([1667, 1668, 1670, 1671, 1672])
 			end
 		
 		end
