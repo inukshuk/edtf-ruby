@@ -12,7 +12,7 @@ group :development do
   gem 'rake'
   gem 'racc', :platform => :ruby
   gem 'cucumber'
-  gem 'rspec', '~>2.14'
+  gem 'rspec', '~>3.0'
   gem 'simplecov', '~>0.8', :require => false
   gem 'rubinius-coverage', :platform => :rbx
   gem 'coveralls', :require => false

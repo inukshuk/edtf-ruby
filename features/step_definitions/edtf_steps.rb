@@ -8,7 +8,7 @@ When /^I convert the date$/ do
 end
 
 Then /^the EDTF String should be "([^"]*)"$/i do |edtf|
-  @string.should == edtf
+  expect(@string).to eq(edtf)
 end
 
 When /^I parse the string "([^"]*)"$/ do |string|
@@ -16,35 +16,35 @@ When /^I parse the string "([^"]*)"$/ do |string|
 end
 
 Then /^the year should be "([^"]*)"$/ do |year|
-  @date.year.should == year.to_i
+  expect(@date.year).to eq(year.to_i)
 end
 
 Then /^the month should be "([^"]*)"$/ do |month|
-  @date.month.should == month.to_i
+  expect(@date.month).to eq(month.to_i)
 end
 
 Then /^the day should be "([^"]*)"$/ do |day|
-  @date.day.should == day.to_i
+  expect(@date.day).to eq(day.to_i)
 end
 
 Then /^the hours should be "([^"]*)"$/ do |hours|
-  @date.hour.should == hours.to_i
+  expect(@date.hour).to eq(hours.to_i)
 end
 
 Then /^the year should be "([^"]*)" \(UTC\)$/ do |year|
-  @date.to_time.utc.year.should == year.to_i
+  expect(@date.to_time.utc.year).to eq(year.to_i)
 end
 
 Then /^the month should be "([^"]*)" \(UTC\)$/ do |month|
-  @date.to_time.utc.month.should == month.to_i
+  expect(@date.to_time.utc.month).to eq(month.to_i)
 end
 
 Then /^the day should be "([^"]*)" \(UTC\)$/ do |day|
-  @date.to_time.utc.day.should == day.to_i
+  expect(@date.to_time.utc.day).to eq(day.to_i)
 end
 
 Then /^the hours should be "([^"]*)" \(UTC\)$/ do |hours|
-  @date.to_time.utc.hour.should == hours.to_i
+  expect(@date.to_time.utc.hour).to eq(hours.to_i)
 end
 
 

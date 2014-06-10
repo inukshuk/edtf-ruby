@@ -52,11 +52,11 @@ module EDTF
 			end
 
 			it 'does not include the date 1671-01-01' do
-				expect(set).not_to include(Date.new(1671))
+				expect(set.include?(Date.new(1671))).to be false
 			end
 
 			it 'does not include the year 1669' do
-				expect(set).not_to include(Date.new(1669).year_precision!)
+				expect(set.include?(Date.new(1669).year_precision!)).to be false
 			end
 			
 			it 'has a length of 3' do
