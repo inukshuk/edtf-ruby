@@ -63,7 +63,7 @@ precision to month, however, the natural successor is not the next day, but
 a day a month from now. Always keep precision in mind when comparing dates,
 too:
 
-    > Date.new(1666).year_precision! == Date.new(1966)
+    > Date.new(1966).year_precision! == Date.new(1966)
     => false
 
 The year 1666 is not equal to the January 1st, 1966. You can set a date's
