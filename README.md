@@ -66,7 +66,7 @@ too:
     > Date.new(1966).year_precision! == Date.new(1966)
     => false
 
-The year 1666 is not equal to the January 1st, 1966. You can set a date's
+The year 1966 is not equal to the January 1st, 1966. You can set a date's
 precision directly, or else use the dedicated bang! methods:
 
     > d = Date.new(1993)
