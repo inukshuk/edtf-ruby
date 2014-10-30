@@ -26,6 +26,11 @@ end
 gem 'i18n'
 
 platform :rbx do
-  gem 'rubysl', '~>2.0'
+  gem 'rubysl-singleton', '~>2.0'
+  gem 'rubysl-open3', '~>2.0'
+  gem 'rubysl-enumerator', '~>2.0'
+  gem 'rubysl-base64', '~>2.0'
+  gem 'rubysl-bigdecimal', '~>2.0'
+  gem 'rubysl-drb', '~>2.0'
   gem 'json'
 end
