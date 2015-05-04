@@ -49,69 +49,69 @@ end
 
 
 Then /^the minutes should be "([^"]*)"$/ do |minutes|
-  @date.min.should == minutes.to_i
+  expect(@date.min).to eq(minutes.to_i)
 end
 
 Then /^the seconds should be "([^"]*)"$/ do |seconds|
-  @date.sec.should == seconds.to_i
+  expect(@date.sec).to eq(seconds.to_i)
 end
 
 Then /^the duration should range from "([^"]*)" to "([^"]*)"$/ do |from,to|
-  [@date.begin.year.to_s, @date.end.year.to_s].should == [from,to]
+  expect([@date.begin.year.to_s, @date.end.year.to_s]).to eq([from,to])
 end
 
 Then /^the interval should start at "([^"]*)"$/ do |date|
-  @date.begin.to_s.should == date
+  expect(@date.begin.to_s).to eq(date)
 end
 
 Then /^the interval should end at "([^"]*)"$/ do |date|
-  @date.end.to_s.should == date
+  expect(@date.end.to_s).to eq(date)
 end
 
 Then /^the interval should include the date "([^"]*)"$/ do |date|
-  @date.should include(Date.parse(date))
+  expect(@date).to include(Date.parse(date))
 end
 
 Then /^the interval should cover the date "([^"]*)"$/ do |date|
-  @date.should be_cover(Date.parse(date))
+  expect(@date).to be_cover(Date.parse(date))
 end
 
 
 Then /^the date should be uncertain\? "([^"]*)"$/ do |arg1|
-  @date.uncertain?.should == !!(arg1 =~ /y(es)?/i)
+  expect(@date.uncertain?).to eq(!!(arg1 =~ /y(es)?/i))
 end
 
 Then /^the year should be uncertain\? "([^"]*)"$/ do |arg1|
-  @date.uncertain?(:year).should == !!(arg1 =~ /y(es)?/i)
+  expect(@date.uncertain?(:year)).to eq(!!(arg1 =~ /y(es)?/i))
 end
 
 Then /^the month should be uncertain\? "([^"]*)"$/ do |arg1|
-  @date.uncertain?(:month).should == !!(arg1 =~ /y(es)?/i)
+  expect(@date.uncertain?(:month)).to eq(!!(arg1 =~ /y(es)?/i))
 end
 
 Then /^the day should be uncertain\? "([^"]*)"$/ do |arg1|
-  @date.uncertain?(:day).should == !!(arg1 =~ /y(es)?/i)
+  expect(@date.uncertain?(:day)).to eq(!!(arg1 =~ /y(es)?/i))
 end
 
 Then /^the date should be approximate\? "([^"]*)"$/ do |arg1|
-  @date.approximate?.should == !!(arg1 =~ /y(es)?/i)
+  expect(@date.approximate?).to eq(!!(arg1 =~ /y(es)?/i))
 end
 
 Then /^the year should be approximate\? "([^"]*)"$/ do |arg1|
-  @date.approximate?(:year).should == !!(arg1 =~ /y(es)?/i)
+  expect(@date.approximate?(:year)).to eq(!!(arg1 =~ /y(es)?/i))
 end
 
 Then /^the month should be approximate\? "([^"]*)"$/ do |arg1|
-  @date.approximate?(:month).should == !!(arg1 =~ /y(es)?/i)
+  expect(@date.approximate?(:month)).to eq(!!(arg1 =~ /y(es)?/i))
 end
 
 Then /^the day should be approximate\? "([^"]*)"$/ do |arg1|
-  @date.approximate?(:day).should == !!(arg1 =~ /y(es)?/i)
+  expect(@date.approximate?(:day)).to eq(!!(arg1 =~ /y(es)?/i))
 end
 
 
 Then /^the unspecified string code be "([^"]*)"$/ do |arg1|
-  @date.unspecified.to_s.should == arg1
+  expect(@date.unspecified.to_s).to eq(arg1)
 end
 
 When /^I parse the following strings an error should be raised:$/ do |table|

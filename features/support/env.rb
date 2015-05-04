@@ -13,7 +13,7 @@ begin
   when defined?(RUBY_ENGINE) && RUBY_ENGINE == 'rbx'
     require 'rubinius/debugger'
   else
-    require 'debugger'
+    require 'byebug'
   end
 rescue LoadError
   # ignore
