@@ -44,7 +44,9 @@ module EDTF
     end
 
     def edtf
-      parenthesize(dates.map { |d| d.respond_to?(:edtf) ? d.edtf : d.to_s }.sort.join(', '))
+      parenthesize(dates.map { |d|
+        d.respond_to?(:edtf) ? d.edtf : d.to_s
+      }.sort.join(','))
     end
 
     def to_a
