@@ -13,7 +13,7 @@ class Date
   }.freeze
 
   EXTENDED_ATTRIBUTES = %w{
-    calendar precision uncertain approximate unspecified
+    calendar precision uncertain approximate unspecified skip_timezone
   }.map(&:to_sym).freeze
 
   extend Forwardable
@@ -31,7 +31,7 @@ class Date
     end
   end
 
-  attr_accessor :calendar
+  attr_accessor :calendar, :skip_timezone
 
   PRECISION.each do |p|
     define_method("#{p}_precision?") { precision == p }
@@ -162,6 +162,9 @@ class Date
   # Returns true if the Date has an EDTF calendar string attached.
   def calendar?; !!@calendar; end
 
+  # Returns true if the Date's EDTF string should be printed without timezone.
+  def skip_timezone?; !!@skip_timezone; end
+
   # Converts the Date into a season.
   def season
     Season.new(self)
@@ -192,7 +195,7 @@ class Date
       y << SYMBOLS[:approximate] if 24&h==8 || 27&h==26
 
 
-      # combine if false-true-true and other m == d 
+      # combine if false-true-true and other m == d
       if 7&h==6 && (48&h==48 || 48&h==0)  || 56&h==48 && (6&h==6 || 6&h==0)
         m[0,0] = '('
         d << ')'

@@ -34,7 +34,8 @@ rule
 
 
   date_time : date T time {
-   result = DateTime.new(val[0].year, val[0].month, val[0].day, *val[2])
+    result = DateTime.new(val[0].year, val[0].month, val[0].day, *val[2])
+    result.skip_timezone = (val[2].length == 3)
   }
 
   time : base_time
@@ -53,8 +54,8 @@ rule
   positive_zone_offset : zone_offset_hour
                        | '0' '0' ':' '0' '0' { result = 0 }
                        ;
-           
-           
+
+
   zone_offset_hour : d01_13 ':' minute   { result = Rational(val[0] * 60 + val[2], 1440) }
                    | '1' '4' ':' '0' '0' { result = Rational(840, 1440) }
                    | '0' '0' ':' d01_59  { result = Rational(val[3], 1440) }
@@ -66,7 +67,7 @@ rule
 
   month : d01_12
   day : d01_31
-   
+
   year_month : year '-' month { result = [val[0], val[2]] }
 
   # We raise an exception if there are two many days for the month, but
@@ -134,7 +135,7 @@ rule
   }
 
   level_1_start : date | partial_uncertain_or_approximate | unspecified | partial_unspecified | UNKNOWN
-             
+
   level_1_end : level_1_start | OPEN
 
 
@@ -150,7 +151,7 @@ rule
       result.precision = :year
     }
     ;
-         
+
   long_year :
     positive_digit digit digit digit digit {
       result = val.zip([10000,1000,100,10,1]).reduce(0) { |s,(a,b)| s += a * b }
@@ -233,11 +234,11 @@ rule
        | list_elements                        { result = EDTF::Set.new(*val[0]) }
        | later                                { result = EDTF::Set.new(val[0]).later! }
        ;
-        
+
   list_elements : list_element                   { result = [val[0]].flatten }
                 | list_elements ',' list_element { result = val[0] + [val[2]].flatten }
                 ;
-     
+
   list_element : atomic
                | consecutives
                ;
@@ -289,18 +290,18 @@ rule
       result.unspecified!(:month)
     }
     ;
- 
+
 
   partial_uncertain_or_approximate : pua_base
     | '(' pua_base ')' UA { result = uoa(val[1], val[3]) }
-  
+
   pua_base :
     pua_year             { result = val[0].year_precision! }
     | pua_year_month     { result = val[0][0].month_precision! }
     | pua_year_month_day { result = val[0].day_precision! }
-  
+
   pua_year : year UA { result = uoa(Date.new(val[0]), val[1], :year) }
-  
+
   pua_year_month :
     pua_year '-' month ua {
       result = [uoa(val[0].change(:month => val[2]), val[3], [:month, :year])]
@@ -315,7 +316,7 @@ rule
         result = [uoa(val[0].change(:month => val[2]), val[4], [:month]), true]
     }
     ;
-  
+
   pua_year_month_day :
     pua_year_month '-' day ua {
       result = uoa(val[0][0].change(:day => val[2]), val[3], val[0][1] ? [:day] : nil)
@@ -355,7 +356,7 @@ rule
     #     result = [uoa(result, val[7], [:year]), true]
     # }
     ;
- 
+
   ua : { result = [] } | UA
 
   # ---- Auxiliary Rules ----
@@ -363,7 +364,7 @@ rule
   digit : '0' { result = 0 }
         | positive_digit
         ;
-    
+
   positive_digit : '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
 
   d01_12 : '0' positive_digit { result = val[1] }
@@ -375,7 +376,7 @@ rule
   d01_13 : d01_12
          | '1' '3'            { result = 13 }
          ;
-     
+
   d01_23 : '0' positive_digit { result = val[1] }
          | '1' digit          { result = 10 + val[1] }
          | '2' '0'            { result = 20 }
@@ -410,7 +411,7 @@ rule
          | '4' digit { result = 40 + val[1] }
          | '5' digit { result = 50 + val[1] }
          ;
-    
+
   d00_59 : '0' '0'
          | d01_59
          ;
@@ -442,32 +443,32 @@ require 'strscan'
     :level => 2,
     :debug => false
   }.freeze
-  
+
   class << self; attr_reader :defaults; end
-  
+
   attr_reader :options
-  
+
   def initialize(options = {})
     @options = Parser.defaults.merge(options)
   end
-  
+
   def debug?
     !!(options[:debug] || ENV['DEBUG'])
   end
-  
+
   def parse(input)
     parse!(input)
   rescue => e
     warn e.message if debug?
     nil
   end
-  
+
   def parse!(input)
     @yydebug = debug?
     @src = StringScanner.new(input)
     do_parse
   end
-  
+
   def on_error(tid, value, stack)
     raise ArgumentError,
       "failed to parse date: unexpected '#{value}' at #{stack.inspect}"
@@ -479,9 +480,9 @@ require 'strscan'
     end
     date
   end
-  
+
   alias uoa apply_uncertainty
-  
+
   def next_token
     case
     when @src.eos?
@@ -489,7 +490,7 @@ require 'strscan'
     # when @src.scan(/\s+/)
       # ignore whitespace
     when @src.scan(/\(/)
-      ['(', @src.matched] 
+      ['(', @src.matched]
     # when @src.scan(/\)\?~-/)
     #   [:PUA, [:uncertain!, :approximate!]]
     # when @src.scan(/\)\?-/)
