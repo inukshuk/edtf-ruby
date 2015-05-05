@@ -4,7 +4,7 @@ EDTF-Ruby
 [![Coverage Status](https://coveralls.io/repos/inukshuk/edtf-ruby/badge.png)](https://coveralls.io/r/inukshuk/edtf-ruby)
 
 EDTF-Ruby comprises a parser and an API implementation of the [Extended
-Date/Time Format standard](http://www.loc.gov/standards/datetime/spec.html).
+Date/Time Format standard](http://www.loc.gov/standards/datetime/).
 
 
 Compatibility
