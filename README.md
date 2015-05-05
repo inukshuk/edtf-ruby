@@ -213,7 +213,7 @@ and the `choice` attribute.
     => false
     > s.choice!
     > s.edtf
-    => "[1667, 1668, 1670..1672]"
+    => "[1667,1668,1670..1672]"
 
 As you can see above, EDTF-Ruby remembers which parts of the set were
 specified as a range; ranges are however enumerated for membership tests:
@@ -233,7 +233,7 @@ When in doubt, you can always map the set to an array. This will also
 enumerate all ranges:
 
     > s.map(&:year)
-    => [1667, 1668, 1670, 1671, 1672] # when enumerated there are 5 elements
+    => [1667,1668,1670,1671,1672] # when enumerated there are 5 elements
 
 EDTF sets also feature an `#earlier?` and `#later?` attribute:
 
@@ -241,7 +241,7 @@ EDTF sets also feature an `#earlier?` and `#later?` attribute:
     => false
     > s.earlier!
     > s.edtf
-    => "[..1667, 1668, 1670..1672]"
+    => "[..1667,1668,1670..1672]"
 
 
 ### Decades and Centuries
