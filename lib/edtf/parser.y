@@ -92,7 +92,9 @@ rule
   # ---- Level 1 Extension Rules ----
 
   # NB: Uncertain/approximate Dates are covered by the Level 2 rules
-  level_1_expression : unspecified | level_1_interval | long_year_simple | season
+  level_1_expression : unknown | unspecified | level_1_interval | long_year_simple | season
+
+  unknown : U U U U { result = EDTF::Unknown.new }
 
   # uncertain_or_approximate_date : date UA { result = uoa(val[0], val[1]) }
 

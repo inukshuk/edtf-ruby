@@ -58,6 +58,7 @@ require 'edtf/epoch'
 require 'edtf/season'
 require 'edtf/interval'
 require 'edtf/set'
+require 'edtf/unknown'
 require 'edtf/parser'
 require 'edtf/extensions'
 

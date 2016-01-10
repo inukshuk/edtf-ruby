@@ -109,6 +109,9 @@ Then /^the day should be approximate\? "([^"]*)"$/ do |arg1|
   expect(@date.approximate?(:day)).to eq(!!(arg1 =~ /y(es)?/i))
 end
 
+Then /^the result should be an Unknown$/ do
+  expect(@date).to be_an(EDTF::Unknown)
+end
 
 Then /^the unspecified string code be "([^"]*)"$/ do |arg1|
   expect(@date.unspecified.to_s).to eq(arg1)
