@@ -70,7 +70,7 @@ module EDTF
     
     # Returns true if the precisions of start and end date are not the same.
     def mixed_precision?
-      min.precsion != max.precision
+      min.precision != max.precision
     end
     
     def each(&block)
