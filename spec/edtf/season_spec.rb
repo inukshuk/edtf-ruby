@@ -75,7 +75,7 @@ module EDTF
       end
 
       it 'throws an exception if given invalid season code' do
-        expect { subject.season = 13 }.to raise_error
+        expect { subject.season = 13 }.to raise_error(NoMethodError)
       end
     end
 
