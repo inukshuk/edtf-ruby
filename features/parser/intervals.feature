@@ -1,11 +1,11 @@
 Feature: EDTF parses ISO 8601 interval strings
 	As a user of edtf-ruby
 	I want to parse ISO 8601 interval strings
-	
+
 	Scenario Outline: parse intervals
 		When I parse the string "<string>"
 		Then the interval should cover the date "<date>"
-	
+
 	@004 @level0
 	Scenarios: specification intervals
 		| string                | date       |
