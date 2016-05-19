@@ -174,7 +174,9 @@ class Date
   def edtf
     return "y#{year}" if long_year?
 
-    s = FORMATS.take(values.length).zip(values).map { |f,v| f % v }
+    v = values
+    s = FORMATS.take(v.length).zip(v).map { |f,d| f % d.abs }
+    s[0] = "-#{s[0]}" if year.negative?
     s = unspecified.mask(s)
 
     unless (h = ua_hash).zero?

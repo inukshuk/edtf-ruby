@@ -9,6 +9,12 @@ Feature: Print Date/Time objects as Level 0 EDTF strings
     Then the EDTF string should be "2004-08-12"
 
   @001 @level0
+  Scenario: Convert simple negative dates
+    Given the date "-0300-08-12"
+    When I convert the date
+    Then the EDTF string should be "-0300-08-12"
+
+  @001 @level0
   Scenario: Convert simple dates with precision
     Given the date "1980-08-24" with precision set to "day"
     When I convert the date
