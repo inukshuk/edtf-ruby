@@ -176,7 +176,7 @@ class Date
 
     v = values
     s = FORMATS.take(v.length).zip(v).map { |f,d| f % d.abs }
-    s[0] = "-#{s[0]}" if year.negative?
+    s[0] = "-#{s[0]}" if year < 0
     s = unspecified.mask(s)
 
     unless (h = ua_hash).zero?
