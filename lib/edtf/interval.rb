@@ -29,10 +29,28 @@ module EDTF
     def_delegators :to_range, :eql?, :hash
     def_delegators :to_a, :length, :empty?
 
-    attr_accessor :from, :to
+    attr_reader :from, :to
 
     def initialize(from = Date.today, to = :open)
-      @from, @to = from, to
+      self.from, self.to = from, to
+    end
+
+    def from=(date)
+      case date
+      when Date, :unknown
+        @from = date
+      else
+        throw ArgumentError.new("Intervals cannot start with: #{date}")
+      end
+    end
+
+    def to=(date)
+      case date
+      when Date, :unknown, :open
+        @to = date
+      else
+        throw ArgumentError.new("Intervals cannot end with: #{date}")
+      end
     end
 
     [:open, :unknown].each do |method_name|

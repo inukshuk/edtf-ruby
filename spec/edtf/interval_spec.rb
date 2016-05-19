@@ -132,5 +132,10 @@ module EDTF
       end
     end
 
+    it 'may not have an open start' do
+      expect(
+        proc { Interval.new(:open, Date.today) }
+      ).to raise_error(ArgumentError)
+    end
   end
 end
