@@ -26,6 +26,11 @@ but we are not testing compatibility actively anymore). Active Support's date
 extensions are currently listed as a dependency, because of many functional
 overlaps (version 3.x and 4.x are supported).
 
+### ISO 8601-2
+
+A variation of EDTF will part of the upcoming ISO 8601-2 standard. EDTF-Ruby
+does not support this new version of EDTF yet, but if you are curious,
+[EDTF.js](inukshuk/edtf.js), an ES6 implementation is already available.
 
 Quickstart
 ----------
