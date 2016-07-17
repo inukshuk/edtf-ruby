@@ -5,6 +5,9 @@ cache: bundler
 before_install:
   - gem install bundler
 script: bundle exec rake test_with_coveralls
+gemfile:
+  - gemfiles/activesupport_4.gemfile
+  - gemfiles/activesupport_5.gemfile
 rvm:
   - 2.2
   - 2.1

@@ -6,3 +6,4 @@ lib/edtf/parser.output
 *.swp
 .bundle
 coverage
+gemfiles/*.gemfile.lock
