@@ -9,13 +9,9 @@ rvm:
   - 2.3.1
   - 2.2.5
   - jruby-9.0.5.0
-  - rbx-2.2.6
 notifications:
   email:
     - sk@semicolon.at
     - namyra@gmail.com
   on_success: change
-  on_failure: always
-matrix:
-  allow_failures:
-   - rvm: rbx-2.2.6
+  on_failure: change
