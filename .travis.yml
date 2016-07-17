@@ -6,10 +6,10 @@ before_install:
   - gem install bundler
 script: bundle exec rake test_with_coveralls
 rvm:
-  - 2.3
+  - 2.3.1
   - 2.2.5
   - jruby-9.0.5.0
-  - rbx-2.2.7
+  - rbx-2.2.6
 notifications:
   email:
     - sk@semicolon.at
@@ -18,4 +18,4 @@ notifications:
   on_failure: always
 matrix:
   allow_failures:
-   - rvm: rbx-2.2.7
+   - rvm: rbx-2.2.6
