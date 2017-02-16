@@ -186,6 +186,31 @@ module EDTF
 				
 			end
 			
+      context 'when passed an array with a negative year string' do
+        let(:date) { ['-1994'] }
+          
+        it 'should return the array with the year by default' do
+          expect(u.mask(date)).to eq(['-1994'])
+        end
+
+        context 'when the year is unspecified' do
+          before(:each) { u.year[3] = true }
+          
+          it 'should return the array with the year and the fourth digit masked' do
+            expect(u.mask(date)).to eq(['-199u'])
+          end      
+        end
+
+        context 'when the decade is unspecified' do
+          before(:each) { u.year[2,2] = [true,true] }
+          
+          it 'should return the array with the year and the third and fourth digit masked' do
+            expect(u.mask(date)).to eq(['-19uu'])
+          end
+          
+        end
+      end
+
 			context 'when passed an array with a year-month string' do
 				let(:date) { ['1994', '01'] }
 				
