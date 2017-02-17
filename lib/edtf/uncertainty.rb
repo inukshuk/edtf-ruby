@@ -86,9 +86,15 @@ module EDTF
     end
 
     def mask(values)
-      values.zip(members.take(values.length)).map do |value, mask|
+      if values[0] && values[0][0] == "-"
+        values[0].delete!("-") 
+        negative_year = true
+      end
+      results = values.zip(members.take(values.length)).map do |value, mask|
         value.split(//).zip(send(mask)).map { |v,m| m ? U : v }.join
       end
+      results[0] = "-#{results[0]}" if negative_year
+      results
     end
   end
 
