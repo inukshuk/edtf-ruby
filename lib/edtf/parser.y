@@ -92,7 +92,7 @@ rule
   # ---- Level 1 Extension Rules ----
 
   # NB: Uncertain/approximate Dates are covered by the Level 2 rules
-  level_1_expression : unknown | unspecified | level_1_interval | long_year_simple | season
+  level_1_expression : unknown | unspecified | negative_unspecified | level_1_interval | long_year_simple | season
 
   unknown : U U U U { result = EDTF::Unknown.new }
 
@@ -130,6 +130,8 @@ rule
   unspecified_day_and_month : year '-' U U '-' U U {
     result = Date.new(val[0]).unspecified!([:day,:month])
   }
+
+  negative_unspecified :  '-' unspecified { result = -val[1] }
 
 
   level_1_interval : level_1_start '/' level_1_end {
