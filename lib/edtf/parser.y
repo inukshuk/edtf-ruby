@@ -20,17 +20,11 @@ rule
                      | date_time
                      ;
 
-  date : positive_date
-       | negative_date
-       ;
-
-  positive_date :
+  date :
     year             { result = Date.new(val[0]).year_precision! }
     | year_month     { result = Date.new(*val.flatten).month_precision! }
     | year_month_day { result = Date.new(*val.flatten).day_precision! }
     ;
-
-  negative_date :  '-' positive_date { result = -val[1] }
 
 
   date_time : date T time {
@@ -61,7 +55,10 @@ rule
                    | '0' '0' ':' d01_59  { result = Rational(val[3], 1440) }
                    ;
 
-  year : digit digit digit digit {
+  year : positive_year
+       | '-' positive_year { result = -val[1] }
+
+  positive_year : digit digit digit digit {
     result = val.zip([1000,100,10,1]).reduce(0) { |s,(a,b)| s += a * b }
   }
 
@@ -108,7 +105,14 @@ rule
               | unspecified_day_and_month
               ;
 
-  unspecified_year :
+  unspecified_year : positive_unspecified_year
+                   | '-' positive_unspecified_year
+                   {
+                     result = val[1]
+                     result[0] = -result[0]
+                   }
+
+  positive_unspecified_year :
     digit digit digit U
     {
       result = [val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }, [false,true]]
