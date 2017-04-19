@@ -16,6 +16,7 @@ group :development do
   gem 'simplecov', '~>0.8', :require => false
   gem 'rubinius-coverage', :platform => :rbx
   gem 'coveralls', :require => false
+  gem 'appraisal'
 end
 
 group :extra do
