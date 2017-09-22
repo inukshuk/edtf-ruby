@@ -13,9 +13,9 @@ group :development do
   gem 'racc', :platform => :ruby
   gem 'cucumber'
   gem 'rspec', '~>3.0'
-  gem 'simplecov', '~>0.8', :require => false
+  gem 'simplecov', :require => false
   gem 'rubinius-coverage', :platform => :rbx
-  gem 'coveralls', :require => false
+  gem 'coveralls', '~>0.8', :require => false
 end
 
 group :extra do
