@@ -256,7 +256,7 @@ rule
 
   earlier : DOTS date { result = val[1] }
 
-  later : year_month_day DOTS { result = Date.new(*val[0]).year_precision! }
+  later : year_month_day DOTS { result = Date.new(*val[0]).day_precision! }
         | year_month DOTS     { result = Date.new(*val[0]).month_precision! }
         | year DOTS           { result = Date.new(val[0]).year_precision! }
         ;

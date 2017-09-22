@@ -66,7 +66,16 @@ module EDTF
       it 'maps to the year array [1667,1668,1670,1671,1672]' do
         expect(set.map(&:year)).to eq([1667, 1668, 1670, 1671, 1672])
       end
+    end
 
+    describe 'the set [1984,1985-10-01..]' do
+      let(:s1) { Set.new(Date.edtf('1984'), Date.edtf('1985-10-01')).later! }
+      let(:s2) { Date.edtf('[1984,1985-10-01..]') }
+
+      it 'has varying precision' do
+        expect(s1.map(&:precision)).to eq([:year, :day])
+        expect(s2.map(&:precision)).to eq([:year, :day])
+      end
     end
 
   end

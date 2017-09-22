@@ -1332,7 +1332,7 @@ module_eval(<<'.,.,', 'parser.y', 256)
 
 module_eval(<<'.,.,', 'parser.y', 258)
   def _reduce_99(val, _values, result)
-     result = Date.new(*val[0]).year_precision! 
+     result = Date.new(*val[0]).day_precision! 
     result
   end
 .,.,
