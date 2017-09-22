@@ -30,7 +30,7 @@ overlaps (version 3.x and 4.x are supported).
 
 A variation of EDTF will part of the upcoming ISO 8601-2 standard. EDTF-Ruby
 does not support this new version of EDTF yet, but if you are curious,
-[EDTF.js](inukshuk/edtf.js), an ES6 implementation is already available.
+[EDTF.js](https://github.com/inukshuk/edtf.js), an ES6 implementation is already available.
 
 Quickstart
 ----------
