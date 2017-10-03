@@ -31,19 +31,19 @@ Then /^the hours should be "([^"]*)"$/ do |hours|
   expect(@date.hour).to eq(hours.to_i)
 end
 
-Then /^the year should be "([^"]*)" \(UTC\)$/ do |year|
+Then /^the year should be "([^"]*)" UTC$/ do |year|
   expect(@date.to_time.utc.year).to eq(year.to_i)
 end
 
-Then /^the month should be "([^"]*)" \(UTC\)$/ do |month|
+Then /^the month should be "([^"]*)" UTC$/ do |month|
   expect(@date.to_time.utc.month).to eq(month.to_i)
 end
 
-Then /^the day should be "([^"]*)" \(UTC\)$/ do |day|
+Then /^the day should be "([^"]*)" UTC$/ do |day|
   expect(@date.to_time.utc.day).to eq(day.to_i)
 end
 
-Then /^the hours should be "([^"]*)" \(UTC\)$/ do |hours|
+Then /^the hours should be "([^"]*)" UTC$/ do |hours|
   expect(@date.to_time.utc.hour).to eq(hours.to_i)
 end
 
