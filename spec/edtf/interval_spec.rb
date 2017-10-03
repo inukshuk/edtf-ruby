@@ -106,6 +106,26 @@ module EDTF
 
     end
 
+    describe 'the interval 2008/unknown' do
+      let(:interval) { Date.edtf('2008/unknown') }
+
+      it { expect(interval).to be_unknown }
+      it { expect(interval).to be_unknown_end }
+      it { expect(interval).not_to be_unknown_start }
+
+      it 'the min date is 2008-01-01' do
+        expect(interval.min.to_s).to eq('2008-01-01')
+      end
+
+      it 'the min date has year precision' do
+        expect(interval.min).to be_year_precision
+      end
+
+      it 'the max date is nil' do
+        expect(interval.max).to be nil
+      end
+    end
+
     describe 'comparisions' do
       it '2007/2009 should be greater than 2001/2002' do
         expect(Date.edtf('2007/2009')).to be > Date.edtf('2001/2002')
