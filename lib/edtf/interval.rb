@@ -216,7 +216,7 @@ module EDTF
         to_a.min(&Proc.new)
       else
         case
-        when unknown_start?, !open? && to < from
+        when unknown_start?, !unknown_end? && !open? && to < from
           nil
         when from.day_precision?
           from
