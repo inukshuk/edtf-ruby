@@ -2,8 +2,6 @@ language: ruby
 bundler_args: --without debug extra
 sudo: false
 cache: bundler
-before_install:
-  - gem install bundler
 script: bundle exec rake test_with_coveralls
 rvm:
   - 2.5.0
