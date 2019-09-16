@@ -15,7 +15,7 @@ Gem::Specification.new do |s|
   s.description = 'A Ruby implementation of the Extended Date/Time Format (EDTF).'
   s.license     = 'BSD-2-Clause-FreeBSD'
 
-  s.add_runtime_dependency('activesupport', '>= 3.0', '< 6.0')
+  s.add_runtime_dependency('activesupport', '>= 3.0', '< 7.0')
 
   s.files        = `git ls-files`.split("\n") << 'lib/edtf/parser.rb'
   s.test_files   = `git ls-files -- {test,spec,features}/*`.split("\n")
