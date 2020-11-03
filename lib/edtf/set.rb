@@ -34,9 +34,9 @@ module EDTF
       self
     end
 
-    def each
+    def each(&block)
       if block_given?
-        to_a.each(&Proc.new)
+        to_a.each(&block)
         self
       else
         to_enum

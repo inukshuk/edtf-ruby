@@ -61,9 +61,9 @@ module EDTF
       false
     end
 
-    def each
+    def each(&block)
       if block_given?
-        to_range.each(&Proc.new)
+        to_range.each(&block)
       else
         to_enum
       end
