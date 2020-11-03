@@ -49,6 +49,7 @@ module EDTF
       it 'parses unspecified dates' do
         expect(Parser.new.parse('199u')).to be_unspecified
         expect(Parser.new.parse('1999-uu-uu')).to be_unspecified
+        expect(Parser.new.parse('199u-01')).to be_unspecified
       end
 
       it 'parses negative unspecified dates' do

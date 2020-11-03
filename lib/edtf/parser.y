@@ -272,6 +272,12 @@ rule
       result = Date.new(val[0][0], val[2], val[4])
       result.unspecified.year[2,2] = val[0][1]
     }
+    | unspecified_year '-' month
+    {
+      result = Date.new(val[0][0], val[2], 1)
+      result.month_precision!
+      result.unspecified.year[2,2] = val[0][1]
+    }
     | unspecified_year '-' U U '-' day
     {
       result = Date.new(val[0][0], 1, val[5])
