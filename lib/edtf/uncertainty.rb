@@ -5,17 +5,17 @@ module EDTF
   class Uncertainty < Struct.new(:year, :month, :day)
 
     attr_reader :hash_base
-    
+
     def initialize(year = nil, month = nil, day = nil, hash_base = 1)
       @hash_base = hash_base
       super(year, month, day)
     end
-    
+
     def hash_base=(base)
       @hash_map = false
       @hash_base = base
     end
-    
+
     def uncertain?(parts = members)
       [*parts].any? { |p| !!send(p) }
     end
@@ -31,27 +31,28 @@ module EDTF
       [*parts].each { |p| send("#{p}=", false) }
       self
     end
-    
+
     def eql?(other)
       hash == other.hash
     end
-    
+
     def hash
       values.zip(hash_map).reduce(0) { |s, (v, h)|  s + (v ? h : 0) }
     end
-    
-    private 
-    
+
+    private
+
     def hash_map
       @hash_map ||= (0...length).map { |i| hash_base << i }
     end
-    
+
   end
 
 
   class Unspecified < Struct.new(:year, :month, :day)
 
-    U = 'u'.freeze
+    # U = 'u'.freeze
+    X = 'X'.freeze
 
     def initialize
       super Array.new(4),Array.new(2), Array.new(2)
@@ -87,11 +88,11 @@ module EDTF
 
     def mask(values)
       if values[0] && values[0][0] == "-"
-        values[0].delete!("-") 
+        values[0].delete!("-")
         negative_year = true
       end
       results = values.zip(members.take(values.length)).map do |value, mask|
-        value.split(//).zip(send(mask)).map { |v,m| m ? U : v }.join
+        value.split(//).zip(send(mask)).map { |v,m| m ? X : v }.join
       end
       results[0] = "-#{results[0]}" if negative_year
       results

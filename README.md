@@ -135,9 +135,11 @@ state of dates in Ruby:
 As you can see above, you can use the bang! methods to set individual date
 parts.
 
-In addition, EDTF supports *unspecified* date parts:
+In addition, EDTF supports *unspecified* date parts. EDTF-Ruby provides parsing
+for both the draft and finalized EDTF specifications, with output meeting the
+requirements of the final specification:
 
-    > d = Date.edtf('1999-03-uu')
+    > d = Date.edtf('1999-03-XX')
     > d.unspecified?
     => true
     > d.unspecified? :year
@@ -146,7 +148,11 @@ In addition, EDTF supports *unspecified* date parts:
     => true
     > d.unspecified! :month
     > d.edtf
-    => "1999-uu-uu"
+    => "1999-XX-XX"
+
+    > draft_d = Date.edtf('1999-03-uu')
+    > draft_d.edtf
+    => "1999-03-XX"
 
 All three, uncertain, approximate, and unspecified attributes do not factor
 into date calculations (like comparisons or successors etc.).
