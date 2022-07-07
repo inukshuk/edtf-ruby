@@ -220,7 +220,7 @@ module EDTF
         expect(Parser.new.parse!('2004-06-uu').unspecified.to_s).to eq('ssss-ss-XX')
       end
 
-			it 'parses internal unspecified interval  "2004-06-XX/2004-07-03"' do
+			it 'parses internal unspecified interval  "2004-06-uu/2004-07-03"' do
 				expect(Parser.new.parse!('2004-06-uu/2004-07-03').from).to eq(Date.new(2004,6,1))
 			end
 

@@ -51,7 +51,6 @@ module EDTF
 
   class Unspecified < Struct.new(:year, :month, :day)
 
-    # U = 'u'.freeze
     X = 'X'.freeze
 
     def initialize
