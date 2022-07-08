@@ -50,10 +50,6 @@ task :build => [:check_warnings] do
   system 'gem build edtf.gemspec'
 end
 
-require 'coveralls/rake/task'
-Coveralls::RakeTask.new
-task :test_with_coveralls => [:spec, :cucumber, 'coveralls:push']
-
 task :check_warnings do
   $VERBOSE = true
   require 'edtf'
