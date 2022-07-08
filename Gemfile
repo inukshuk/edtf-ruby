@@ -10,8 +10,8 @@ group :development do
   gem 'racc'
   gem 'cucumber'
   gem 'rspec'
-  gem 'simplecov'
-  gem 'simplecov-lcov'
+  gem 'simplecov', platform: 'mri'
+  gem 'simplecov-lcov', platform: 'mri'
 end
 
 group :extra do
