@@ -2,7 +2,7 @@ source 'https://rubygems.org'
 gemspec
 
 group :debug do
-  gem 'debug'
+  gem 'debug', platform: 'mri'
 end
 
 group :development do
