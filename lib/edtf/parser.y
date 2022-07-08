@@ -2,7 +2,7 @@
 
 class EDTF::Parser
 
-token T Z E X x U UNKNOWN OPEN LONGYEAR UNMATCHED DOTS UA PUA
+token T Z E X U UNKNOWN OPEN LONGYEAR UNMATCHED DOTS UA PUA
 
 expect 0
 
@@ -89,49 +89,30 @@ rule
   # ---- Level 1 Extension Rules ----
 
   # NB: Uncertain/approximate Dates are covered by the Level 2 rules
-  level_1_expression : draft_unknown | final_unknown | draft_unspecified | final_unspecified | level_1_interval | long_year_simple | season
+  level_1_expression : unknown | unspecified | level_1_interval | long_year_simple | season
 
-  draft_unknown : U U U U { result = EDTF::Unknown.new }
-
-  final_unknown : X X X X { result = EDTF::Unknown.new }
+  unknown : U U U U { result = EDTF::Unknown.new }
 
   # uncertain_or_approximate_date : date UA { result = uoa(val[0], val[1]) }
 
-  draft_unspecified : draft_unspecified_year
+  unspecified : unspecified_year
               {
                 result = Date.new(val[0][0]).year_precision!
                 result.unspecified.year[2,2] = val[0][1]
               }
-              | draft_unspecified_month
-              | draft_unspecified_day
-              | draft_unspecified_day_and_month
+              | unspecified_month
+              | unspecified_day
+              | unspecified_day_and_month
               ;
 
-  draft_unspecified_year : draft_positive_unspecified_year
-                   | '-' draft_positive_unspecified_year
+  unspecified_year : positive_unspecified_year
+                   | '-' positive_unspecified_year
                    {
                      result = val[1]
                      result[0] = -result[0]
                    }
 
-  final_unspecified : final_unspecified_year
-             {
-               result = Date.new(val[0][0]).year_precision!
-               result.unspecified.year[2,2] = val[0][1]
-             }
-             | final_unspecified_month
-             | final_unspecified_day
-             | final_unspecified_day_and_month
-             ;
-
-  final_unspecified_year : final_positive_unspecified_year
-                   | '-' final_positive_unspecified_year
-                   {
-                     result = val[1]
-                     result[0] = -result[0]
-                   }
-
-  draft_positive_unspecified_year :
+  positive_unspecified_year :
     digit digit digit U
     {
       result = [val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }, [false,true]]
@@ -141,39 +122,16 @@ rule
       result = [val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }, [true, true]]
     }
 
-  draft_unspecified_month : year '-' U U {
+  unspecified_month : year '-' U U {
     result = Date.new(val[0]).unspecified!(:month)
     result.precision = :month
   }
 
-  draft_unspecified_day : year_month '-' U U {
+  unspecified_day : year_month '-' U U {
     result = Date.new(*val[0]).unspecified!(:day)
   }
 
-  draft_unspecified_day_and_month : year '-' U U '-' U U {
-    result = Date.new(val[0]).unspecified!([:day,:month])
-  }
-
-  final_positive_unspecified_year :
-    digit digit digit X
-    {
-      result = [val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }, [false,true]]
-    }
-    | digit digit X X
-    {
-      result = [val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }, [true, true]]
-    }
-
-  final_unspecified_month : year '-' X X {
-    result = Date.new(val[0]).unspecified!(:month)
-    result.precision = :month
-  }
-
-  final_unspecified_day : year_month '-' X X {
-    result = Date.new(*val[0]).unspecified!(:day)
-  }
-
-  final_unspecified_day_and_month : year '-' X X '-' X X {
+  unspecified_day_and_month : year '-' U U '-' U U {
     result = Date.new(val[0]).unspecified!([:day,:month])
   }
 
@@ -181,7 +139,7 @@ rule
     result = Interval.new(val[0], val[2])
   }
 
-  level_1_start : date | partial_uncertain_or_approximate | draft_unspecified | final_unspecified | draft_partial_unspecified | final_partial_unspecified | UNKNOWN
+  level_1_start : date | partial_uncertain_or_approximate | unspecified | partial_unspecified | UNKNOWN
 
   level_1_end : level_1_start | OPEN
 
@@ -224,8 +182,7 @@ rule
   # NB: Level 2 Intervals are covered by the Level 1 Interval rules.
   level_2_expression : season_qualified
                      | partial_uncertain_or_approximate
-                     | draft_partial_unspecified
-                     | final_partial_unspecified
+                     | partial_unspecified
                      | choice_list
                      | inclusive_list
                      | masked_precision
@@ -257,12 +214,12 @@ rule
 
 
   masked_precision :
-    digit digit digit x
+    digit digit digit X
     {
       d = val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }
       result = EDTF::Decade.new(d)
     }
-    | digit digit x x
+    | digit digit X X
     {
       d = val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }
       result = EDTF::Century.new(d)
@@ -293,8 +250,7 @@ rule
 
   atomic : date
          | partial_uncertain_or_approximate
-         | draft_unspecified
-         | final_unspecified
+         | unspecified
          ;
 
   earlier : DOTS date { result = val[1] }
@@ -309,74 +265,37 @@ rule
                | year DOTS year                     { result = (Date.new(val[0]).year_precision! .. Date.new(val[2]).year_precision!) }
                ;
 
-  draft_partial_unspecified :
-    draft_unspecified_year '-' month '-' day
+  partial_unspecified :
+    unspecified_year '-' month '-' day
     {
       result = Date.new(val[0][0], val[2], val[4])
       result.unspecified.year[2,2] = val[0][1]
     }
-    | draft_unspecified_year '-' month
+    | unspecified_year '-' month
     {
       result = Date.new(val[0][0], val[2], 1)
       result.month_precision!
       result.unspecified.year[2,2] = val[0][1]
     }
-    | draft_unspecified_year '-' U U '-' day
+    | unspecified_year '-' U U '-' day
     {
       result = Date.new(val[0][0], 1, val[5])
       result.unspecified.year[2,2] = val[0][1]
       result.unspecified!(:month)
     }
-    | draft_unspecified_year '-' U U '-' U U
+    | unspecified_year '-' U U '-' U U
     {
       result = Date.new(val[0][0], 1, 1)
       result.unspecified.year[2,2] = val[0][1]
       result.unspecified!([:month, :day])
     }
-    | draft_unspecified_year '-' month '-' U U
+    | unspecified_year '-' month '-' U U
     {
       result = Date.new(val[0][0], val[2], 1)
       result.unspecified.year[2,2] = val[0][1]
       result.unspecified!(:day)
     }
     | year '-' U U '-' day
-    {
-      result = Date.new(val[0], 1, val[5])
-      result.unspecified!(:month)
-    }
-    ;
-
-  final_partial_unspecified :
-    final_unspecified_year '-' month '-' day
-    {
-      result = Date.new(val[0][0], val[2], val[4])
-      result.unspecified.year[2,2] = val[0][1]
-    }
-    | final_unspecified_year '-' month
-    {
-      result = Date.new(val[0][0], val[2], 1)
-      result.month_precision!
-      result.unspecified.year[2,2] = val[0][1]
-    }
-    | final_unspecified_year '-' X X '-' day
-    {
-      result = Date.new(val[0][0], 1, val[5])
-      result.unspecified.year[2,2] = val[0][1]
-      result.unspecified!(:month)
-    }
-    | final_unspecified_year '-' X X '-' X X
-    {
-      result = Date.new(val[0][0], 1, 1)
-      result.unspecified.year[2,2] = val[0][1]
-      result.unspecified!([:month, :day])
-    }
-    | final_unspecified_year '-' month '-' X X
-    {
-      result = Date.new(val[0][0], val[2], 1)
-      result.unspecified.year[2,2] = val[0][1]
-      result.unspecified!(:day)
-    }
-    | year '-' X X '-' day
     {
       result = Date.new(val[0], 1, val[5])
       result.unspecified!(:month)
@@ -617,9 +536,9 @@ require 'strscan'
     when @src.scan(/u/)
       [:U, @src.matched]
     when @src.scan(/X/)
-      [:X, @src.matched]
+      [:U, @src.matched]
     when @src.scan(/x/)
-      [:x, @src.matched]
+      [:X, @src.matched]
     when @src.scan(/y/i)
       [:LONGYEAR, @src.matched]
     when @src.scan(/e/i)
