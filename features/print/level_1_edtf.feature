@@ -1,21 +1,21 @@
 Feature: Print Date/Time objects as Level 1 EDTF strings
   As a Ruby programmer
   I want to convert Date/Time objects to EDTF strings
-  
+
   @101 @level1
 	Scenario: Uncertain or approximate dates
 		When I parse the string "2001?"
 		When I convert the date
 		Then the EDTF string should be "2001?"
-		
+
 		When I parse the string "2004-06?"
 		When I convert the date
 		Then the EDTF string should be "2004-06?"
-		
+
 		When I parse the string "2004-06-11?"
 		When I convert the date
 		Then the EDTF string should be "2004-06-11?"
-		
+
 		When I parse the string "1984~"
 		When I convert the date
 		Then the EDTF string should be "1984~"
@@ -23,28 +23,50 @@ Feature: Print Date/Time objects as Level 1 EDTF strings
 		When I parse the string "1984?~"
 		When I convert the date
 		Then the EDTF string should be "1984?~"
-		
-	@102 @level1
+
+	@102 @level1 @draft
 	Scenario: Unspecified dates
 		When I parse the string "199u"
 		When I convert the date
-		Then the EDTF string should be "199u"
+		Then the EDTF string should be "199X"
 
 		When I parse the string "19uu"
 		When I convert the date
-		Then the EDTF string should be "19uu"
+		Then the EDTF string should be "19XX"
 
 		When I parse the string "1999-uu"
 		When I convert the date
-		Then the EDTF string should be "1999-uu"
+		Then the EDTF string should be "1999-XX"
 
 		When I parse the string "1999-01-uu"
 		When I convert the date
-		Then the EDTF string should be "1999-01-uu"
+		Then the EDTF string should be "1999-01-XX"
 
-		When I parse the string "1999-uu-uu"
+		When I parse the string "1999-XX-XX"
 		When I convert the date
-		Then the EDTF string should be "1999-uu-uu"
+		Then the EDTF string should be "1999-XX-XX"
+
+  @102 @level1 @final
+  Scenario: Unspecified dates
+    When I parse the string "199X"
+    When I convert the date
+    Then the EDTF string should be "199X"
+
+    When I parse the string "19XX"
+		When I convert the date
+		Then the EDTF string should be "19XX"
+
+		When I parse the string "1999-XX"
+		When I convert the date
+		Then the EDTF string should be "1999-XX"
+
+		When I parse the string "1999-01-XX"
+		When I convert the date
+		Then the EDTF string should be "1999-01-XX"
+
+		When I parse the string "1999-XX-XX"
+		When I convert the date
+		Then the EDTF string should be "1999-XX-XX"
 
 	@103 @level1 @interval
 	Scenario: Prints L1 Extended Intervals
@@ -88,19 +110,28 @@ Feature: Print Date/Time objects as Level 1 EDTF strings
 		When I convert the date
 		Then the EDTF string should be "1984-06-02?/unknown"
 
-	@104 @level1
+	@104 @level1 @draft
 	Scenario: Prints years with more than four digits
 		When I parse the string "y170000002"
 		When I convert the date
-		Then the EDTF string should be "y170000002"
+		Then the EDTF string should be "Y170000002"
 
 		When I parse the string "y-170000002"
 		When I convert the date
-		Then the EDTF string should be "y-170000002"
+		Then the EDTF string should be "Y-170000002"
+
+  @104 @level1 @final
+  Scenario: Prints years with more than four digits
+    When I parse the string "Y170000002"
+		When I convert the date
+		Then the EDTF string should be "Y170000002"
+
+		When I parse the string "Y-170000002"
+		When I convert the date
+		Then the EDTF string should be "Y-170000002"
 
 	@105 @level1 @season
 	Scenario: Prints seasons
 		When I parse the string "2001-21"
 		When I convert the date
 		Then the EDTF string should be "2001-21"
-		

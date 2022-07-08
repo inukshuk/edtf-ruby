@@ -135,7 +135,6 @@ rule
     result = Date.new(val[0]).unspecified!([:day,:month])
   }
 
-
   level_1_interval : level_1_start '/' level_1_end {
     result = Interval.new(val[0], val[2])
   }
@@ -302,7 +301,6 @@ rule
       result.unspecified!(:month)
     }
     ;
-
 
   partial_uncertain_or_approximate : pua_base
     | '(' pua_base ')' UA { result = uoa(val[1], val[3]) }
@@ -525,6 +523,8 @@ require 'strscan'
       [:Z, @src.matched]
     when @src.scan(/\?~/)
       [:UA, [:uncertain!, :approximate!]]
+    when @src.scan(/%/)
+      [:UA, [:uncertain!, :approximate!]]
     when @src.scan(/\?/)
       [:UA, [:uncertain!]]
     when @src.scan(/~/)
@@ -535,11 +535,13 @@ require 'strscan'
       [:UNKNOWN, :unknown]
     when @src.scan(/u/)
       [:U, @src.matched]
-    when @src.scan(/x/i)
+    when @src.scan(/X/)
+      [:U, @src.matched]
+    when @src.scan(/x/)
       [:X, @src.matched]
-    when @src.scan(/y/)
+    when @src.scan(/y/i)
       [:LONGYEAR, @src.matched]
-    when @src.scan(/e/)
+    when @src.scan(/e/i)
       [:E, @src.matched]
     when @src.scan(/\+/)
       ['+', @src.matched]
