@@ -1,7 +1,7 @@
 EDTF-Ruby
 =========
-[![Build Status](https://travis-ci.org/inukshuk/edtf-ruby.png?branch=master)](https://travis-ci.org/inukshuk/edtf-ruby)
-[![Coverage Status](https://coveralls.io/repos/inukshuk/edtf-ruby/badge.png)](https://coveralls.io/r/inukshuk/edtf-ruby)
+[![ci](https://github.com/inukshuk/edtf-ruby/actions/workflows/ci.yml/badge.svg)](https://github.com/inukshuk/edtf-ruby/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/inukshuk/edtf-ruby/badge.svg?branch=main)](https://coveralls.io/github/inukshuk/edtf-ruby?branch=main)
 
 EDTF-Ruby comprises a parser and an API implementation of the [Extended
 Date/Time Format standard](http://www.loc.gov/standards/datetime/).
@@ -334,8 +334,7 @@ and submit a pull request.
 
 Credits
 -------
-EDTF-Ruby was written by [Sylvester Keil](http://sylvester.keil.or.at) and
-[Namyra](https://github.com/namyra).
+EDTF-Ruby was written by Sylvester Keil and Ilja Srna.
 
 Published under the terms and conditions of the FreeBSD License; see LICENSE
 for details.

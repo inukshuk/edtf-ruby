@@ -8,8 +8,7 @@ Gem::Specification.new do |s|
   s.name        = 'edtf'
   s.version     = EDTF::VERSION.dup
   s.platform    = Gem::Platform::RUBY
-  s.authors     = ['Sylvester Keil']
-  s.email       = ['sylvester@keil.or.at']
+  s.authors     = ['Sylvester Keil', 'Ilja Srna']
   s.homepage    = 'http://github.com/inukshuk/edtf-ruby'
   s.summary     = 'Extended Date/Time Format for Ruby.'
   s.description = 'A Ruby implementation of the Extended Date/Time Format (EDTF).'
