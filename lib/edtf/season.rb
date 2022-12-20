@@ -109,7 +109,7 @@ module EDTF
 
     def each
       if block_given?
-        to_range.each(&Proc.new)
+        to_range.each { |r| yield(r) }
         self
       else
         to_enum
