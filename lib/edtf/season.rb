@@ -107,9 +107,9 @@ module EDTF
       min.day_precision! <= other && other <= max.day_precision!
     end
 
-    def each
+    def each(&block)
       if block_given?
-        to_range.each(&Proc.new)
+        to_range.each(&block)
         self
       else
         to_enum

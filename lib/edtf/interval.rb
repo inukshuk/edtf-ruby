@@ -211,9 +211,9 @@ module EDTF
     # used to compare values (slower). Returns nil if the first date of the
     # interval is larger than the last or if the interval has an unknown or
     # open start.
-    def min
+    def min(&block)
       if block_given?
-        to_a.min(&Proc.new)
+        to_a.min(&block)
       else
         case
         when unknown_start?, !unknown_end? && !open? && to < from
@@ -244,9 +244,9 @@ module EDTF
     # To calculate the dates, precision is taken into account. Thus, the max
     # Date of "2007/2008" would be 2008-12-31, whilst the max Date of
     # "2007-12/2008-10" would be 2009-10-31.
-    def max
+    def max(&block)
       if block_given?
-        to_a.max(&Proc.new)
+        to_a.max(&block)
       else
         case
         when open_end?, unknown_end?, !unknown_start? && to < from
