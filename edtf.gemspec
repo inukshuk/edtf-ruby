@@ -12,7 +12,7 @@ Gem::Specification.new do |s|
   s.homepage    = 'http://github.com/inukshuk/edtf-ruby'
   s.summary     = 'Extended Date/Time Format for Ruby.'
   s.description = 'A Ruby implementation of the Extended Date/Time Format (EDTF).'
-  s.license     = 'BSD-2-Clause-FreeBSD'
+  s.license     = 'BSD-2-Clause-Views'
 
   s.add_runtime_dependency('activesupport', '>= 3.0', '< 9.0')
 
