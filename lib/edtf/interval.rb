@@ -37,7 +37,7 @@ module EDTF
 
     def from=(date)
       case date
-      when Date, :unknown
+      when Date, :unknown, :open
         @from = date
       else
         throw ArgumentError.new("Intervals cannot start with: #{date}")
@@ -54,6 +54,15 @@ module EDTF
     end
 
     [:open, :unknown].each do |method_name|
+      define_method("#{method_name}_start!") do
+        @from = method_name
+        self
+      end
+
+      define_method("#{method_name}_start?") do
+        @from == method_name
+      end
+
       define_method("#{method_name}_end!") do
         @to = method_name
         self
@@ -64,16 +73,8 @@ module EDTF
       end
     end
 
-    alias open! open_end!
-    alias open? open_end?
-
-    def unknown_start?
-      from == :unknown
-    end
-
-    def unknown_start!
-      @from = :unknown
-      self
+    def open?
+      open_start? || open_end?
     end
 
     def unknown?
@@ -83,12 +84,12 @@ module EDTF
     # Returns the intervals precision. Mixed precisions are currently not
     # supported; in that case, the start date's precision takes precedence.
     def precision
-      min.precision || max.precision
+      min&.precision || max&.precision
     end
 
     # Returns true if the precisions of start and end date are not the same.
     def mixed_precision?
-      min.precision != max.precision
+      min&.precision != max&.precision
     end
 
     def each(&block)
@@ -170,6 +171,8 @@ module EDTF
         max.day_precision! == other
       when unknown_end?
         min.day_precision! == other
+      when open_start?
+        max.day_precision! >= other
       when open_end?
         min.day_precision! <= other
       else
@@ -216,7 +219,7 @@ module EDTF
         to_a.min(&block)
       else
         case
-        when unknown_start?, !unknown_end? && !open? && to < from
+        when open_start?, unknown_start?, !(open_end? || unknown_end?) && !open? && to < from
           nil
         when from.day_precision?
           from
@@ -249,7 +252,7 @@ module EDTF
         to_a.max(&block)
       else
         case
-        when open_end?, unknown_end?, !unknown_start? && to < from
+        when open_end?, unknown_end?, !(open_start? || unknown_start?) && to < from
           nil
         when to.day_precision?
           to
