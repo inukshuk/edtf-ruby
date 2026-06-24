@@ -1469,14 +1469,14 @@ module_eval(<<'.,.,', 'parser.y', 291)
 
 module_eval(<<'.,.,', 'parser.y', 294)
   def _reduce_117(val, _values, result)
-     result = (Date.new(val[0]).day_precision! .. Date.new(val[2]).day_precision!)
+     result = (Date.new(*val[0]).day_precision! .. Date.new(*val[2]).day_precision!)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 295)
   def _reduce_118(val, _values, result)
-     result = (Date.new(val[0]).month_precision! .. Date.new(val[2]).month_precision!)
+     result = (Date.new(*val[0]).month_precision! .. Date.new(*val[2]).month_precision!)
     result
   end
 .,.,

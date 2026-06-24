@@ -78,5 +78,30 @@ module EDTF
       end
     end
 
+    describe 'the set [1760-12..1761-03]' do
+      let(:set) { Date.edtf('[1760-12..1761-03]') }
+      
+      it "is a choice" do
+        expect(set).to be_choice
+      end
+      
+      it "maps to the 4 months 1760-12 through 1761-03" do
+        expected_months = %w[1760-12 1761-01 1761-02 1761-03].map { |m| Date.edtf(m) }
+        expect(set.to_a).to eq(expected_months)
+      end
+    end
+
+    describe 'the set {1760-12..1761-03}' do
+      let(:set) { Date.edtf('{1760-12..1761-03}') }
+
+      it "is not a choice" do
+        expect(set).not_to be_choice
+      end
+
+      it "maps to the 4 months 1760-12 through 1761-03" do
+        expected_months = %w[1760-12 1761-01 1761-02 1761-03].map { |m| Date.edtf(m) }
+        expect(set.to_a).to eq(expected_months)
+      end
+    end
   end
 end

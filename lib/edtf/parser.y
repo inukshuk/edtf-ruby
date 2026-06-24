@@ -292,8 +292,8 @@ rule
         | year DOTS           { result = Date.new(val[0]).year_precision! }
         ;
 
-  consecutives : year_month_day DOTS year_month_day { result = (Date.new(val[0]).day_precision! .. Date.new(val[2]).day_precision!) }
-               | year_month DOTS year_month         { result = (Date.new(val[0]).month_precision! .. Date.new(val[2]).month_precision!) }
+  consecutives : year_month_day DOTS year_month_day { result = (Date.new(*val[0]).day_precision! .. Date.new(*val[2]).day_precision!) }
+               | year_month DOTS year_month         { result = (Date.new(*val[0]).month_precision! .. Date.new(*val[2]).month_precision!) }
                | year DOTS year                     { result = (Date.new(val[0]).year_precision! .. Date.new(val[2]).year_precision!) }
                ;
 
