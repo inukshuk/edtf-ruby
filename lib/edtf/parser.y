@@ -21,9 +21,9 @@ rule
                      ;
 
   date :
-    year             { result = Date.new(val[0]).year_precision! }
-    | year_month     { result = Date.new(*val.flatten).month_precision! }
-    | year_month_day { result = Date.new(*val.flatten).day_precision! }
+    year             { result = Date.gregorian(val[0]).year_precision! }
+    | year_month     { result = Date.gregorian(*val.flatten).month_precision! }
+    | year_month_day { result = Date.gregorian(*val.flatten).day_precision! }
     ;
 
 
@@ -97,7 +97,7 @@ rule
 
   unspecified : unspecified_year
               {
-                result = Date.new(val[0][0]).year_precision!
+                result = Date.gregorian(val[0][0]).year_precision!
                 result.unspecified.year[2,2] = val[0][1]
               }
               | unspecified_month
@@ -123,16 +123,16 @@ rule
     }
 
   unspecified_month : year '-' U U {
-    result = Date.new(val[0]).unspecified!(:month)
+    result = Date.gregorian(val[0]).unspecified!(:month)
     result.precision = :month
   }
 
   unspecified_day : year_month '-' U U {
-    result = Date.new(*val[0]).unspecified!(:day)
+    result = Date.gregorian(*val[0]).unspecified!(:day)
   }
 
   unspecified_day_and_month : year '-' U U '-' U U {
-    result = Date.new(val[0]).unspecified!([:day,:month])
+    result = Date.gregorian(val[0]).unspecified!([:day,:month])
   }
 
   level_1_interval : level_1_interval_closed | level_1_interval_open | level_1_interval_unknown
@@ -179,12 +179,12 @@ rule
   long_year_simple :
     LONGYEAR long_year
     {
-      result = Date.new(val[1])
+      result = Date.gregorian(val[1])
       result.precision = :year
     }
     | LONGYEAR '-' long_year
     {
-      result = Date.new(-1 * val[2])
+      result = Date.gregorian(-1 * val[2])
       result.precision = :year
     }
     ;
@@ -229,15 +229,15 @@ rule
   long_year_scientific :
     long_year_simple E integer
     {
-      result = Date.new(val[0].year * 10 ** val[2]).year_precision!
+      result = Date.gregorian(val[0].year * 10 ** val[2]).year_precision!
     }
     | LONGYEAR int1_4 E integer
     {
-      result = Date.new(val[1] * 10 ** val[3]).year_precision!
+      result = Date.gregorian(val[1] * 10 ** val[3]).year_precision!
     }
     | LONGYEAR '-' int1_4 E integer
     {
-      result = Date.new(-1 * val[2] * 10 ** val[4]).year_precision!
+      result = Date.gregorian(-1 * val[2] * 10 ** val[4]).year_precision!
     }
     ;
 
@@ -287,49 +287,49 @@ rule
 
   earlier : DOTS date { result = val[1] }
 
-  later : year_month_day DOTS { result = Date.new(*val[0]).day_precision! }
-        | year_month DOTS     { result = Date.new(*val[0]).month_precision! }
-        | year DOTS           { result = Date.new(val[0]).year_precision! }
+  later : year_month_day DOTS { result = Date.gregorian(*val[0]).day_precision! }
+        | year_month DOTS     { result = Date.gregorian(*val[0]).month_precision! }
+        | year DOTS           { result = Date.gregorian(val[0]).year_precision! }
         ;
 
-  consecutives : year_month_day DOTS year_month_day { result = (Date.new(*val[0]).day_precision! .. Date.new(*val[2]).day_precision!) }
-               | year_month DOTS year_month         { result = (Date.new(*val[0]).month_precision! .. Date.new(*val[2]).month_precision!) }
-               | year DOTS year                     { result = (Date.new(val[0]).year_precision! .. Date.new(val[2]).year_precision!) }
+  consecutives : year_month_day DOTS year_month_day { result = (Date.gregorian(*val[0]).day_precision! .. Date.gregorian(*val[2]).day_precision!) }
+               | year_month DOTS year_month         { result = (Date.gregorian(*val[0]).month_precision! .. Date.gregorian(*val[2]).month_precision!) }
+               | year DOTS year                     { result = (Date.gregorian(val[0]).year_precision! .. Date.gregorian(val[2]).year_precision!) }
                ;
 
   partial_unspecified :
     unspecified_year '-' month '-' day
     {
-      result = Date.new(val[0][0], val[2], val[4])
+      result = Date.gregorian(val[0][0], val[2], val[4])
       result.unspecified.year[2,2] = val[0][1]
     }
     | unspecified_year '-' month
     {
-      result = Date.new(val[0][0], val[2], 1)
+      result = Date.gregorian(val[0][0], val[2], 1)
       result.month_precision!
       result.unspecified.year[2,2] = val[0][1]
     }
     | unspecified_year '-' U U '-' day
     {
-      result = Date.new(val[0][0], 1, val[5])
+      result = Date.gregorian(val[0][0], 1, val[5])
       result.unspecified.year[2,2] = val[0][1]
       result.unspecified!(:month)
     }
     | unspecified_year '-' U U '-' U U
     {
-      result = Date.new(val[0][0], 1, 1)
+      result = Date.gregorian(val[0][0], 1, 1)
       result.unspecified.year[2,2] = val[0][1]
       result.unspecified!([:month, :day])
     }
     | unspecified_year '-' month '-' U U
     {
-      result = Date.new(val[0][0], val[2], 1)
+      result = Date.gregorian(val[0][0], val[2], 1)
       result.unspecified.year[2,2] = val[0][1]
       result.unspecified!(:day)
     }
     | year '-' U U '-' day
     {
-      result = Date.new(val[0], 1, val[5])
+      result = Date.gregorian(val[0], 1, val[5])
       result.unspecified!(:month)
     }
     ;
@@ -342,17 +342,17 @@ rule
     | pua_year_month     { result = val[0][0].month_precision! }
     | pua_year_month_day { result = val[0].day_precision! }
 
-  pua_year : year UA { result = uoa(Date.new(val[0]), val[1], :year) }
+  pua_year : year UA { result = uoa(Date.gregorian(val[0]), val[1], :year) }
 
   pua_year_month :
     pua_year '-' month ua {
       result = [uoa(val[0].change(:month => val[2]), val[3], [:month, :year])]
     }
     | year '-' month UA {
-        result = [uoa(Date.new(val[0], val[2]), val[3], [:year, :month])]
+        result = [uoa(Date.gregorian(val[0], val[2]), val[3], [:year, :month])]
     }
     | year '-(' month ')' UA {
-        result = [uoa(Date.new(val[0], val[2]), val[4], [:month]), true]
+        result = [uoa(Date.gregorian(val[0], val[2]), val[4], [:month]), true]
     }
     | pua_year '-(' month ')' UA {
         result = [uoa(val[0].change(:month => val[2]), val[4], [:month]), true]
@@ -367,19 +367,19 @@ rule
         result = uoa(val[0][0].change(:day => val[2]), val[4], [:day])
     }
     | year '-(' month ')' UA day ua {
-        result = uoa(uoa(Date.new(val[0], val[2], val[5]), val[4], :month), val[6], :day)
+        result = uoa(uoa(Date.gregorian(val[0], val[2], val[5]), val[4], :month), val[6], :day)
     }
     | year_month '-' day UA {
-        result = uoa(Date.new(val[0][0], val[0][1], val[2]), val[3])
+        result = uoa(Date.gregorian(val[0][0], val[0][1], val[2]), val[3])
     }
     | year_month '-(' day ')' UA {
-        result = uoa(Date.new(val[0][0], val[0][1], val[2]), val[4], [:day])
+        result = uoa(Date.gregorian(val[0][0], val[0][1], val[2]), val[4], [:day])
     }
     | year '-(' month '-' day ')' UA {
-        result = uoa(Date.new(val[0], val[2], val[4]), val[6], [:month, :day])
+        result = uoa(Date.gregorian(val[0], val[2], val[4]), val[6], [:month, :day])
     }
     | year '-(' month '-(' day ')' UA ')' UA {
-        result = Date.new(val[0], val[2], val[4])
+        result = Date.gregorian(val[0], val[2], val[4])
         result = uoa(result, val[6], [:day])
         result = uoa(result, val[8], [:month, :day])
     }

@@ -17,6 +17,17 @@ module EDTF
       it 'parses year zero' do
         expect(Parser.new.parse('0000').to_s).to eq('0000-01-01')
       end
+      
+      it 'handles the Gregorian 10-day correction' do
+        (4..15).each do |mday|
+          date_str = '1582-10-%02d' % mday
+          date = Parser.new.parse(date_str)
+          expect(date).to be_gregorian
+          expect(date.year).to eq(1582)
+          expect(date.month).to eq(10)
+          expect(date.mday).to eq(mday)
+        end
+      end
 
       it 'parses date/time with time zones' do
         expect(Parser.new.parse('2011-08-15T11:19:00+01:00').to_s).to eq('2011-08-15T11:19:00+01:00')
