@@ -1,8 +1,15 @@
 source 'https://rubygems.org'
 gemspec
 
-group :debug do
-  gem 'debug', platform: 'mri'
+group :coverage do
+  platforms :mri do
+    gem 'simplecov'
+    gem 'simplecov-lcov'
+  end
+end
+
+group :debug, optional: true do
+  gem 'debug', '>= 1.0.0', require: false
 end
 
 group :development do
@@ -10,13 +17,4 @@ group :development do
   gem 'racc'
   gem 'cucumber'
   gem 'rspec'
-  gem 'simplecov', platform: 'mri'
-  gem 'simplecov-lcov', platform: 'mri'
 end
-
-group :extra do
-  gem 'ZenTest'
-end
-
-# active_support requires this
-gem 'i18n'
