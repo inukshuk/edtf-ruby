@@ -135,13 +135,45 @@ rule
     result = Date.new(val[0]).unspecified!([:day,:month])
   }
 
-  level_1_interval : level_1_start '/' level_1_end {
+  level_1_interval : level_1_interval_closed | level_1_interval_open | level_1_interval_unknown
+
+  level_1_interval_closed : level_1_start '/' level_1_end {
     result = Interval.new(val[0], val[2])
   }
 
-  level_1_start : date | partial_uncertain_or_approximate | unspecified | partial_unspecified | UNKNOWN
+  level_1_interval_open : level_1_interval_open_start | level_1_interval_open_end 
 
-  level_1_end : level_1_start | OPEN
+  level_1_interval_open_start : open_start_or_end '/' level_1_end {
+    result = Interval.new(:open, val[2])
+  }
+
+  level_1_interval_open_end : level_1_start '/' open_start_or_end {
+    result = Interval.new(val[0], :open)
+  }
+
+  open_start_or_end : OPEN | DOTS 
+
+  level_1_interval_unknown : level_1_interval_empty_start | level_1_interval_empty_end | level_1_interval_unknown_start | level_1_interval_unknown_end
+
+  level_1_interval_empty_start : '/' level_1_end {
+    result = Interval.new(:unknown, val[1])
+  }
+
+  level_1_interval_empty_end : level_1_start '/' {
+    result = Interval.new(val[0], :unknown)
+  }
+
+  level_1_interval_unknown_start : UNKNOWN '/' level_1_end {
+    result = Interval.new(:unknown, val[2])
+  }
+
+  level_1_interval_unknown_end : level_1_start '/' UNKNOWN {
+    result = Interval.new(val[0], :unknown)
+  }
+
+  level_1_start : date | partial_uncertain_or_approximate | unspecified | partial_unspecified
+
+  level_1_end : level_1_start
 
 
   long_year_simple :
@@ -260,8 +292,8 @@ rule
         | year DOTS           { result = Date.new(val[0]).year_precision! }
         ;
 
-  consecutives : year_month_day DOTS year_month_day { result = (Date.new(val[0]).day_precision! .. Date.new(val[2]).day_precision!) }
-               | year_month DOTS year_month         { result = (Date.new(val[0]).month_precision! .. Date.new(val[2]).month_precision!) }
+  consecutives : year_month_day DOTS year_month_day { result = (Date.new(*val[0]).day_precision! .. Date.new(*val[2]).day_precision!) }
+               | year_month DOTS year_month         { result = (Date.new(*val[0]).month_precision! .. Date.new(*val[2]).month_precision!) }
                | year DOTS year                     { result = (Date.new(val[0]).year_precision! .. Date.new(val[2]).year_precision!) }
                ;
 
