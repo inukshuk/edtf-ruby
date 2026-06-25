@@ -871,7 +871,7 @@ Racc_token_to_s_table = [
   "d01_30" ]
 Ractor.make_shareable(Racc_token_to_s_table) if defined?(Ractor)
 
-Racc_debug_parser = false
+Racc_debug_parser = true
 
 ##### State transition tables end #####
 

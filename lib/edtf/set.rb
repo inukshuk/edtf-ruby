@@ -7,7 +7,6 @@ module EDTF
     include Comparable
 
     def_delegators :@dates, :size, :length, :empty?
-    def_delegators :to_a, :include?
 
     attr_accessor :choice, :later, :earlier
 
@@ -28,6 +27,21 @@ module EDTF
         self
       end
     end
+
+    def include?(v)
+      return false unless v.is_a?(Date)
+      return false if empty?
+
+      dates_array = to_a
+      if earlier?
+        (min = dates_array.first) >= v && min.precision == v.precision
+      elsif later?
+        (max = dates_array.last) <= v && max.precision == v.precision
+      else
+        dates_array.member?(v)
+      end
+    end
+    alias member? include?
 
     def <<(date)
       dates << date

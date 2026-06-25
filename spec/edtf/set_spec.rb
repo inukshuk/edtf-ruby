@@ -52,7 +52,7 @@ module EDTF
       end
 
       it 'does not include the date 1671-01-01' do
-        expect(set.include?(Date.new(1671))).to be false
+        expect(set.include?(Date.new(1671).day_precision!)).to be false
       end
 
       it 'does not include the year 1669' do
@@ -101,6 +101,168 @@ module EDTF
       it "maps to the 4 months 1760-12 through 1761-03" do
         expected_months = %w[1760-12 1761-01 1761-02 1761-03].map { |m| Date.edtf(m) }
         expect(set.to_a).to eq(expected_months)
+      end
+    end
+
+    context "open sets" do
+      describe 'the set {..1984}' do
+        let(:set) { Date.edtf('{..1984}') }
+
+        it "is not a choice" do
+          expect(set).not_to be_choice
+        end
+
+        it 'includes the date 1984' do
+          expect(set.include?(Date.new(1984).year_precision!)).to be true
+        end
+
+        it 'includes the date 1984 BCE' do
+          expect(set.include?(Date.new(-1984).year_precision!)).to be true
+        end
+
+        it 'does not include the date 1995' do
+          expect(set.include?(Date.new(1995).year_precision!)).to be false
+        end
+      end
+
+      describe 'the set {..1984-05-11}' do
+        let(:set) { Date.edtf('{..1984-05-11}') }
+
+        it "is not a choice" do
+          expect(set).not_to be_choice
+        end
+
+        it 'includes the date 1984-05-11' do
+          expect(set.include?(Date.new(1984, 5, 11))).to be true
+        end
+
+        it 'includes the date 11 May 1984 BCE' do
+          expect(set.include?(Date.new(-1984, 5, 11))).to be true
+        end
+
+        it 'does not include the date 1995-01-01' do
+          expect(set.include?(Date.new(1995))).to be false
+        end
+      end
+
+      describe 'the set {1984..}' do
+        let(:set) { Date.edtf('{1984..}') }
+
+        it "is not a choice" do
+          expect(set).not_to be_choice
+        end
+
+        it 'includes the date 1984' do
+          expect(set.include?(Date.new(1984).year_precision!)).to be true
+        end
+
+        it 'does not include the date 1984 BCE' do
+          expect(set.include?(Date.new(-1984).year_precision!)).to be false
+        end
+
+        it 'includes the date 1995' do
+          expect(set.include?(Date.new(1995).year_precision!)).to be true
+        end
+      end
+
+      describe 'the set {1984-05-11..}' do
+        let(:set) { Date.edtf('{1984-05-11..}') }
+
+        it "is not a choice" do
+          expect(set).not_to be_choice
+        end
+
+        it 'includes the date 1984-05-11' do
+          expect(set.include?(Date.new(1984, 5, 11))).to be true
+        end
+
+        it 'does not include the date 11 May 1984 BCE' do
+          expect(set.include?(Date.new(-1984, 5, 11))).to be false
+        end
+
+        it 'includes the date 1995-01-01' do
+          expect(set.include?(Date.new(1995))).to be true
+        end
+      end
+
+      describe 'the set [..1984]' do
+        let(:set) { Date.edtf('[..1984]') }
+
+        it "is a choice" do
+          expect(set).to be_choice
+        end
+
+        it 'includes the date 1984' do
+          expect(set.include?(Date.new(1984).year_precision!)).to be true
+        end
+
+        it 'includes the date 1984 BCE' do
+          expect(set.include?(Date.new(-1984).year_precision!)).to be true
+        end
+
+        it 'does not include the date 1995' do
+          expect(set.include?(Date.new(1995).year_precision!)).to be false
+        end
+      end
+
+      describe 'the set [..1984-05-11]' do
+        let(:set) { Date.edtf('[..1984-05-11]') }
+
+        it "is a choice" do
+          expect(set).to be_choice
+        end
+
+        it 'includes the date 1984-05-11' do
+          expect(set.include?(Date.new(1984, 5, 11))).to be true
+        end
+
+        it 'includes the date 11 May 1984 BCE' do
+          expect(set.include?(Date.new(-1984, 5, 11))).to be true
+        end
+
+        it 'does not include the date 1995-01-01' do
+          expect(set.include?(Date.new(1995))).to be false
+        end
+      end
+
+      describe 'the set [1984..]' do
+        let(:set) { Date.edtf('[1984..]') }
+
+        it "is a choice" do
+          expect(set).to be_choice
+        end
+
+        it 'includes the date 1984' do
+          expect(set.include?(Date.new(1984).year_precision!)).to be true
+        end
+
+        it 'does not include the date 1984 BCE' do
+          expect(set.include?(Date.new(-1984).year_precision!)).to be false
+        end
+
+        it 'includes the date 1995' do
+          expect(set.include?(Date.new(1995).year_precision!)).to be true
+        end
+      end
+
+      describe 'the set [1984-05-11..]' do
+        let(:set) { Date.edtf('[1984-05-11..]') }
+
+        it "is a choice" do
+          expect(set).to be_choice
+        end
+
+        it 'includes the date 1984-05-11' do
+          expect(set.include?(Date.new(1984, 5, 11))).to be true
+        end
+
+        it 'does not include the date 11 May 1984 BCE' do
+          expect(set.include?(Date.new(-1984, 5, 11))).to be false
+        end
+
+        it 'includes the date 1995-01-01' do
+          expect(set.include?(Date.new(1995))).to be true
+        end
       end
     end
   end
