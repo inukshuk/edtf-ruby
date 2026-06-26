@@ -4,6 +4,20 @@ describe 'Date/DateTime' do
     it 'responds to edtf' do
       expect(Date).to respond_to(:edtf)
     end
+    
+    describe 'gregorian' do
+      it 'returns a proleptic Gregorian date for pre-Gregorian dates' do
+        date = Date.gregorian(1582, 9, 30)
+        expect(date).to be_gregorian
+        expect(date).to eq(Date.new(1582, 9, 30, Date::GREGORIAN))
+      end
+      
+      it 'returns a Gregorian date for valid Gregorian dates' do
+        date = Date.gregorian(1582, 10, 30)
+        expect(date).to be_gregorian
+        expect(date).to eq(Date.new(1582, 10, 30))
+      end
+    end
   end
 
   describe 'instance methods' do

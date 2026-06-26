@@ -889,21 +889,21 @@ Racc_debug_parser = true
 
 module_eval(<<'.,.,', 'parser.y', 23)
   def _reduce_6(val, _values, result)
-     result = Date.new(val[0]).year_precision!
+     result = Date.gregorian(val[0]).year_precision!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 24)
   def _reduce_7(val, _values, result)
-     result = Date.new(*val.flatten).month_precision!
+     result = Date.gregorian(*val.flatten).month_precision!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 25)
   def _reduce_8(val, _values, result)
-     result = Date.new(*val.flatten).day_precision!
+     result = Date.gregorian(*val.flatten).day_precision!
     result
   end
 .,.,
@@ -1057,7 +1057,7 @@ module_eval(<<'.,.,', 'parser.y', 93)
 
 module_eval(<<'.,.,', 'parser.y', 99)
   def _reduce_39(val, _values, result)
-                    result = Date.new(val[0][0]).year_precision!
+                    result = Date.gregorian(val[0][0]).year_precision!
                 result.unspecified.year[2,2] = val[0][1]
 
     result
@@ -1099,7 +1099,7 @@ module_eval(<<'.,.,', 'parser.y', 121)
 
 module_eval(<<'.,.,', 'parser.y', 125)
   def _reduce_47(val, _values, result)
-        result = Date.new(val[0]).unspecified!(:month)
+        result = Date.gregorian(val[0]).unspecified!(:month)
     result.precision = :month
 
     result
@@ -1108,7 +1108,7 @@ module_eval(<<'.,.,', 'parser.y', 125)
 
 module_eval(<<'.,.,', 'parser.y', 130)
   def _reduce_48(val, _values, result)
-        result = Date.new(*val[0]).unspecified!(:day)
+        result = Date.gregorian(*val[0]).unspecified!(:day)
 
     result
   end
@@ -1116,7 +1116,7 @@ module_eval(<<'.,.,', 'parser.y', 130)
 
 module_eval(<<'.,.,', 'parser.y', 134)
   def _reduce_49(val, _values, result)
-        result = Date.new(val[0]).unspecified!([:day,:month])
+        result = Date.gregorian(val[0]).unspecified!([:day,:month])
 
     result
   end
@@ -1212,7 +1212,7 @@ module_eval(<<'.,.,', 'parser.y', 170)
 
 module_eval(<<'.,.,', 'parser.y', 181)
   def _reduce_73(val, _values, result)
-          result = Date.new(val[1])
+          result = Date.gregorian(val[1])
       result.precision = :year
 
     result
@@ -1221,7 +1221,7 @@ module_eval(<<'.,.,', 'parser.y', 181)
 
 module_eval(<<'.,.,', 'parser.y', 186)
   def _reduce_74(val, _values, result)
-          result = Date.new(-1 * val[2])
+          result = Date.gregorian(-1 * val[2])
       result.precision = :year
 
     result
@@ -1305,7 +1305,7 @@ module_eval(<<'.,.,', 'parser.y', 225)
 
 module_eval(<<'.,.,', 'parser.y', 231)
   def _reduce_91(val, _values, result)
-          result = Date.new(val[0].year * 10 ** val[2]).year_precision!
+          result = Date.gregorian(val[0].year * 10 ** val[2]).year_precision!
 
     result
   end
@@ -1313,7 +1313,7 @@ module_eval(<<'.,.,', 'parser.y', 231)
 
 module_eval(<<'.,.,', 'parser.y', 235)
   def _reduce_92(val, _values, result)
-          result = Date.new(val[1] * 10 ** val[3]).year_precision!
+          result = Date.gregorian(val[1] * 10 ** val[3]).year_precision!
 
     result
   end
@@ -1321,7 +1321,7 @@ module_eval(<<'.,.,', 'parser.y', 235)
 
 module_eval(<<'.,.,', 'parser.y', 239)
   def _reduce_93(val, _values, result)
-          result = Date.new(-1 * val[2] * 10 ** val[4]).year_precision!
+          result = Date.gregorian(-1 * val[2] * 10 ** val[4]).year_precision!
 
     result
   end
@@ -1448,49 +1448,49 @@ module_eval(<<'.,.,', 'parser.y', 287)
 
 module_eval(<<'.,.,', 'parser.y', 289)
   def _reduce_114(val, _values, result)
-     result = Date.new(*val[0]).day_precision!
+     result = Date.gregorian(*val[0]).day_precision!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 290)
   def _reduce_115(val, _values, result)
-     result = Date.new(*val[0]).month_precision!
+     result = Date.gregorian(*val[0]).month_precision!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 291)
   def _reduce_116(val, _values, result)
-     result = Date.new(val[0]).year_precision!
+     result = Date.gregorian(val[0]).year_precision!
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 294)
   def _reduce_117(val, _values, result)
-     result = (Date.new(*val[0]).day_precision! .. Date.new(*val[2]).day_precision!)
+     result = (Date.gregorian(*val[0]).day_precision! .. Date.gregorian(*val[2]).day_precision!)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 295)
   def _reduce_118(val, _values, result)
-     result = (Date.new(*val[0]).month_precision! .. Date.new(*val[2]).month_precision!)
+     result = (Date.gregorian(*val[0]).month_precision! .. Date.gregorian(*val[2]).month_precision!)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 296)
   def _reduce_119(val, _values, result)
-     result = (Date.new(val[0]).year_precision! .. Date.new(val[2]).year_precision!)
+     result = (Date.gregorian(val[0]).year_precision! .. Date.gregorian(val[2]).year_precision!)
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'parser.y', 302)
   def _reduce_120(val, _values, result)
-          result = Date.new(val[0][0], val[2], val[4])
+          result = Date.gregorian(val[0][0], val[2], val[4])
       result.unspecified.year[2,2] = val[0][1]
 
     result
@@ -1499,7 +1499,7 @@ module_eval(<<'.,.,', 'parser.y', 302)
 
 module_eval(<<'.,.,', 'parser.y', 307)
   def _reduce_121(val, _values, result)
-          result = Date.new(val[0][0], val[2], 1)
+          result = Date.gregorian(val[0][0], val[2], 1)
       result.month_precision!
       result.unspecified.year[2,2] = val[0][1]
 
@@ -1509,7 +1509,7 @@ module_eval(<<'.,.,', 'parser.y', 307)
 
 module_eval(<<'.,.,', 'parser.y', 313)
   def _reduce_122(val, _values, result)
-          result = Date.new(val[0][0], 1, val[5])
+          result = Date.gregorian(val[0][0], 1, val[5])
       result.unspecified.year[2,2] = val[0][1]
       result.unspecified!(:month)
 
@@ -1519,7 +1519,7 @@ module_eval(<<'.,.,', 'parser.y', 313)
 
 module_eval(<<'.,.,', 'parser.y', 319)
   def _reduce_123(val, _values, result)
-          result = Date.new(val[0][0], 1, 1)
+          result = Date.gregorian(val[0][0], 1, 1)
       result.unspecified.year[2,2] = val[0][1]
       result.unspecified!([:month, :day])
 
@@ -1529,7 +1529,7 @@ module_eval(<<'.,.,', 'parser.y', 319)
 
 module_eval(<<'.,.,', 'parser.y', 325)
   def _reduce_124(val, _values, result)
-          result = Date.new(val[0][0], val[2], 1)
+          result = Date.gregorian(val[0][0], val[2], 1)
       result.unspecified.year[2,2] = val[0][1]
       result.unspecified!(:day)
 
@@ -1539,7 +1539,7 @@ module_eval(<<'.,.,', 'parser.y', 325)
 
 module_eval(<<'.,.,', 'parser.y', 331)
   def _reduce_125(val, _values, result)
-          result = Date.new(val[0], 1, val[5])
+          result = Date.gregorian(val[0], 1, val[5])
       result.unspecified!(:month)
 
     result
@@ -1578,7 +1578,7 @@ module_eval(<<'.,.,', 'parser.y', 342)
 
 module_eval(<<'.,.,', 'parser.y', 344)
   def _reduce_131(val, _values, result)
-     result = uoa(Date.new(val[0]), val[1], :year)
+     result = uoa(Date.gregorian(val[0]), val[1], :year)
     result
   end
 .,.,
@@ -1593,7 +1593,7 @@ module_eval(<<'.,.,', 'parser.y', 348)
 
 module_eval(<<'.,.,', 'parser.y', 351)
   def _reduce_133(val, _values, result)
-            result = [uoa(Date.new(val[0], val[2]), val[3], [:year, :month])]
+            result = [uoa(Date.gregorian(val[0], val[2]), val[3], [:year, :month])]
 
     result
   end
@@ -1601,7 +1601,7 @@ module_eval(<<'.,.,', 'parser.y', 351)
 
 module_eval(<<'.,.,', 'parser.y', 354)
   def _reduce_134(val, _values, result)
-            result = [uoa(Date.new(val[0], val[2]), val[4], [:month]), true]
+            result = [uoa(Date.gregorian(val[0], val[2]), val[4], [:month]), true]
 
     result
   end
@@ -1633,7 +1633,7 @@ module_eval(<<'.,.,', 'parser.y', 366)
 
 module_eval(<<'.,.,', 'parser.y', 369)
   def _reduce_138(val, _values, result)
-            result = uoa(uoa(Date.new(val[0], val[2], val[5]), val[4], :month), val[6], :day)
+            result = uoa(uoa(Date.gregorian(val[0], val[2], val[5]), val[4], :month), val[6], :day)
 
     result
   end
@@ -1641,7 +1641,7 @@ module_eval(<<'.,.,', 'parser.y', 369)
 
 module_eval(<<'.,.,', 'parser.y', 372)
   def _reduce_139(val, _values, result)
-            result = uoa(Date.new(val[0][0], val[0][1], val[2]), val[3])
+            result = uoa(Date.gregorian(val[0][0], val[0][1], val[2]), val[3])
 
     result
   end
@@ -1649,7 +1649,7 @@ module_eval(<<'.,.,', 'parser.y', 372)
 
 module_eval(<<'.,.,', 'parser.y', 375)
   def _reduce_140(val, _values, result)
-            result = uoa(Date.new(val[0][0], val[0][1], val[2]), val[4], [:day])
+            result = uoa(Date.gregorian(val[0][0], val[0][1], val[2]), val[4], [:day])
 
     result
   end
@@ -1657,7 +1657,7 @@ module_eval(<<'.,.,', 'parser.y', 375)
 
 module_eval(<<'.,.,', 'parser.y', 378)
   def _reduce_141(val, _values, result)
-            result = uoa(Date.new(val[0], val[2], val[4]), val[6], [:month, :day])
+            result = uoa(Date.gregorian(val[0], val[2], val[4]), val[6], [:month, :day])
 
     result
   end
@@ -1665,7 +1665,7 @@ module_eval(<<'.,.,', 'parser.y', 378)
 
 module_eval(<<'.,.,', 'parser.y', 381)
   def _reduce_142(val, _values, result)
-            result = Date.new(val[0], val[2], val[4])
+            result = Date.gregorian(val[0], val[2], val[4])
         result = uoa(result, val[6], [:day])
         result = uoa(result, val[8], [:month, :day])
 

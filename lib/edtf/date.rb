@@ -19,7 +19,10 @@ class Date
   extend Forwardable
 
   class << self
-
+    def gregorian(year = -4712, month = 1, mday = 1)
+      new(year, month, mday, Date::GREGORIAN)
+    end
+    
     def edtf(input, options = {})
       edtf!(input, options)
     rescue
