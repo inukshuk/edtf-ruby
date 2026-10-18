@@ -1,35 +1,36 @@
 EDTF-Ruby
 =========
 [![ci](https://github.com/inukshuk/edtf-ruby/actions/workflows/ci.yml/badge.svg)](https://github.com/inukshuk/edtf-ruby/actions/workflows/ci.yml)
-[![Coverage Status](https://coveralls.io/repos/github/inukshuk/edtf-ruby/badge.svg?branch=main)](https://coveralls.io/github/inukshuk/edtf-ruby?branch=main)
 
-EDTF-Ruby comprises a parser and an API implementation of the [Extended
-Date/Time Format standard](http://www.loc.gov/standards/datetime/).
+EDTF-Ruby comprises a parser and an API implementation
+of the [Extended Date/Time Format standard](https://www.loc.gov/standards/datetime/).
 
 
 Compatibility
 -------------
 EDTF-Ruby parser implements all levels and features of the EDTF specification
-(version September 16, 2011). With the following known caveats:
+(version September 16, 2011).
+With the following known caveats:
 
-* In the latest revision of the EDTF specification alternative versions of
-  partial uncertain/approximate strings were introduced (with or without
-  nested parentheses); EDTF-Ruby currently uses the version that tries to
-  reduce parentheses for printing as we find that one easier to read; the
-  parser accepts all valid dates using this approach, plus some dates using
-  nested expressions (the parser will not accept some of the more complex
-  examples, though).
+* In the latest revision of the EDTF specification
+  alternative versions of partial uncertain/approximate strings were introduced
+  (with or without nested parentheses);
+  EDTF-Ruby currently uses the version that tries to reduce parentheses for printing
+  as we find that one easier to read;
+  the parser accepts all valid dates using this approach,
+  plus some dates using nested expressions
+  (the parser will not accept some of the more complex examples, though).
 
-EDTF-Ruby has been confirmed to work on the following Ruby implementations:
-2.1, 2.0, 1.9.3, Rubinius, and JRuby (1.8.7 and 1.9.2 were originally supported
-but we are not testing compatibility actively anymore). Active Support's date
-extensions are currently listed as a dependency, because of many functional
-overlaps (version 3.x and 4.x are supported).
+EDTF-Ruby is tested on Ruby 3.2 and later, and on JRuby.
+Active Support's date extensions are currently listed as a dependency,
+because of many functional overlaps
+(versions 3.x through 8.x are supported).
 
 ### ISO 8601-2
 
-A variation of EDTF has been adopted by the ISO 8601-2 standard. EDTF-Ruby
-does not support this new version of EDTF yet, but if you are curious,
+A variation of EDTF has been adopted by the ISO 8601-2 standard.
+EDTF-Ruby does not support this new version of EDTF yet,
+but if you are curious,
 [EDTF.js](https://github.com/inukshuk/edtf.js), an ES6 implementation
 is already available.
 
@@ -37,23 +38,28 @@ Quickstart
 ----------
 EDTF Ruby is implemented as an extension to the regular Ruby date/time classes.
 You can parse EDTF strings either using `Date.edtf` or `EDTF.parse`
-(both methods come with an alternative bang! version, that will raise an error
-if the string cannot be parsed instead of silently returning nil); if
-given a valid EDTF string the return value will either be an (extended) `Date`,
+(both methods come with an alternative bang! version,
+that will raise an error if the string cannot be parsed
+instead of silently returning nil);
+if given a valid EDTF string
+the return value will either be an (extended) `Date`,
 `EDTF::Interval`, `EDTF::Set`, `EDTF::Epoch` or `EDTF::Season` instance.
 
-Given any of these instances, you can print the corresponding EDTF string
-using the `#edtf` method.
+Given any of these instances,
+you can print the corresponding EDTF string using the `#edtf` method.
 
 ### Dates
 
-Most of the EDTF features deal with dates; EDTF-Ruby implements these by
-extending Active Support's version of the regular Ruby Date class. The library
-intends to be transparent to Ruby's regular API, i.e., every Date instance
-should act as you would normally expect but provides additional functionality.
+Most of the EDTF features deal with dates;
+EDTF-Ruby implements these by extending Active Support's version
+of the regular Ruby Date class.
+The library intends to be transparent to Ruby's regular API,
+i.e., every Date instance should act as you would normally expect
+but provides additional functionality.
 
-Most, notably, EDTF dates come in day, month, or year precision. This is a
-subtle difference that determines how many other methods work. For instance:
+Most notably, EDTF dates come in day, month, or year precision.
+This is a subtle difference that determines how many other methods work.
+For instance:
 
     > Date.today.precision
     => :day
@@ -64,16 +70,18 @@ subtle difference that determines how many other methods work. For instance:
     > Date.today.month_precision!.succ
     => Sat, 10 Dec 2011
 
-As you can see, dates have day precision by default; after setting the date's
-precision to month, however, the natural successor is not the next day, but
-a day a month from now. Always keep precision in mind when comparing dates,
-too:
+As you can see, dates have day precision by default;
+after setting the date's precision to month, however,
+the natural successor is not the next day,
+but a day a month from now.
+Always keep precision in mind when comparing dates, too:
 
     > Date.new(1966).year_precision! == Date.new(1966)
     => false
 
-The year 1966 is not equal to the January 1st, 1966. You can set a date's
-precision directly, or else use the dedicated bang! methods:
+The year 1966 is not equal to the January 1st, 1966.
+You can set a date's precision directly,
+or else use the dedicated bang! methods:
 
     > d = Date.new(1993)
     > d.day_precision?   # -> true
@@ -88,35 +96,39 @@ precision directly, or else use the dedicated bang! methods:
     > d.day_precision?    # -> false
     > d.year_precision?   # -> true
 
-In the examples above, you also see that the `#edtf` method will print a
-different string depending on the date's current precision.
+In the examples above, you also see that the `#edtf` method
+will print a different string depending on the date's current precision.
 
-The second important extension is that dates can be uncertain and or
-approximate. The distinction between the two may seem somewhat contrived,
+The second important extension is that dates can be uncertain and or approximate.
+The distinction between the two may seem somewhat contrived,
 but we have come to understand it as follows:
 
-Assume you take a history exam and have to answer one of those dreaded
-questions that require you to say exactly in what year a certain event
-happened; you studied hard, but all of a sudden you are *uncertain*: was
-that the year 1683 or was it 1638? This is what uncertainty is in the
-parlance of EDTF: in fact, you would write it just like that "1638?".
+Assume you take a history exam
+and have to answer one of those dreaded questions
+that require you to say exactly in what year a certain event happened;
+you studied hard, but all of a sudden you are *uncertain*:
+was that the year 1683 or was it 1638?
+This is what uncertainty is in the parlance of EDTF:
+in fact, you would write it just like that "1638?".
 
-Approximate dates are similar but slightly different. Lets say you want
-to tell a story about something that happened to you one winter; you
-don't recall the exact date, but you know it must have been sometime
-between Christmas and New Year's. Come to think of it, you don't
-remember the year either, but you must have been around ten years old.
-Using EDTF, you could write something like "1993~-12-(27)~": this
-indicates that both the year and the day are approximations: perhaps
-the day is not the 27th but it is somewhere close.
+Approximate dates are similar but slightly different.
+Let's say you want to tell a story about something that happened to you one winter;
+you don't recall the exact date,
+but you know it must have been sometime between Christmas and New Year's.
+Come to think of it, you don't remember the year either,
+but you must have been around ten years old.
+Using EDTF, you could write something like "1993~-12-(27)~":
+this indicates that both the year and the day are approximations:
+perhaps the day is not the 27th but it is somewhere close.
 
-This is the main difference between uncertain and approximate in
-EDTF (in our opinion at least): approximate always means close to the
-actual number, whilst uncertain could be something completely different
+This is the main difference between uncertain and approximate in EDTF
+(in our opinion at least):
+approximate always means close to the actual number,
+whilst uncertain could be something completely different
 (just as there is a large temporal distance between 1638 and 1683).
 
-Here are a few examples of how you can access the uncertain/approximate
-state of dates in Ruby:
+Here are a few examples of how you can access
+the uncertain/approximate state of dates in Ruby:
 
     > d = Date.edtf('1984?')
     > d.uncertain?
@@ -133,12 +145,11 @@ state of dates in Ruby:
     > d.edtf
     => "1984?-01~"
 
-As you can see above, you can use the bang! methods to set individual date
-parts.
+As you can see above, you can use the bang! methods to set individual date parts.
 
-In addition, EDTF supports *unspecified* date parts. EDTF-Ruby provides parsing
-for both the draft and finalized EDTF specifications, with output meeting the
-requirements of the final specification:
+In addition, EDTF supports *unspecified* date parts.
+EDTF-Ruby provides parsing for both the draft and finalized EDTF specifications,
+with output meeting the requirements of the final specification:
 
     > d = Date.edtf('1999-03-XX')
     > d.unspecified?
@@ -155,8 +166,9 @@ requirements of the final specification:
     > draft_d.edtf
     => "1999-03-XX"
 
-All three, uncertain, approximate, and unspecified attributes do not factor
-into date calculations (like comparisons or successors etc.).
+All three, uncertain, approximate, and unspecified attributes
+do not factor into date calculations
+(like comparisons or successors etc.).
 
 EDTF long or scientific years are mapped to normal date instances.
 
@@ -171,9 +183,10 @@ When printing date strings, EDTF-Ruby will try to avoid nested parentheses:
 
 ### Intervals
 
-If you parse an EDTF interval, the EDTF-Ruby parser will return an instance
-of `EDTF::Interval`; intervals mimic regular Ruby ranges, but offer additional
-functionality.
+If you parse an EDTF interval,
+the EDTF-Ruby parser will return an instance of `EDTF::Interval`;
+intervals mimic regular Ruby ranges,
+but offer additional functionality.
 
     > d = Date.edtf('1984-06?/2004-08?')
     > d.from.uncertain?
@@ -181,14 +194,15 @@ functionality.
     > d.include?(Date.new(1987,04,13))
     => false
 
-The day is not included because interval has month precision. However:
+The day is not included because interval has month precision.
+However:
 
     > d.cover?(Date.new(1987,04,13))
     => true
 
-The day is still covered by the interval. In general, optimized in the
-same way that Ruby optimizes numeric ranges. Additionally, precision
-plays into the way intervals are enumerated:
+The day is still covered by the interval.
+In general, optimized in the same way that Ruby optimizes numeric ranges.
+Additionally, precision plays into the way intervals are enumerated:
 
     > d.length
     => 243
@@ -198,14 +212,16 @@ There are 243 months between 1984-06-01 and 2004-08-31.
     > d.step(36).map(&:year)
     => [1984, 1987, 1990, 1993, 1996, 1999, 2002]
 
-Here we iterate through the interval in 36-month steps and map each date to
-the year.
+Here we iterate through the interval in 36-month steps
+and map each date to the year.
 
     > Date.edtf('1582-10-01/1582-10-31').length
-    => 21
+    => 31
 
-This interval has day precision, so 21 is the number of days in October 1582,
-which was cut short because of the Gregorian calendar reform.
+This interval has day precision,
+so 31 is the number of days in October 1582:
+EDTF-Ruby uses the proleptic Gregorian calendar,
+so the ten days skipped by the Gregorian calendar reform are included.
 
 Intervals can be open or have unknown start or end dates.
 
@@ -216,8 +232,10 @@ Intervals can be open or have unknown start or end dates.
 
 ### Sets
 
-EDTF supports two kind of sets: choice lists (meaning one date out of a list),
-or inclusive lists. In EDTF-Ruby, these are covered by the class `EDTF::Set`
+EDTF supports two kinds of sets:
+choice lists (meaning one date out of a list),
+or inclusive lists.
+In EDTF-Ruby, these are covered by the class `EDTF::Set`
 and the `choice` attribute.
 
     > s = Date.edtf('{1667,1668, 1670..1672}')
@@ -227,22 +245,23 @@ and the `choice` attribute.
     > s.edtf
     => "[1667,1668,1670..1672]"
 
-As you can see above, EDTF-Ruby remembers which parts of the set were
-specified as a range; ranges are however enumerated for membership tests:
+As you can see above,
+EDTF-Ruby remembers which parts of the set were specified as a range;
+ranges are however enumerated for membership tests:
 
     > s.include?(Date.edtf('1669'))
     => false
     > s.include?(Date.edtf('1671'))
     => true
 
-Even though we're still aware that the year 1671 was is not directly an
-element of the set:
+Even though we're still aware
+that the year 1671 is not directly an element of the set:
 
     > s.length
     => 3
 
-When in doubt, you can always map the set to an array. This will also
-enumerate all ranges:
+When in doubt, you can always map the set to an array.
+This will also enumerate all ranges:
 
     > s.map(&:year)
     => [1667,1668,1670,1671,1672] # when enumerated there are 5 elements
@@ -258,14 +277,14 @@ EDTF sets also feature an `#earlier?` and `#later?` attribute:
 
 ### Decades and Centuries
 
-The EDTF specification supports so called masked precision strings to define
-decades or centuries. EDTF-Ruby maps these to dedicated intervals which
-always cover 10 or 100 years, respectively.
+The EDTF specification supports so called masked precision strings
+to define decades or centuries.
+EDTF-Ruby maps these to dedicated intervals
+which always cover 10 or 100 years, respectively.
 
     > d = Date.edtf!('196x')
-    => 196x
-    > d.class
-    => EDTF::Decade
+    > d.edtf
+    => "196x"
     > d.class
     => EDTF::Decade
     > d.min
@@ -277,13 +296,15 @@ always cover 10 or 100 years, respectively.
 
 ### Seasons
 
-Finally, EDTF covers seasons. Again, EDTF-Ruby provides a dedicated class
-for this. Note that EDTF does not make any assumption about the specifics
-(which months etc.) of the season and you don't have to either; however
-EDTF-Ruby defines method aliases which allow you to access the seasons
-by the names spring, summer, autumn (or fall), and winter, respectively.
-You can also use the more neutral taxonomy of first, second, third,
-fourth.
+Finally, EDTF covers seasons.
+Again, EDTF-Ruby provides a dedicated class for this.
+Note that EDTF does not make any assumption about the specifics
+(which months etc.) of the season
+and you don't have to either;
+however EDTF-Ruby defines method aliases
+which allow you to access the seasons by the names
+spring, summer, autumn (or fall), and winter, respectively.
+You can also use the more neutral taxonomy of first, second, third, fourth.
 
     > w = Date.edtf!('2003-24')
     > w.winter?
@@ -299,24 +320,25 @@ fourth.
     => Mon, 31 May 2004
     > s.to_a.length
     => 92
-    005:0> w.to_a.length
+    > w.to_a.length
     => 91
 
-As you can see, spring 2004 lasted one day longer than winter 2003 (note
-that spring and winter here do not relate to the astronomical seasons
+As you can see, spring 2004 lasted one day longer than winter 2003
+(note that spring and winter here do not relate to the astronomical seasons
 but strictly to three month periods).
 
-Of course you can print seasons to EDTF strings, too. Finally, seasons can
-be uncertain/approximate.
+Of course you can print seasons to EDTF strings, too.
+Finally, seasons can be uncertain/approximate.
 
     > s.edtf
     => "2004-21"
     > s.approximate!.edtf
-    => "2004-21"
+    => "2004-21~"
 
 
-For additional features, please take a look at the documentation or the
-extensive list of rspec examples.
+For additional features,
+please take a look at the documentation
+or the extensive list of rspec examples.
 
 
 Contributing
@@ -326,16 +348,20 @@ You can check out a copy of the latest code using Git:
 
     $ git clone https://github.com/inukshuk/edtf-ruby.git
 
-To get started, generate the parser and run all tests:
+To get started, install the dependencies and run all tests:
 
     $ cd edtf-ruby
     $ bundle install
-    $ bundle exec rspec spec
-    $ bundle exec cucumber
+    $ bundle exec rake
 
-If you've found a bug or have a question, please open an issue on the
-[EDTF-Ruby issue tracker](https://github.com/inukshuk/edtf-ruby). Or, for extra
-credit, clone the EDTF-Ruby repository, write a failing example, fix the bug
+If you change the grammar in `lib/edtf/parser.y`,
+regenerate the parser with `bundle exec rake racc`.
+
+If you've found a bug or have a question,
+please open an issue on the
+[EDTF-Ruby issue tracker](https://github.com/inukshuk/edtf-ruby/issues).
+Or, for extra credit, clone the EDTF-Ruby repository,
+write a failing example, fix the bug
 and submit a pull request.
 
 
@@ -343,5 +369,5 @@ Credits
 -------
 EDTF-Ruby was written by Sylvester Keil and Ilja Srna.
 
-Published under the terms and conditions of the FreeBSD License; see LICENSE
-for details.
+Published under the terms and conditions of the FreeBSD License;
+see LICENSE for details.

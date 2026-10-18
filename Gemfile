@@ -1,20 +1,13 @@
 source 'https://rubygems.org'
 gemspec
 
-group :coverage do
-  platforms :mri do
-    gem 'simplecov'
-    gem 'simplecov-lcov'
-  end
-end
-
-group :debug, optional: true do
-  gem 'debug', '>= 1.0.0', require: false
-end
-
-group :development do
+group :development, :test do
   gem 'rake'
-  gem 'racc'
-  gem 'cucumber'
   gem 'rspec'
+  gem 'cucumber'
+  gem 'debug', require: false, platforms: :mri
+end
+
+group :coverage do
+  gem 'simplecov', '>= 1.3', require: false
 end

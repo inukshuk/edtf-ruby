@@ -6,3 +6,4 @@ lib/edtf/parser.output
 .bundle
 coverage
 pkg
+*.gem
