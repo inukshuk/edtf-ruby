@@ -130,7 +130,13 @@ module EDTF
     def qualified?; !!@qualifier; end
 
     def edtf
-      '%04d-%2d%s' % [year, CODES[season], qualified? ? "^#{qualifier}" : '']
+      '%04d-%2d%s%s%s' % [
+        year,
+        CODES[season],
+        uncertain? ? '?' : '',
+        approximate? ? '~' : '',
+        qualified? ? "^#{qualifier}" : ''
+      ]
     end
 
     alias to_s edtf
