@@ -303,6 +303,106 @@ module EDTF
       it '2007/2009 should be equal to 2007/2009' do
         expect(Date.edtf('2007/2009')).to eq(Date.edtf('2007/2009'))
       end
+
+      describe 'with open or unknown ends' do
+        it 'sorts open and unknown starts and ends as infinity' do
+          intervals = %w{
+            2004/open 2004/2005 2003/unknown unknown/2005 open/2005 2004/unknown
+          }.map { |s| Date.edtf(s) }
+
+          expect(intervals.sort.map(&:edtf)).to eq(%w{
+            open/2005 unknown/2005 2003/unknown 2004/2005 2004/unknown 2004/open
+          })
+        end
+
+        it 'open/2005 should be equal to open/2005' do
+          expect(Date.edtf('open/2005')).to eq(Date.edtf('open/2005'))
+        end
+
+        it 'open/2005 should not be equal to unknown/2005' do
+          expect(Date.edtf('open/2005')).not_to eq(Date.edtf('unknown/2005'))
+        end
+
+        it '2004/open should be greater than 2004/2005' do
+          expect(Date.edtf('2004/open')).to be > Date.edtf('2004/2005')
+        end
+
+        it 'can be compared to seasons and epochs' do
+          interval = Date.edtf('2004/open')
+          expect(interval).to be < Season.new(2004, :summer)
+          expect(Season.new(2004, :summer)).to be > interval
+          expect(interval).to be > Decade.new(1990)
+          expect(Decade.new(1990)).to be < interval
+        end
+
+        it 'compares seasons and epochs with the same start' do
+          expect(Season.new(2004, :spring) <=> Date.edtf('2004-03-01/open')).to eq(-1)
+          expect(Decade.new(1990) <=> Date.edtf('1990/open')).to eq(-1)
+        end
+      end
+
+      describe 'with dates' do
+        let(:interval) { Date.edtf('2004/2005') }
+
+        it 'is equal to covered dates' do
+          expect(interval <=> Date.new(2004,6,1)).to eq(0)
+          expect(Date.new(2004,6,1) <=> interval).to eq(0)
+        end
+
+        it 'is greater than earlier dates' do
+          expect(interval <=> Date.new(1990,1,1)).to eq(1)
+          expect(Date.new(1990,1,1) <=> interval).to eq(-1)
+        end
+
+        it 'is less than later dates' do
+          expect(interval <=> Date.new(2010,1,1)).to eq(-1)
+          expect(Date.new(2010,1,1) <=> interval).to eq(1)
+        end
+
+        it 'compares open starts' do
+          interval = Date.edtf('open/2005')
+          expect(interval <=> Date.new(1990,1,1)).to eq(0)
+          expect(interval <=> Date.new(2010,1,1)).to eq(-1)
+        end
+
+        it 'compares seasons and epochs' do
+          expect(Date.new(2004,4,1) <=> Season.new(2004, :spring)).to eq(0)
+          expect(Date.new(2010,1,1) <=> Season.new(2004, :spring)).to eq(1)
+          expect(Date.new(1980,1,1) <=> Decade.new(1990)).to eq(-1)
+        end
+      end
+    end
+
+    describe 'coverage with open or unknown ends' do
+      it '2008/unknown covers dates from 2008 onward' do
+        interval = Date.edtf('2008/unknown')
+        expect(interval).to be_cover(Date.new(2008,6,1))
+        expect(interval).to be_cover(Date.new(2030,1,1))
+        expect(interval).not_to be_cover(Date.new(2007,12,31))
+      end
+
+      it 'unknown/2008 covers dates up to 2008' do
+        interval = Date.edtf('unknown/2008')
+        expect(interval).to be_cover(Date.new(1900,1,1))
+        expect(interval).to be_cover(Date.new(2008,12,31))
+        expect(interval).not_to be_cover(Date.new(2009,1,1))
+      end
+
+      it 'unbounded intervals cover everything' do
+        expect(Interval.new(:unknown, :open)).to be_cover(Date.today)
+      end
+
+      it '2000/open covers 2004/open' do
+        expect(Date.edtf('2000/open')).to be === Date.edtf('2004/open')
+      end
+
+      it '2000/2010 does not cover 2004/open' do
+        expect(Date.edtf('2000/2010')).not_to be === Date.edtf('2004/open')
+      end
+
+      it '2000/2010 covers 2004/2005' do
+        expect(Date.edtf('2000/2010')).to be === Date.edtf('2004/2005')
+      end
     end
   end
 end

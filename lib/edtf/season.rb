@@ -146,7 +146,9 @@ module EDTF
       case other
       when Date
         cover?(other) ? 0 : to_date <=> other
-      when Interval, Epoch
+      when Interval
+        (c = other <=> self) && -c
+      when Epoch
         [min, max] <=> [other.min, other.max]
       when Season
         [year, month, qualifier] <=> [other.year, other.month, other.qualifier]

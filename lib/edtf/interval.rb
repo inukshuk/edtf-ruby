@@ -166,18 +166,8 @@ module EDTF
 
       other = other.day_precision
 
-      case
-      when unknown_start?
-        max.day_precision! == other
-      when unknown_end?
-        min.day_precision! == other
-      when open_start?
-        max.day_precision! >= other
-      when open_end?
-        min.day_precision! <= other
-      else
-        min.day_precision! <= other && other <= max.day_precision!
-      end
+      (unbounded_start? || min.day_precision! <= other) &&
+        (unbounded_end? || other <= max.day_precision!)
     end
 
     # call-seq:
@@ -268,12 +258,20 @@ module EDTF
       max
     end
 
+    # Intervals are compared by their min and max dates. Open and unknown
+    # starts and ends are treated like -/+ infinity, with open being the
+    # more extreme of the two. Dates are equal to an interval if they are
+    # covered by it.
     def <=>(other)
       case other
       when Interval, Season, Epoch
-        [min, max] <=> [other.min, other.max]
+        bounds <=> bounds_of(other)
       when Date
-        cover?(other) ? min <=> other : 0
+        case
+        when cover?(other) then 0
+        when unbounded_start? then -1
+        else min.day_precision <=> other.day_precision
+        end
       else
         nil
       end
@@ -282,7 +280,8 @@ module EDTF
     def ===(other)
       case other
       when Interval
-        cover?(other.min) && cover?(other.max)
+        (other.unbounded_start? ? unbounded_start? : cover?(other.min)) &&
+          (other.unbounded_end? ? unbounded_end? : cover?(other.max))
       when Date
         cover?(other)
       else
@@ -300,6 +299,32 @@ module EDTF
     end
 
     alias to_s edtf
+
+    protected
+
+    def unbounded_start?
+      open_start? || unknown_start?
+    end
+
+    def unbounded_end?
+      open_end? || unknown_end?
+    end
+
+    START_RANK = { :open => -2, :unknown => -1 }.freeze
+    END_RANK = { :unknown => 1, :open => 2 }.freeze
+
+    def bounds
+      [
+        unbounded_start? ? START_RANK[from] : 0, min,
+        unbounded_end? ? END_RANK[to] : 0, max
+      ]
+    end
+
+    private
+
+    def bounds_of(other)
+      other.is_a?(Interval) ? other.bounds : [0, other.min, 0, other.max]
+    end
 
   end
 
