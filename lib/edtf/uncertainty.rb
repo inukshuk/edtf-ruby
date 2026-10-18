@@ -12,7 +12,6 @@ module EDTF
     end
 
     def hash_base=(base)
-      @hash_map = false
       @hash_base = base
     end
 
@@ -37,13 +36,7 @@ module EDTF
     end
 
     def hash
-      values.zip(hash_map).reduce(0) { |s, (v, h)|  s + (v ? h : 0) }
-    end
-
-    private
-
-    def hash_map
-      @hash_map ||= (0...length).map { |i| hash_base << i }
+      (year ? hash_base : 0) + (month ? hash_base << 1 : 0) + (day ? hash_base << 2 : 0)
     end
 
   end
@@ -78,6 +71,12 @@ module EDTF
 
     alias specific! specified!
     alias unspecific! unspecified!
+
+    def hash
+      y, m, d = year, month, day
+      (y[0] ? 1 : 0) | (y[1] ? 2 : 0) | (y[2] ? 4 : 0) | (y[3] ? 8 : 0) |
+        (m[0] ? 16 : 0) | (m[1] ? 32 : 0) | (d[0] ? 64 : 0) | (d[1] ? 128 : 0)
+    end
 
     private :year=, :month=, :day=
 

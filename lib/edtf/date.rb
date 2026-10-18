@@ -263,9 +263,31 @@ class Date
     when ::Date
       values <=> other.values
     when EDTF::Interval, EDTF::Season, EDTF::Epoch
-      other.cover?(self) ? other.min <=> self : 0
+      (c = other <=> self) && -c
     else
       nil
+    end
+  end
+
+  alias original_eql? eql?
+  alias original_hash hash
+
+  # Returns true if other is the same date and has the same EDTF attributes.
+  def eql?(other)
+    if original_eql?(other)
+      extended_hash == other.extended_hash && calendar == other.calendar
+    else
+      false
+    end
+  end
+
+  # Returns the original Date hash unless EDTF attributes are set.
+  def hash
+    h = extended_hash
+    if h.zero? && !calendar?
+      original_hash
+    else
+      [original_hash, h, @calendar].hash
     end
   end
 
@@ -313,6 +335,18 @@ class Date
   protected
 
   attr_writer :uncertain, :unspecified, :approximate
+
+  # Bits 0-1: precision (0 - day, 1 - month, 2 - year)
+  # Bits 2-4: uncertain year, month, day (Uncertainty#hash with base 1)
+  # Bits 5-7: approximate year, month, day (Uncertainty#hash with base 8)
+  # Bits 8-15: unspecified year, month, and day digits
+  def extended_hash
+    h = @precision == :year ? 2 : @precision == :month ? 1 : 0
+    h |= @uncertain.hash << 2 if @uncertain
+    h |= @approximate.hash << 2 if @approximate
+    h |= @unspecified.hash << 8 if @unspecified
+    h
+  end
 
   def copy_extended_attributes(other)
     @uncertain   = other.uncertain.dup

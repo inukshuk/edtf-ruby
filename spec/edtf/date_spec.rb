@@ -232,6 +232,56 @@ describe 'Date/DateTime' do
 
 		end
 
+		describe '#eql? and #hash' do
+
+			it 'distinguishes dates with different EDTF attributes (#49)' do
+				a = EDTF.parse!('1972%')
+				b = EDTF.parse!('1972-XX-XX')
+				h = { a => 1, b => 2 }
+
+				expect(a).not_to eql(b)
+				expect(h.size).to eq(2)
+				expect(h[a]).to eq(1)
+			end
+
+			it 'distinguishes precision' do
+				expect(Date.new(1972)).not_to eql(Date.new(1972).year_precision!)
+			end
+
+			it 'distinguishes uncertain and approximate dates' do
+				expect(Date.edtf('1972')).not_to eql(Date.edtf('1972?'))
+				expect(Date.edtf('1972?')).not_to eql(Date.edtf('1972~'))
+			end
+
+			it 'distinguishes unspecified dates' do
+				expect(Date.edtf('1972-01-01')).not_to eql(Date.edtf('1972-01-XX'))
+			end
+
+			it 'distinguishes calendars' do
+				expect(Date.edtf('2001-02-03^xyz')).not_to eql(Date.edtf('2001-02-03'))
+			end
+
+			it 'treats dates with the same EDTF attributes as equal' do
+				a, b = Date.edtf('1972?-XX~'), Date.edtf('1972?-XX~')
+				expect(a).to eql(b)
+				expect(a.hash).to eq(b.hash)
+			end
+
+			it 'ignores unset or cleared EDTF attributes' do
+				a = Date.new(1972, 1, 1)
+				b = Date.new(1972, 1, 1).day_precision!.uncertain!.certain!
+
+				expect(a).to eql(b)
+				expect(a.hash).to eq(b.hash)
+			end
+
+			it 'uses the original hash for regular dates' do
+				d = Date.new(1972, 1, 1)
+				expect(d.hash).to eq(d.original_hash)
+			end
+
+		end
+
 		describe '#==' do
 
 			it "xmas and new year's eve are not equal" do
