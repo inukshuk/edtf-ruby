@@ -21,7 +21,7 @@ With the following known caveats:
   plus some dates using nested expressions
   (the parser will not accept some of the more complex examples, though).
 
-EDTF-Ruby is tested on Ruby 3.2 and later, and on JRuby.
+EDTF-Ruby is tested on Ruby 3.3 and later, and on JRuby.
 Active Support's date extensions are currently listed as a dependency,
 because of many functional overlaps
 (versions 3.x through 8.x are supported).
