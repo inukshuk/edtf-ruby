@@ -27,6 +27,18 @@ level_0:
     type: "date"
     values: [1985]
     edtf: "1985"
+  - input: "1984"
+    type: "date"
+    values: [1984]
+    edtf: "1984"
+  - input: "1984-01"
+    type: "date"
+    values: [1984, 1]
+    edtf: "1984-01"
+  - input: "1984-11-23"
+    type: "date"
+    values: [1984, 11, 23]
+    edtf: "1984-11-23"
   - input: "2016-05-31"
     type: "date"
     values: [2016, 5, 31]
@@ -71,6 +83,10 @@ level_0:
     type: "date"
     values: [-2323]
     edtf: "-2323"
+  - input: "-2101"
+    type: "date"
+    values: [-2101]
+    edtf: "-2101"
   - input: "-9999"
     type: "date"
     values: [-9999]
@@ -115,6 +131,17 @@ level_0:
       values: [2008]
       edtf: "2008"
     edtf: "1964/2008"
+  - input: "2007/2008"
+    type: "interval"
+    from:
+      type: "date"
+      values: [2007]
+      edtf: "2007"
+    to:
+      type: "date"
+      values: [2008]
+      edtf: "2008"
+    edtf: "2007/2008"
   - input: "1980-08/1994"
     type: "interval"
     from:
@@ -231,11 +258,22 @@ level_1:
     season: "winter"
     bounds: ["2001-12-01", "2002-02-28"]
     edtf: "2001-24"
+  - input: "2003-23"
+    type: "season"
+    year: 2003
+    season: "autumn"
+    bounds: ["2003-09-01", "2003-11-30"]
+    edtf: "2003-23"
   - input: "1984?"
     type: "date"
     values: [1984]
     uncertain: ["year"]
     edtf: "1984?"
+  - input: "1984-11-23?"
+    type: "date"
+    values: [1984, 11, 23]
+    uncertain: ["year", "month", "day"]
+    edtf: "1984-11-23?"
   - input: "2004-06?"
     type: "date"
     values: [2004, 6]
@@ -251,6 +289,11 @@ level_1:
     values: [1984]
     approximate: ["year"]
     edtf: "1984~"
+  - input: "1984-01~"
+    type: "date"
+    values: [1984, 1]
+    approximate: ["year", "month"]
+    edtf: "1984-01~"
   - input: "2004-06~"
     type: "date"
     values: [2004, 6]
@@ -294,6 +337,11 @@ level_1:
     values: [1980]
     unspecified: "sssX-ss-ss"
     edtf: "198X"
+  - input: "199X"
+    type: "date"
+    values: [1990]
+    unspecified: "sssX-ss-ss"
+    edtf: "199X"
   - input: "2004-XX"
     type: "date"
     values: [2004, 1]
@@ -309,11 +357,26 @@ level_1:
     values: [1985, 1, 1]
     unspecified: "ssss-XX-XX"
     edtf: "1985-XX-XX"
+  - input: "1999-XX-XX"
+    type: "date"
+    values: [1999, 1, 1]
+    unspecified: "ssss-XX-XX"
+    edtf: "1999-XX-XX"
+  - input: "2004-06-XX"
+    type: "date"
+    values: [2004, 6, 1]
+    unspecified: "ssss-ss-XX"
+    edtf: "2004-06-XX"
   - input: "-199X"
     type: "date"
     values: [-1990]
     unspecified: "sssX-ss-ss"
     edtf: "-199X"
+  - input: "-1999-XX-XX"
+    type: "date"
+    values: [-1999, 1, 1]
+    unspecified: "ssss-XX-XX"
+    edtf: "-1999-XX-XX"
   - input: "1985-04-12/.."
     type: "interval"
     from:
@@ -522,6 +585,12 @@ level_2:
     values: [2001, 9]
     approximate: ["year"]
     edtf: "2001~-09"
+  - input: "2004~-06?"
+    type: "date"
+    values: [2004, 6]
+    uncertain: ["year", "month"]
+    approximate: ["year"]
+    edtf: "2004~-06?"
   - input: "156X-12-31"
     type: "date"
     values: [1560, 12, 31]
@@ -542,6 +611,56 @@ level_2:
     values: [1500, 1, 25]
     unspecified: "ssXX-XX-ss"
     edtf: "15XX-XX-25"
+  - input: "199X-01"
+    type: "date"
+    values: [1990, 1]
+    unspecified: "sssX-ss-ss"
+    edtf: "199X-01"
+  - input: "199X-01-01"
+    type: "date"
+    values: [1990, 1, 1]
+    unspecified: "sssX-ss-ss"
+    edtf: "199X-01-01"
+  - input: "19XX-01-01"
+    type: "date"
+    values: [1900, 1, 1]
+    unspecified: "ssXX-ss-ss"
+    edtf: "19XX-01-01"
+  - input: "199X-XX-01"
+    type: "date"
+    values: [1990, 1, 1]
+    unspecified: "sssX-XX-ss"
+    edtf: "199X-XX-01"
+  - input: "19XX-XX-01"
+    type: "date"
+    values: [1900, 1, 1]
+    unspecified: "ssXX-XX-ss"
+    edtf: "19XX-XX-01"
+  - input: "199X-XX-XX"
+    type: "date"
+    values: [1990, 1, 1]
+    unspecified: "sssX-XX-XX"
+    edtf: "199X-XX-XX"
+  - input: "19XX-XX-XX"
+    type: "date"
+    values: [1900, 1, 1]
+    unspecified: "ssXX-XX-XX"
+    edtf: "19XX-XX-XX"
+  - input: "199X-01-XX"
+    type: "date"
+    values: [1990, 1, 1]
+    unspecified: "sssX-ss-XX"
+    edtf: "199X-01-XX"
+  - input: "19XX-01-XX"
+    type: "date"
+    values: [1900, 1, 1]
+    unspecified: "ssXX-ss-XX"
+    edtf: "19XX-01-XX"
+  - input: "1999-XX-01"
+    type: "date"
+    values: [1999, 1, 1]
+    unspecified: "ssss-XX-ss"
+    edtf: "1999-XX-01"
   - input: "[1667,1668,1670..1672]"
     type: "choice"
     members: ["1667", "1668", "1670", "1671", "1672"]
@@ -570,6 +689,11 @@ level_2:
     later: true
     members: ["1760-01", "1760-02", "1760-12"]
     edtf: "[1760-01,1760-02,1760-12..]"
+  - input: "[1760-01, 1760-02, 1760-12..]"
+    type: "choice"
+    later: true
+    members: ["1760-01", "1760-02", "1760-12"]
+    edtf: "[1760-01,1760-02,1760-12..]"
   - input: "[1667, 1672-12]"
     type: "choice"
     members: ["1667", "1672-12"]
@@ -583,11 +707,19 @@ level_2:
     type: "list"
     members: ["1667", "1668", "1670", "1671", "1672"]
     edtf: "{1667,1668,1670..1672}"
+  - input: "{1667,1668, 1670..1672}"
+    type: "list"
+    members: ["1667", "1668", "1670", "1671", "1672"]
+    edtf: "{1667,1668,1670..1672}"
   - input: "{1667, 1670..1672}"
     type: "list"
     members: ["1667", "1670", "1671", "1672"]
     edtf: "{1667,1670..1672}"
   - input: "{1960,1961-12}"
+    type: "list"
+    members: ["1960", "1961-12"]
+    edtf: "{1960,1961-12}"
+  - input: "{1960, 1961-12}"
     type: "list"
     members: ["1960", "1961-12"]
     edtf: "{1960,1961-12}"
@@ -655,11 +787,51 @@ draft_syntax:
     values: [2016, 5, 1]
     unspecified: "ssss-ss-XX"
     edtf: "2016-05-XX"
+  - input: "2004-06-uu"
+    type: "date"
+    values: [2004, 6, 1]
+    unspecified: "ssss-ss-XX"
+    edtf: "2004-06-XX"
   - input: "199u-01-01"
     type: "date"
     values: [1990, 1, 1]
     unspecified: "sssX-ss-ss"
     edtf: "199X-01-01"
+  - input: "19uu-01-01"
+    type: "date"
+    values: [1900, 1, 1]
+    unspecified: "ssXX-ss-ss"
+    edtf: "19XX-01-01"
+  - input: "199u-uu-01"
+    type: "date"
+    values: [1990, 1, 1]
+    unspecified: "sssX-XX-ss"
+    edtf: "199X-XX-01"
+  - input: "199u-uu-uu"
+    type: "date"
+    values: [1990, 1, 1]
+    unspecified: "sssX-XX-XX"
+    edtf: "199X-XX-XX"
+  - input: "19uu-uu-uu"
+    type: "date"
+    values: [1900, 1, 1]
+    unspecified: "ssXX-XX-XX"
+    edtf: "19XX-XX-XX"
+  - input: "199u-01-uu"
+    type: "date"
+    values: [1990, 1, 1]
+    unspecified: "sssX-ss-XX"
+    edtf: "199X-01-XX"
+  - input: "19uu-01-uu"
+    type: "date"
+    values: [1900, 1, 1]
+    unspecified: "ssXX-ss-XX"
+    edtf: "19XX-01-XX"
+  - input: "1999-uu-01"
+    type: "date"
+    values: [1999, 1, 1]
+    unspecified: "ssss-XX-ss"
+    edtf: "1999-XX-01"
   - input: "19uu-uu-01"
     type: "date"
     values: [1900, 1, 1]
@@ -793,6 +965,12 @@ draft_syntax:
     uncertain: ["month", "day"]
     approximate: ["year", "day"]
     edtf: "2004~-(06)?-01?~"
+  - input: "2004~-(06)?"
+    type: "date"
+    values: [2004, 6]
+    uncertain: ["month"]
+    approximate: ["year"]
+    edtf: "2004~-(06)?"
   - input: "2004-(06)%-11"
     type: "date"
     values: [2004, 6, 11]
@@ -917,6 +1095,28 @@ extensions:
     approximate: true
     bounds: ["2001-03-01", "2001-05-31"]
     edtf: "2001-21?~"
+  - input: "2003-23?"
+    type: "season"
+    year: 2003
+    season: "autumn"
+    uncertain: true
+    bounds: ["2003-09-01", "2003-11-30"]
+    edtf: "2003-23?"
+  - input: "2003-23~"
+    type: "season"
+    year: 2003
+    season: "autumn"
+    approximate: true
+    bounds: ["2003-09-01", "2003-11-30"]
+    edtf: "2003-23~"
+  - input: "2003-23%"
+    type: "season"
+    year: 2003
+    season: "autumn"
+    uncertain: true
+    approximate: true
+    bounds: ["2003-09-01", "2003-11-30"]
+    edtf: "2003-23?~"
   - input: "[1984, 1990?]"
     type: "choice"
     members: ["1984", "1990?"]
