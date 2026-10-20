@@ -1,0 +1,1241 @@
+# Compatibility baseline for the EDTF parser.
+#
+# Each entry records how EDTF-Ruby 4.x parses an input string. The
+# attributes are produced by EDTF::Compatibility.describe (see
+# spec/support/compatibility.rb); only non-default attributes are listed.
+# The 'edtf' attribute is the current output and will change when the
+# output switches to ISO 8601-2 syntax.
+#
+# Entries in 'unsupported' are valid EDTF that the parser rejects today.
+# They run as pending examples and need a full description once supported.
+
+# EDTF 2019 level 0 (ISO 8601-1 dates, date-times and intervals).
+level_0:
+  - input: "2001-02-03"
+    type: "date"
+    values: [2001, 2, 3]
+    edtf: "2001-02-03"
+  - input: "1985-04-12"
+    type: "date"
+    values: [1985, 4, 12]
+    edtf: "1985-04-12"
+  - input: "1985-04"
+    type: "date"
+    values: [1985, 4]
+    edtf: "1985-04"
+  - input: "1985"
+    type: "date"
+    values: [1985]
+    edtf: "1985"
+  - input: "1984"
+    type: "date"
+    values: [1984]
+    edtf: "1984"
+  - input: "1984-01"
+    type: "date"
+    values: [1984, 1]
+    edtf: "1984-01"
+  - input: "1984-11-23"
+    type: "date"
+    values: [1984, 11, 23]
+    edtf: "1984-11-23"
+  - input: "2016-05-31"
+    type: "date"
+    values: [2016, 5, 31]
+    edtf: "2016-05-31"
+  - input: "2016-02-29"
+    type: "date"
+    values: [2016, 2, 29]
+    edtf: "2016-02-29"
+  - input: "2000-02-29"
+    type: "date"
+    values: [2000, 2, 29]
+    edtf: "2000-02-29"
+  - input: "0409"
+    type: "date"
+    values: [409]
+    edtf: "0409"
+  - input: "0000"
+    type: "date"
+    values: [0]
+    edtf: "0000"
+  - input: "0000-01-01"
+    type: "date"
+    values: [0, 1, 1]
+    edtf: "0000-01-01"
+  - input: "9999"
+    type: "date"
+    values: [9999]
+    edtf: "9999"
+  - input: "-0002"
+    type: "date"
+    values: [-2]
+    edtf: "-0002"
+  - input: "-0999"
+    type: "date"
+    values: [-999]
+    edtf: "-0999"
+  - input: "-1985"
+    type: "date"
+    values: [-1985]
+    edtf: "-1985"
+  - input: "-2323"
+    type: "date"
+    values: [-2323]
+    edtf: "-2323"
+  - input: "-2101"
+    type: "date"
+    values: [-2101]
+    edtf: "-2101"
+  - input: "-9999"
+    type: "date"
+    values: [-9999]
+    edtf: "-9999"
+  - input: "1582-10-10"
+    type: "date"
+    values: [1582, 10, 10]
+    edtf: "1582-10-10"
+  - input: "1985-04-12T23:20:30"
+    type: "datetime"
+    values: [1985, 4, 12, 23, 20, 30]
+    offset: "+00:00"
+    edtf: "1985-04-12T23:20:30"
+  - input: "1985-04-12T23:20:30Z"
+    type: "datetime"
+    values: [1985, 4, 12, 23, 20, 30]
+    offset: "+00:00"
+    edtf: "1985-04-12T23:20:30+00:00"
+  - input: "1985-04-12T23:20:30+04:30"
+    type: "datetime"
+    values: [1985, 4, 12, 23, 20, 30]
+    offset: "+04:30"
+    edtf: "1985-04-12T23:20:30+04:30"
+  - input: "2016-05-02T16:54:59-12:00"
+    type: "datetime"
+    values: [2016, 5, 2, 16, 54, 59]
+    offset: "-12:00"
+    edtf: "2016-05-02T16:54:59-12:00"
+  - input: "2011-08-15T11:19:00+01:00"
+    type: "datetime"
+    values: [2011, 8, 15, 11, 19, 0]
+    offset: "+01:00"
+    edtf: "2011-08-15T11:19:00+01:00"
+  - input: "1964/2008"
+    type: "interval"
+    from:
+      type: "date"
+      values: [1964]
+      edtf: "1964"
+    to:
+      type: "date"
+      values: [2008]
+      edtf: "2008"
+    edtf: "1964/2008"
+  - input: "2007/2008"
+    type: "interval"
+    from:
+      type: "date"
+      values: [2007]
+      edtf: "2007"
+    to:
+      type: "date"
+      values: [2008]
+      edtf: "2008"
+    edtf: "2007/2008"
+  - input: "1980-08/1994"
+    type: "interval"
+    from:
+      type: "date"
+      values: [1980, 8]
+      edtf: "1980-08"
+    to:
+      type: "date"
+      values: [1994]
+      edtf: "1994"
+    edtf: "1980-08/1994"
+  - input: "2004-06/2006-08"
+    type: "interval"
+    from:
+      type: "date"
+      values: [2004, 6]
+      edtf: "2004-06"
+    to:
+      type: "date"
+      values: [2006, 8]
+      edtf: "2006-08"
+    edtf: "2004-06/2006-08"
+  - input: "2004-01-01/2004-01-02"
+    type: "interval"
+    from:
+      type: "date"
+      values: [2004, 1, 1]
+      edtf: "2004-01-01"
+    to:
+      type: "date"
+      values: [2004, 1, 2]
+      edtf: "2004-01-02"
+    edtf: "2004-01-01/2004-01-02"
+  - input: "2004-02-01/2005-02-08"
+    type: "interval"
+    from:
+      type: "date"
+      values: [2004, 2, 1]
+      edtf: "2004-02-01"
+    to:
+      type: "date"
+      values: [2005, 2, 8]
+      edtf: "2005-02-08"
+    edtf: "2004-02-01/2005-02-08"
+  - input: "2004-02-01/2005-02"
+    type: "interval"
+    from:
+      type: "date"
+      values: [2004, 2, 1]
+      edtf: "2004-02-01"
+    to:
+      type: "date"
+      values: [2005, 2]
+      edtf: "2005-02"
+    edtf: "2004-02-01/2005-02"
+  - input: "2004-02-01/2005"
+    type: "interval"
+    from:
+      type: "date"
+      values: [2004, 2, 1]
+      edtf: "2004-02-01"
+    to:
+      type: "date"
+      values: [2005]
+      edtf: "2005"
+    edtf: "2004-02-01/2005"
+  - input: "2005/2006-02"
+    type: "interval"
+    from:
+      type: "date"
+      values: [2005]
+      edtf: "2005"
+    to:
+      type: "date"
+      values: [2006, 2]
+      edtf: "2006-02"
+    edtf: "2005/2006-02"
+
+# EDTF 2019 level 1.
+level_1:
+  - input: "Y170000002"
+    type: "date"
+    values: [170000002]
+    edtf: "Y170000002"
+  - input: "Y-170000002"
+    type: "date"
+    values: [-170000002]
+    edtf: "Y-170000002"
+  - input: "Y10000"
+    type: "date"
+    values: [10000]
+    edtf: "Y10000"
+  - input: "2001-21"
+    type: "season"
+    year: 2001
+    season: "spring"
+    bounds: ["2001-03-01", "2001-05-31"]
+    edtf: "2001-21"
+  - input: "2001-22"
+    type: "season"
+    year: 2001
+    season: "summer"
+    bounds: ["2001-06-01", "2001-08-31"]
+    edtf: "2001-22"
+  - input: "2001-23"
+    type: "season"
+    year: 2001
+    season: "autumn"
+    bounds: ["2001-09-01", "2001-11-30"]
+    edtf: "2001-23"
+  - input: "2001-24"
+    type: "season"
+    year: 2001
+    season: "winter"
+    bounds: ["2001-12-01", "2002-02-28"]
+    edtf: "2001-24"
+  - input: "2003-23"
+    type: "season"
+    year: 2003
+    season: "autumn"
+    bounds: ["2003-09-01", "2003-11-30"]
+    edtf: "2003-23"
+  - input: "1984?"
+    type: "date"
+    values: [1984]
+    uncertain: ["year"]
+    edtf: "1984?"
+  - input: "1984-11-23?"
+    type: "date"
+    values: [1984, 11, 23]
+    uncertain: ["year", "month", "day"]
+    edtf: "1984-11-23?"
+  - input: "2004-06?"
+    type: "date"
+    values: [2004, 6]
+    uncertain: ["year", "month"]
+    edtf: "2004-06?"
+  - input: "2004-06-11?"
+    type: "date"
+    values: [2004, 6, 11]
+    uncertain: ["year", "month", "day"]
+    edtf: "2004-06-11?"
+  - input: "1984~"
+    type: "date"
+    values: [1984]
+    approximate: ["year"]
+    edtf: "1984~"
+  - input: "1984-01~"
+    type: "date"
+    values: [1984, 1]
+    approximate: ["year", "month"]
+    edtf: "1984-01~"
+  - input: "2004-06~"
+    type: "date"
+    values: [2004, 6]
+    approximate: ["year", "month"]
+    edtf: "2004-06~"
+  - input: "2016-05-03~"
+    type: "date"
+    values: [2016, 5, 3]
+    approximate: ["year", "month", "day"]
+    edtf: "2016-05-03~"
+  - input: "1984%"
+    type: "date"
+    values: [1984]
+    uncertain: ["year"]
+    approximate: ["year"]
+    edtf: "1984?~"
+  - input: "2004-06%"
+    type: "date"
+    values: [2004, 6]
+    uncertain: ["year", "month"]
+    approximate: ["year", "month"]
+    edtf: "2004-06?~"
+  - input: "2004-06-11%"
+    type: "date"
+    values: [2004, 6, 11]
+    uncertain: ["year", "month", "day"]
+    approximate: ["year", "month", "day"]
+    edtf: "2004-06-11?~"
+  - input: "201X"
+    type: "date"
+    values: [2010]
+    unspecified: "sssX-ss-ss"
+    edtf: "201X"
+  - input: "20XX"
+    type: "date"
+    values: [2000]
+    unspecified: "ssXX-ss-ss"
+    edtf: "20XX"
+  - input: "198X"
+    type: "date"
+    values: [1980]
+    unspecified: "sssX-ss-ss"
+    edtf: "198X"
+  - input: "199X"
+    type: "date"
+    values: [1990]
+    unspecified: "sssX-ss-ss"
+    edtf: "199X"
+  - input: "2004-XX"
+    type: "date"
+    values: [2004, 1]
+    unspecified: "ssss-XX-ss"
+    edtf: "2004-XX"
+  - input: "1985-04-XX"
+    type: "date"
+    values: [1985, 4, 1]
+    unspecified: "ssss-ss-XX"
+    edtf: "1985-04-XX"
+  - input: "1985-XX-XX"
+    type: "date"
+    values: [1985, 1, 1]
+    unspecified: "ssss-XX-XX"
+    edtf: "1985-XX-XX"
+  - input: "1999-XX-XX"
+    type: "date"
+    values: [1999, 1, 1]
+    unspecified: "ssss-XX-XX"
+    edtf: "1999-XX-XX"
+  - input: "2004-06-XX"
+    type: "date"
+    values: [2004, 6, 1]
+    unspecified: "ssss-ss-XX"
+    edtf: "2004-06-XX"
+  - input: "-199X"
+    type: "date"
+    values: [-1990]
+    unspecified: "sssX-ss-ss"
+    edtf: "-199X"
+  - input: "-1999-XX-XX"
+    type: "date"
+    values: [-1999, 1, 1]
+    unspecified: "ssss-XX-XX"
+    edtf: "-1999-XX-XX"
+  - input: "1985-04-12/.."
+    type: "interval"
+    from:
+      type: "date"
+      values: [1985, 4, 12]
+      edtf: "1985-04-12"
+    to: "open"
+    edtf: "1985-04-12/open"
+  - input: "1985-04-12/"
+    type: "interval"
+    from:
+      type: "date"
+      values: [1985, 4, 12]
+      edtf: "1985-04-12"
+    to: "unknown"
+    edtf: "1985-04-12/unknown"
+  - input: "1985-04/.."
+    type: "interval"
+    from:
+      type: "date"
+      values: [1985, 4]
+      edtf: "1985-04"
+    to: "open"
+    edtf: "1985-04/open"
+  - input: "1985-04/"
+    type: "interval"
+    from:
+      type: "date"
+      values: [1985, 4]
+      edtf: "1985-04"
+    to: "unknown"
+    edtf: "1985-04/unknown"
+  - input: "1985/.."
+    type: "interval"
+    from:
+      type: "date"
+      values: [1985]
+      edtf: "1985"
+    to: "open"
+    edtf: "1985/open"
+  - input: "1985/"
+    type: "interval"
+    from:
+      type: "date"
+      values: [1985]
+      edtf: "1985"
+    to: "unknown"
+    edtf: "1985/unknown"
+  - input: "../1985-04-12"
+    type: "interval"
+    from: "open"
+    to:
+      type: "date"
+      values: [1985, 4, 12]
+      edtf: "1985-04-12"
+    edtf: "open/1985-04-12"
+  - input: "/1985-04-12"
+    type: "interval"
+    from: "unknown"
+    to:
+      type: "date"
+      values: [1985, 4, 12]
+      edtf: "1985-04-12"
+    edtf: "unknown/1985-04-12"
+  - input: "../1985-04"
+    type: "interval"
+    from: "open"
+    to:
+      type: "date"
+      values: [1985, 4]
+      edtf: "1985-04"
+    edtf: "open/1985-04"
+  - input: "/1985-04"
+    type: "interval"
+    from: "unknown"
+    to:
+      type: "date"
+      values: [1985, 4]
+      edtf: "1985-04"
+    edtf: "unknown/1985-04"
+  - input: "../1985"
+    type: "interval"
+    from: "open"
+    to:
+      type: "date"
+      values: [1985]
+      edtf: "1985"
+    edtf: "open/1985"
+  - input: "/1985"
+    type: "interval"
+    from: "unknown"
+    to:
+      type: "date"
+      values: [1985]
+      edtf: "1985"
+    edtf: "unknown/1985"
+  - input: "1980?/1994~"
+    type: "interval"
+    from:
+      type: "date"
+      values: [1980]
+      uncertain: ["year"]
+      edtf: "1980?"
+    to:
+      type: "date"
+      values: [1994]
+      approximate: ["year"]
+      edtf: "1994~"
+    edtf: "1980?/1994~"
+  - input: "1985~/1990?"
+    type: "interval"
+    from:
+      type: "date"
+      values: [1985]
+      approximate: ["year"]
+      edtf: "1985~"
+    to:
+      type: "date"
+      values: [1990]
+      uncertain: ["year"]
+      edtf: "1990?"
+    edtf: "1985~/1990?"
+  - input: "1964/2008?"
+    type: "interval"
+    from:
+      type: "date"
+      values: [1964]
+      edtf: "1964"
+    to:
+      type: "date"
+      values: [2008]
+      uncertain: ["year"]
+      edtf: "2008?"
+    edtf: "1964/2008?"
+  - input: "2004-06-11?/2004-06-12"
+    type: "interval"
+    from:
+      type: "date"
+      values: [2004, 6, 11]
+      uncertain: ["year", "month", "day"]
+      edtf: "2004-06-11?"
+    to:
+      type: "date"
+      values: [2004, 6, 12]
+      edtf: "2004-06-12"
+    edtf: "2004-06-11?/2004-06-12"
+  - input: "1984-06-02?/2004-08-08~"
+    type: "interval"
+    from:
+      type: "date"
+      values: [1984, 6, 2]
+      uncertain: ["year", "month", "day"]
+      edtf: "1984-06-02?"
+    to:
+      type: "date"
+      values: [2004, 8, 8]
+      approximate: ["year", "month", "day"]
+      edtf: "2004-08-08~"
+    edtf: "1984-06-02?/2004-08-08~"
+
+# EDTF 2019 level 2 (only what the current parser supports).
+level_2:
+  - input: "Y17E7"
+    type: "date"
+    values: [170000000]
+    edtf: "Y170000000"
+  - input: "Y-17E7"
+    type: "date"
+    values: [-170000000]
+    edtf: "Y-170000000"
+  - input: "2004?-06-11"
+    type: "date"
+    values: [2004, 6, 11]
+    uncertain: ["year"]
+    edtf: "2004?-06-11"
+  - input: "2004?-06"
+    type: "date"
+    values: [2004, 6]
+    uncertain: ["year"]
+    edtf: "2004?-06"
+  - input: "2004-06~-11"
+    type: "date"
+    values: [2004, 6, 11]
+    approximate: ["year", "month"]
+    edtf: "2004-06~-11"
+  - input: "2004%-06"
+    type: "date"
+    values: [2004, 6]
+    uncertain: ["year"]
+    approximate: ["year"]
+    edtf: "2004?~-06"
+  - input: "2004%-06-11"
+    type: "date"
+    values: [2004, 6, 11]
+    uncertain: ["year"]
+    approximate: ["year"]
+    edtf: "2004?~-06-11"
+  - input: "2004-06%-11"
+    type: "date"
+    values: [2004, 6, 11]
+    uncertain: ["year", "month"]
+    approximate: ["year", "month"]
+    edtf: "2004-06?~-11"
+  - input: "2001~-09"
+    type: "date"
+    values: [2001, 9]
+    approximate: ["year"]
+    edtf: "2001~-09"
+  - input: "2004~-06?"
+    type: "date"
+    values: [2004, 6]
+    uncertain: ["year", "month"]
+    approximate: ["year"]
+    edtf: "2004~-06?"
+  - input: "156X-12-31"
+    type: "date"
+    values: [1560, 12, 31]
+    unspecified: "sssX-ss-ss"
+    edtf: "156X-12-31"
+  - input: "15XX-12-25"
+    type: "date"
+    values: [1500, 12, 25]
+    unspecified: "ssXX-ss-ss"
+    edtf: "15XX-12-25"
+  - input: "15XX-12-XX"
+    type: "date"
+    values: [1500, 12, 1]
+    unspecified: "ssXX-ss-XX"
+    edtf: "15XX-12-XX"
+  - input: "15XX-XX-25"
+    type: "date"
+    values: [1500, 1, 25]
+    unspecified: "ssXX-XX-ss"
+    edtf: "15XX-XX-25"
+  - input: "199X-01"
+    type: "date"
+    values: [1990, 1]
+    unspecified: "sssX-ss-ss"
+    edtf: "199X-01"
+  - input: "199X-01-01"
+    type: "date"
+    values: [1990, 1, 1]
+    unspecified: "sssX-ss-ss"
+    edtf: "199X-01-01"
+  - input: "19XX-01-01"
+    type: "date"
+    values: [1900, 1, 1]
+    unspecified: "ssXX-ss-ss"
+    edtf: "19XX-01-01"
+  - input: "199X-XX-01"
+    type: "date"
+    values: [1990, 1, 1]
+    unspecified: "sssX-XX-ss"
+    edtf: "199X-XX-01"
+  - input: "19XX-XX-01"
+    type: "date"
+    values: [1900, 1, 1]
+    unspecified: "ssXX-XX-ss"
+    edtf: "19XX-XX-01"
+  - input: "199X-XX-XX"
+    type: "date"
+    values: [1990, 1, 1]
+    unspecified: "sssX-XX-XX"
+    edtf: "199X-XX-XX"
+  - input: "19XX-XX-XX"
+    type: "date"
+    values: [1900, 1, 1]
+    unspecified: "ssXX-XX-XX"
+    edtf: "19XX-XX-XX"
+  - input: "199X-01-XX"
+    type: "date"
+    values: [1990, 1, 1]
+    unspecified: "sssX-ss-XX"
+    edtf: "199X-01-XX"
+  - input: "19XX-01-XX"
+    type: "date"
+    values: [1900, 1, 1]
+    unspecified: "ssXX-ss-XX"
+    edtf: "19XX-01-XX"
+  - input: "1999-XX-01"
+    type: "date"
+    values: [1999, 1, 1]
+    unspecified: "ssss-XX-ss"
+    edtf: "1999-XX-01"
+  - input: "[1667,1668,1670..1672]"
+    type: "choice"
+    members: ["1667", "1668", "1670", "1671", "1672"]
+    edtf: "[1667,1668,1670..1672]"
+  - input: "[1667,1668, 1670..1672]"
+    type: "choice"
+    members: ["1667", "1668", "1670", "1671", "1672"]
+    edtf: "[1667,1668,1670..1672]"
+  - input: "[..1760-12-03]"
+    type: "choice"
+    earlier: true
+    members: ["1760-12-03"]
+    edtf: "[..1760-12-03]"
+  - input: "[1760-12..]"
+    type: "choice"
+    later: true
+    members: ["1760-12"]
+    edtf: "[1760-12..]"
+  - input: "[1760..]"
+    type: "choice"
+    later: true
+    members: ["1760"]
+    edtf: "[1760..]"
+  - input: "[1760-01,1760-02,1760-12..]"
+    type: "choice"
+    later: true
+    members: ["1760-01", "1760-02", "1760-12"]
+    edtf: "[1760-01,1760-02,1760-12..]"
+  - input: "[1760-01, 1760-02, 1760-12..]"
+    type: "choice"
+    later: true
+    members: ["1760-01", "1760-02", "1760-12"]
+    edtf: "[1760-01,1760-02,1760-12..]"
+  - input: "[1667, 1672-12]"
+    type: "choice"
+    members: ["1667", "1672-12"]
+    edtf: "[1667,1672-12]"
+  - input: "[..1984]"
+    type: "choice"
+    earlier: true
+    members: ["1984"]
+    edtf: "[..1984]"
+  - input: "{1667,1668,1670..1672}"
+    type: "list"
+    members: ["1667", "1668", "1670", "1671", "1672"]
+    edtf: "{1667,1668,1670..1672}"
+  - input: "{1667,1668, 1670..1672}"
+    type: "list"
+    members: ["1667", "1668", "1670", "1671", "1672"]
+    edtf: "{1667,1668,1670..1672}"
+  - input: "{1667, 1670..1672}"
+    type: "list"
+    members: ["1667", "1670", "1671", "1672"]
+    edtf: "{1667,1670..1672}"
+  - input: "{1960,1961-12}"
+    type: "list"
+    members: ["1960", "1961-12"]
+    edtf: "{1960,1961-12}"
+  - input: "{1960, 1961-12}"
+    type: "list"
+    members: ["1960", "1961-12"]
+    edtf: "{1960,1961-12}"
+  - input: "{1960 ,  1961-12}"
+    type: "list"
+    members: ["1960", "1961-12"]
+    edtf: "{1960,1961-12}"
+  - input: "{..1984}"
+    type: "list"
+    earlier: true
+    members: ["1984"]
+    edtf: "{..1984}"
+  - input: "{1760..}"
+    type: "list"
+    later: true
+    members: ["1760"]
+    edtf: "{1760..}"
+  - input: "2004-06-XX/2004-07-03"
+    type: "interval"
+    from:
+      type: "date"
+      values: [2004, 6, 1]
+      unspecified: "ssss-ss-XX"
+      edtf: "2004-06-XX"
+    to:
+      type: "date"
+      values: [2004, 7, 3]
+      edtf: "2004-07-03"
+    edtf: "2004-06-XX/2004-07-03"
+
+# Pre-ISO EDTF draft (2012) syntax the current parser accepts. Compatibility mode must keep accepting these.
+draft_syntax:
+  - input: "199u"
+    type: "date"
+    values: [1990]
+    unspecified: "sssX-ss-ss"
+    edtf: "199X"
+  - input: "19uu"
+    type: "date"
+    values: [1900]
+    unspecified: "ssXX-ss-ss"
+    edtf: "19XX"
+  - input: "198u"
+    type: "date"
+    values: [1980]
+    unspecified: "sssX-ss-ss"
+    edtf: "198X"
+  - input: "199u-01"
+    type: "date"
+    values: [1990, 1]
+    unspecified: "sssX-ss-ss"
+    edtf: "199X-01"
+  - input: "1999-uu"
+    type: "date"
+    values: [1999, 1]
+    unspecified: "ssss-XX-ss"
+    edtf: "1999-XX"
+  - input: "1999-uu-uu"
+    type: "date"
+    values: [1999, 1, 1]
+    unspecified: "ssss-XX-XX"
+    edtf: "1999-XX-XX"
+  - input: "2016-05-uu"
+    type: "date"
+    values: [2016, 5, 1]
+    unspecified: "ssss-ss-XX"
+    edtf: "2016-05-XX"
+  - input: "2004-06-uu"
+    type: "date"
+    values: [2004, 6, 1]
+    unspecified: "ssss-ss-XX"
+    edtf: "2004-06-XX"
+  - input: "199u-01-01"
+    type: "date"
+    values: [1990, 1, 1]
+    unspecified: "sssX-ss-ss"
+    edtf: "199X-01-01"
+  - input: "19uu-01-01"
+    type: "date"
+    values: [1900, 1, 1]
+    unspecified: "ssXX-ss-ss"
+    edtf: "19XX-01-01"
+  - input: "199u-uu-01"
+    type: "date"
+    values: [1990, 1, 1]
+    unspecified: "sssX-XX-ss"
+    edtf: "199X-XX-01"
+  - input: "199u-uu-uu"
+    type: "date"
+    values: [1990, 1, 1]
+    unspecified: "sssX-XX-XX"
+    edtf: "199X-XX-XX"
+  - input: "19uu-uu-uu"
+    type: "date"
+    values: [1900, 1, 1]
+    unspecified: "ssXX-XX-XX"
+    edtf: "19XX-XX-XX"
+  - input: "199u-01-uu"
+    type: "date"
+    values: [1990, 1, 1]
+    unspecified: "sssX-ss-XX"
+    edtf: "199X-01-XX"
+  - input: "19uu-01-uu"
+    type: "date"
+    values: [1900, 1, 1]
+    unspecified: "ssXX-ss-XX"
+    edtf: "19XX-01-XX"
+  - input: "1999-uu-01"
+    type: "date"
+    values: [1999, 1, 1]
+    unspecified: "ssss-XX-ss"
+    edtf: "1999-XX-01"
+  - input: "19uu-uu-01"
+    type: "date"
+    values: [1900, 1, 1]
+    unspecified: "ssXX-XX-ss"
+    edtf: "19XX-XX-01"
+  - input: "-199u"
+    type: "date"
+    values: [-1990]
+    unspecified: "sssX-ss-ss"
+    edtf: "-199X"
+  - input: "-1999-uu-uu"
+    type: "date"
+    values: [-1999, 1, 1]
+    unspecified: "ssss-XX-XX"
+    edtf: "-1999-XX-XX"
+  - input: "uuuu"
+    type: "unknown"
+    edtf: "uuuu"
+  - input: "y170000002"
+    type: "date"
+    values: [170000002]
+    edtf: "Y170000002"
+  - input: "y-170000002"
+    type: "date"
+    values: [-170000002]
+    edtf: "Y-170000002"
+  - input: "y17e7"
+    type: "date"
+    values: [170000000]
+    edtf: "Y170000000"
+  - input: "Y17e7"
+    type: "date"
+    values: [170000000]
+    edtf: "Y170000000"
+  - input: "y-17e7"
+    type: "date"
+    values: [-170000000]
+    edtf: "Y-170000000"
+  - input: "1984?~"
+    type: "date"
+    values: [1984]
+    uncertain: ["year"]
+    approximate: ["year"]
+    edtf: "1984?~"
+  - input: "2004-06?~"
+    type: "date"
+    values: [2004, 6]
+    uncertain: ["year", "month"]
+    approximate: ["year", "month"]
+    edtf: "2004-06?~"
+  - input: "2016-05-03?~"
+    type: "date"
+    values: [2016, 5, 3]
+    uncertain: ["year", "month", "day"]
+    approximate: ["year", "month", "day"]
+    edtf: "2016-05-03?~"
+  - input: "2003-23?~"
+    type: "season"
+    year: 2003
+    season: "autumn"
+    uncertain: true
+    approximate: true
+    bounds: ["2003-09-01", "2003-11-30"]
+    edtf: "2003-23?~"
+  - input: "2004-(06)?-11"
+    type: "date"
+    values: [2004, 6, 11]
+    uncertain: ["month"]
+    edtf: "2004-(06)?-11"
+  - input: "2004-06-(11)~"
+    type: "date"
+    values: [2004, 6, 11]
+    approximate: ["day"]
+    edtf: "2004-06-(11)~"
+  - input: "2004-(06)?~"
+    type: "date"
+    values: [2004, 6]
+    uncertain: ["month"]
+    approximate: ["month"]
+    edtf: "2004-(06)?~"
+  - input: "2004-(06-11)?"
+    type: "date"
+    values: [2004, 6, 11]
+    uncertain: ["month", "day"]
+    edtf: "2004-(06-11)?"
+  - input: "2004?-06-(11)~"
+    type: "date"
+    values: [2004, 6, 11]
+    uncertain: ["year"]
+    approximate: ["day"]
+    edtf: "2004?-06-(11)~"
+  - input: "(2004-(06)~)?"
+    type: "date"
+    values: [2004, 6]
+    uncertain: ["year", "month"]
+    approximate: ["month"]
+    edtf: "2004?-(06)?~"
+  - input: "(2004-(06-01)~)?"
+    type: "date"
+    values: [2004, 6, 1]
+    uncertain: ["year", "month", "day"]
+    approximate: ["month", "day"]
+    edtf: "2004?-(06-01)?~"
+  - input: "(2004-(06)?-01)~"
+    type: "date"
+    values: [2004, 6, 1]
+    uncertain: ["month"]
+    approximate: ["year", "month", "day"]
+    edtf: "2004~-(06)?~-01~"
+  - input: "2004-06?-(01)~"
+    type: "date"
+    values: [2004, 6, 1]
+    uncertain: ["year", "month"]
+    approximate: ["day"]
+    edtf: "2004-06?-(01)~"
+  - input: "2004~-(06)?-01~"
+    type: "date"
+    values: [2004, 6, 1]
+    uncertain: ["month"]
+    approximate: ["year", "day"]
+    edtf: "2004~-(06)?-01~"
+  - input: "2004~-(06-(01)~)?"
+    type: "date"
+    values: [2004, 6, 1]
+    uncertain: ["month", "day"]
+    approximate: ["year", "day"]
+    edtf: "2004~-(06)?-01?~"
+  - input: "2004~-(06)?-01?~"
+    type: "date"
+    values: [2004, 6, 1]
+    uncertain: ["month", "day"]
+    approximate: ["year", "day"]
+    edtf: "2004~-(06)?-01?~"
+  - input: "2004~-(06)?"
+    type: "date"
+    values: [2004, 6]
+    uncertain: ["month"]
+    approximate: ["year"]
+    edtf: "2004~-(06)?"
+  - input: "2004-(06)%-11"
+    type: "date"
+    values: [2004, 6, 11]
+    uncertain: ["month"]
+    approximate: ["month"]
+    edtf: "2004-(06)?~-11"
+  - input: "2004-06-(11)%"
+    type: "date"
+    values: [2004, 6, 11]
+    uncertain: ["day"]
+    approximate: ["day"]
+    edtf: "2004-06-(11)?~"
+  - input: "2004-01-01/open"
+    type: "interval"
+    from:
+      type: "date"
+      values: [2004, 1, 1]
+      edtf: "2004-01-01"
+    to: "open"
+    edtf: "2004-01-01/open"
+  - input: "1960/open"
+    type: "interval"
+    from:
+      type: "date"
+      values: [1960]
+      edtf: "1960"
+    to: "open"
+    edtf: "1960/open"
+  - input: "open/1960"
+    type: "interval"
+    from: "open"
+    to:
+      type: "date"
+      values: [1960]
+      edtf: "1960"
+    edtf: "open/1960"
+  - input: "2004-01-01/unknown"
+    type: "interval"
+    from:
+      type: "date"
+      values: [2004, 1, 1]
+      edtf: "2004-01-01"
+    to: "unknown"
+    edtf: "2004-01-01/unknown"
+  - input: "unknown/2004-01-01"
+    type: "interval"
+    from: "unknown"
+    to:
+      type: "date"
+      values: [2004, 1, 1]
+      edtf: "2004-01-01"
+    edtf: "unknown/2004-01-01"
+  - input: "2004-06-uu/2004-07-03"
+    type: "interval"
+    from:
+      type: "date"
+      values: [2004, 6, 1]
+      unspecified: "ssss-ss-XX"
+      edtf: "2004-06-XX"
+    to:
+      type: "date"
+      values: [2004, 7, 3]
+      edtf: "2004-07-03"
+    edtf: "2004-06-XX/2004-07-03"
+
+# Non-standard syntax specific to EDTF-Ruby (masked precision, qualifiers).
+extensions:
+  - input: "198x"
+    type: "decade"
+    year: 1980
+    bounds: ["1980-01-01", "1989-12-31"]
+    edtf: "198x"
+  - input: "18xx"
+    type: "century"
+    year: 1800
+    bounds: ["1800-01-01", "1899-12-31"]
+    edtf: "18xx"
+  - input: "2001-02-03^xyz"
+    type: "date"
+    values: [2001, 2, 3]
+    calendar: "xyz"
+    edtf: "2001-02-03^xyz"
+  - input: "2001-02-03^julian"
+    type: "date"
+    values: [2001, 2, 3]
+    calendar: "julian"
+    edtf: "2001-02-03^julian"
+  - input: "2001-21^southern"
+    type: "season"
+    year: 2001
+    season: "spring"
+    qualifier: "southern"
+    bounds: ["2001-03-01", "2001-05-31"]
+    edtf: "2001-21^southern"
+  - input: "2003-23^european"
+    type: "season"
+    year: 2003
+    season: "autumn"
+    qualifier: "european"
+    bounds: ["2003-09-01", "2003-11-30"]
+    edtf: "2003-23^european"
+  - input: "2001-21?"
+    type: "season"
+    year: 2001
+    season: "spring"
+    uncertain: true
+    bounds: ["2001-03-01", "2001-05-31"]
+    edtf: "2001-21?"
+    note: "qualified seasons (edtf.js accepts these only at its non-standard level 3)"
+  - input: "2001-21~"
+    type: "season"
+    year: 2001
+    season: "spring"
+    approximate: true
+    bounds: ["2001-03-01", "2001-05-31"]
+    edtf: "2001-21~"
+  - input: "2001-21%"
+    type: "season"
+    year: 2001
+    season: "spring"
+    uncertain: true
+    approximate: true
+    bounds: ["2001-03-01", "2001-05-31"]
+    edtf: "2001-21?~"
+  - input: "2003-23?"
+    type: "season"
+    year: 2003
+    season: "autumn"
+    uncertain: true
+    bounds: ["2003-09-01", "2003-11-30"]
+    edtf: "2003-23?"
+  - input: "2003-23~"
+    type: "season"
+    year: 2003
+    season: "autumn"
+    approximate: true
+    bounds: ["2003-09-01", "2003-11-30"]
+    edtf: "2003-23~"
+  - input: "2003-23%"
+    type: "season"
+    year: 2003
+    season: "autumn"
+    uncertain: true
+    approximate: true
+    bounds: ["2003-09-01", "2003-11-30"]
+    edtf: "2003-23?~"
+  - input: "[1984, 1990?]"
+    type: "choice"
+    members: ["1984", "1990?"]
+    edtf: "[1984,1990?]"
+    note: "qualified set members (edtf.js rejects these)"
+  - input: "{1984~,1985}"
+    type: "list"
+    members: ["1984~", "1985"]
+    edtf: "{1984~,1985}"
+
+# Accepted today, but arguably wrong. Pinned so that any change is deliberate.
+quirks:
+  - input: "-0000"
+    type: "date"
+    values: [0]
+    edtf: "0000"
+    note: "negative year zero is accepted and normalized to 0000 (edtf.js rejects it)"
+  - input: "XXXX"
+    type: "unknown"
+    edtf: "uuuu"
+    note: "parsed as EDTF::Unknown, not as a date with an unspecified year"
+  - input: "2016-05-02T24:00:00"
+    type: "datetime"
+    values: [2016, 5, 3, 0, 0, 0]
+    offset: "+00:00"
+    edtf: "2016-05-03T00:00:00"
+    note: "24:00 rolls over to the next day"
+
+# Invalid input. Must keep being rejected.
+rejected:
+  - input: "xyz"
+  - input: "x2009"
+  - input: "-"
+  - input: "12345"
+  - input: "Y9999"
+  - input: "-Y17E7"
+  - input: "2016-00"
+  - input: "2016-13"
+  - input: "2016-05-00"
+  - input: "2016-05-32"
+  - input: "2016-02-30"
+  - input: "2016-04-31"
+  - input: "2015-02-29"
+    note: "not a leap year (edtf.js accepts this)"
+  - input: "1999-02-29"
+    note: "not a leap year (edtf.js accepts this)"
+  - input: "1900-02-29"
+    note: "not a leap year (edtf.js accepts this)"
+  - input: "2016-13-XX"
+  - input: "2004-04-(1)?1"
+  - input: "(2004)?-06"
+  - input: "2016-05-02T24:00:01"
+  - input: "2016-05-02T00:61:00"
+  - input: "2016-05-02T12:00:00-00:00"
+  - input: "open"
+  - input: ".."
+  - input: "open/open"
+  - input: "unknown/unknown"
+  - input: "[]"
+  - input: "{}"
+  - input: "[1999}"
+  - input: "{1999]"
+  - input: "[1999"
+  - input: "{1999"
+  - input: "2001-02-03T12:00:00^julian"
+
+# Valid EDTF 2019 that the current parser rejects.
+unsupported:
+  - input: "1985-04-12T23:20:30-04"
+    note: "level 0: time zone offset in hours only"
+  - input: "2016-05-02T16:54:59+0230"
+    note: "level 0: basic format time zone offset"
+  - input: "2016-05-02T16:54:59.042"
+    note: "level 0: fractional seconds (edtf.js)"
+  - input: "XXXX-XX"
+    note: "level 1: unspecified year and month"
+  - input: "XXXX-XX-XX"
+    note: "level 1: unspecified year, month and day"
+  - input: "1950S2"
+    note: "level 2: significant digits"
+  - input: "Y171010000S3"
+    note: "level 2: significant digits on a long year"
+  - input: "Y3388E2S3"
+    note: "level 2: significant digits on an exponential year"
+  - input: "2001-25"
+    note: "level 2: spring (Northern Hemisphere)"
+  - input: "2001-29"
+    note: "level 2: spring (Southern Hemisphere)"
+  - input: "2001-33"
+    note: "level 2: quarter 1"
+  - input: "2001-37"
+    note: "level 2: quadrimester 1"
+  - input: "2001-40"
+    note: "level 2: semestral 1"
+  - input: "2001-41"
+    note: "level 2: semestral 2"
+  - input: "?2004-06-~11"
+    note: "level 2: prefix qualifiers on year and day"
+  - input: "2004-?06-11"
+    note: "level 2: prefix qualifier on month"
+  - input: "2004-06-~11"
+    note: "level 2: prefix qualifier on day"
+  - input: "2004-%06-11"
+    note: "level 2: prefix qualifier (uncertain and approximate) on month"
+  - input: "2001-?09~-09"
+    note: "level 2: prefix and suffix qualifiers combined (edtf.js)"
+  - input: "2004-06-~01/2004-06-~20"
+    note: "level 2: interval with prefix qualified days"
+  - input: "XXXX-12-XX"
+    note: "level 2: unspecified year and day"
+  - input: "1XXX-XX"
+    note: "level 2: unspecified digits in year and month"
+  - input: "1XXX-12"
+    note: "level 2: unspecified digits in year"
+  - input: "1984-1X"
+    note: "level 2: unspecified digit in month"
+  - input: "1500-1X-25"
+    note: "level 2: unspecified digit in month (edtf.js)"
+  - input: "15XX-01-3X"
+    note: "level 2: unspecified digit in day (edtf.js)"
+  - input: "1XX3"
+    note: "level 2: unspecified digits in the middle of the year (edtf.js)"
