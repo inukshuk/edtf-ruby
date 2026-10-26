@@ -45,7 +45,7 @@ Feature: Parse date-times
       | 1985-04-12T23:20:30-04 | 1985-04-12T23:20:30 | 1985-04-13T03:20:30 |
 
     # EDTF requires the extended format; edtf.js also accepts +hhmm.
-    @level0 @wip
+    @level0 @ext-basic-offset @wip
     Examples: Time zone offset without a colon
       | string                   | date-time           | utc                 |
       | 2016-05-02T16:54:59+0230 | 2016-05-02T16:54:59 | 2016-05-02T14:24:59 |

@@ -21,9 +21,7 @@ Feature: Parse sets
       | {..1984}                    | all of | 1984                         | earlier |
       | {1760..}                    | all of | 1760                         | later   |
 
-    # Quirk: ISO 8601-2 allows no spaces,
-    # but EDTF-Ruby and edtf.js accept them.
-    @level2
+    @level2 @ext-set-whitespace
     Examples: Spaces around commas
       | string                        | kind   | members                      | open  |
       | {1667,1668, 1670..1672}       | all of | 1667, 1668, 1670, 1671, 1672 | none  |
