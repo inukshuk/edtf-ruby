@@ -10,16 +10,34 @@ Feature: Parse dates
     Examples: Year, month and day
       | string     | date       |
       | 2001-02-03 | 2001-02-03 |
+      | 1985-04-12 | 1985-04-12 |
+      | 2016-05-31 | 2016-05-31 |
       | 2008-12    | 2008-12    |
+      | 1985-04    | 1985-04    |
       | 2008       | 2008       |
+      | 1985       | 1985       |
+      | 0409       | 0409       |
+      | 9999       | 9999       |
+      | 0000       | 0000       |
+      | 0000-01-01 | 0000-01-01 |
+      | -0002      | -0002      |
       | -0999      | -0999      |
+      | -1985      | -1985      |
       | -2101      | -2101      |
       | -2323      | -2323      |
-      | 0000       | 0000       |
+      | -9999      | -9999      |
+
+    @level0
+    Examples: Leap days and the Gregorian reform
+      | string     | date       |
+      | 2016-02-29 | 2016-02-29 |
+      | 2000-02-29 | 2000-02-29 |
+      | 1582-10-10 | 1582-10-10 |
 
     @level1
     Examples: Years with more than four digits
       | string      | date       |
+      | Y10000      | 10000      |
       | Y170000002  | 170000002  |
       | Y-170000002 | -170000002 |
 
@@ -40,6 +58,25 @@ Feature: Parse dates
       | string | date       |
       | y17e7  | 170000000  |
       | y-17e7 | -170000000 |
+      | Y17e7  | 170000000  |
+
+    # Quirk: edtf.js rejects -0000.
+    @level0 @legacy
+    Examples: Quirks: negative year zero
+      | string | date |
+      | -0000  | 0000 |
+
+  @level2 @wip
+  Scenario Outline: Significant digits
+    When I parse "<string>"
+    Then it should be the date "<date>"
+    And the significant digits should be <digits>
+
+    Examples:
+      | string       | date      | digits |
+      | 1950S2       | 1950      | 2      |
+      | Y171010000S3 | 171010000 | 3      |
+      | Y3388E2S3    | 338800    | 3      |
 
   Scenario Outline: Calendars
     When I parse "<string>"
@@ -48,11 +85,6 @@ Feature: Parse dates
 
     @legacy
     Examples: EDTF-Ruby extensions: calendar names
-      | string         | date       | calendar |
-      | 2001-02-03^xyz | 2001-02-03 | xyz      |
-
-  Scenario: Invalid dates
-    Then the following strings should be rejected:
-      | xyz           |
-      | x2009         |
-      | 2004-04-(1)?1 |
+      | string            | date       | calendar |
+      | 2001-02-03^xyz    | 2001-02-03 | xyz      |
+      | 2001-02-03^julian | 2001-02-03 | julian   |

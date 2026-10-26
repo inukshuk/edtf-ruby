@@ -34,6 +34,9 @@ Feature: Parse uncertain or approximate dates
       | 1984-11-23? | 1984-11-23 | year, month, day | none             |
       | 1984-01~    | 1984-01    | none             | year, month      |
       | 1984%       | 1984       | year             | year             |
+      | 2016-05-03~ | 2016-05-03 | none             | year, month, day |
+      | 2004-06%    | 2004-06    | year, month      | year, month      |
+      | 2004-06-11% | 2004-06-11 | year, month, day | year, month, day |
 
     @level2
     Examples: Parts of the date are qualified
@@ -54,6 +57,10 @@ Feature: Parse uncertain or approximate dates
       | 2004?-06~    | 2004-06    | year             | year, month      |
       | 2004?-06     | 2004-06    | year             | none             |
       | 2004~-06     | 2004-06    | none             | year             |
+      | 2004%-06     | 2004-06    | year             | year             |
+      | 2004%-06-11  | 2004-06-11 | year             | year             |
+      | 2004-06%-11  | 2004-06-11 | year, month      | year, month      |
+      | 2001~-09     | 2001-09    | none             | year             |
 
     @level1 @legacy
     Examples: Draft syntax: combined qualifiers
@@ -62,6 +69,7 @@ Feature: Parse uncertain or approximate dates
       | 2004-06-01?~ | 2004-06-01 | year, month, day | year, month, day |
       | 2004-06?~    | 2004-06    | year, month      | year, month      |
       | 2004?~       | 2004       | year             | year             |
+      | 2016-05-03?~ | 2016-05-03 | year, month, day | year, month, day |
 
     @level2 @legacy
     Examples: Draft syntax: parentheses and combined qualifiers
@@ -142,3 +150,14 @@ Feature: Parse uncertain or approximate dates
       | 2004~-(06)?       | 2004-06    | month            | year             |
       | 2004-(06)?        | 2004-06    | month            | none             |
       | 2004-(06)~        | 2004-06    | none             | month            |
+      | 2004-(06)%-11     | 2004-06-11 | month            | month            |
+      | 2004-06-(11)%     | 2004-06-11 | day              | day              |
+
+    @level2 @wip
+    Examples: Qualification to the left of a part
+      | string       | date       | uncertain | approximate |
+      | ?2004-06-~11 | 2004-06-11 | year      | day         |
+      | 2004-?06-11  | 2004-06-11 | month     | none        |
+      | 2004-06-~11  | 2004-06-11 | none      | day         |
+      | 2004-%06-11  | 2004-06-11 | month     | month       |
+      | 2001-?09~-09 | 2001-09-09 | month     | year, month |

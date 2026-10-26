@@ -64,8 +64,10 @@ Then('it should be the date {string}') do |date|
   expect(@result.values).to eq(values(date))
 end
 
+# Fractional seconds are compared only when expected, e.g. "...T16:54:59.042".
 Then('it should be the date-time {string}') do |date_time|
-  expect(@result.strftime('%FT%T')).to eq(date_time)
+  format = date_time.include?('.') ? '%FT%T.%L' : '%FT%T'
+  expect(@result.strftime(format)).to eq(date_time)
 end
 
 Then('in UTC it should be {string}') do |date_time|
@@ -139,9 +141,15 @@ end
 # "one of" is a choice; "all of" includes every member.
 Then('it should be {string} the members {string}') do |kind, members|
   expect(@result.choice?).to eq(kind == 'one of')
-  expect(@result.map(&:values)).to eq(members.split(/,\s*/).map { |m| values(m) })
+  expected = members.split(/,\s*/)
+  expect(@result.to_a.length).to eq(expected.length)
+  @result.to_a.zip(expected).each { |actual, member| expect(actual).to eql(parse(member)) }
 end
 
 Then('the open end should be {string}') do |open|
   expect([@result.earlier?, @result.later?]).to eq([open == 'earlier', open == 'later'])
+end
+
+Then('the significant digits should be {int}') do |digits|
+  expect(@result.significant_digits).to eq(digits)
 end
