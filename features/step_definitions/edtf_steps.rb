@@ -20,6 +20,19 @@ module EDTFHelpers
   def qualified_parts(predicate)
     PARTS.select { |part| @result.public_send(predicate, part) }
   end
+
+  # "open" and "unknown" are interval ends without a date.
+  def expect_endpoint(actual, expected)
+    if %w[open unknown].include?(expected)
+      expect(actual).to eq(expected.to_sym)
+    else
+      expect(actual).to eql(parse(expected))
+    end
+  end
+
+  def yes?(answer)
+    answer == 'yes'
+  end
 end
 
 World(EDTFHelpers)
@@ -92,4 +105,43 @@ end
 
 Then('its EDTF string should be {string}') do |edtf|
   expect(@result.edtf).to eq(edtf)
+end
+
+Then('the start should be {string}') do |date|
+  expect_endpoint(@result.from, date)
+end
+
+Then('the end should be {string}') do |date|
+  expect_endpoint(@result.to, date)
+end
+
+Then('it should be the season {string}') do |season|
+  year, code = season.match(/\A(-?\d+)-(\d\d)\z/).captures.map(&:to_i)
+  expect([@result.year, EDTF::Season::CODES[@result.season]]).to eq([year, code])
+end
+
+Then('it should be uncertain: {word}') do |answer|
+  expect(@result.uncertain?).to eq(yes?(answer))
+end
+
+Then('it should be approximate: {word}') do |answer|
+  expect(@result.approximate?).to eq(yes?(answer))
+end
+
+Then('the season qualifier should be {string}') do |qualifier|
+  expect(@result.qualifier).to eq(qualifier)
+end
+
+Then('the calendar should be {string}') do |calendar|
+  expect(@result.calendar).to eq(calendar)
+end
+
+# "one of" is a choice; "all of" includes every member.
+Then('it should be {string} the members {string}') do |kind, members|
+  expect(@result.choice?).to eq(kind == 'one of')
+  expect(@result.map(&:values)).to eq(members.split(/,\s*/).map { |m| values(m) })
+end
+
+Then('the open end should be {string}') do |open|
+  expect([@result.earlier?, @result.later?]).to eq([open == 'earlier', open == 'later'])
 end

@@ -14,6 +14,9 @@ Feature: Parse uncertain or approximate dates
       | 2004-06-01 | 2004-06-01 | none      | none        |
       | 2004-06    | 2004-06    | none      | none        |
       | 2004       | 2004       | none      | none        |
+      | 1984-11-23 | 1984-11-23 | none      | none        |
+      | 1984-01    | 1984-01    | none      | none        |
+      | 1984       | 1984       | none      | none        |
 
     @level1
     Examples: The whole date is qualified
@@ -28,6 +31,9 @@ Feature: Parse uncertain or approximate dates
       | 2004-06~    | 2004-06    | none             | year, month      |
       | 2004?       | 2004       | year             | none             |
       | 2004~       | 2004       | none             | year             |
+      | 1984-11-23? | 1984-11-23 | year, month, day | none             |
+      | 1984-01~    | 1984-01    | none             | year, month      |
+      | 1984%       | 1984       | year             | year             |
 
     @level2
     Examples: Parts of the date are qualified

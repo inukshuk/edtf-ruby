@@ -1,9 +1,8 @@
 module EDTF
-  describe 'Seasons' do
-    let(:subject) { Season.new }
+  describe Season do
+    subject { Season.new }
     let(:summer) { Season.new(:summer) }
     let(:winter) { Season.new(:winter) }
-
 
     describe 'uncertain/approximate' do
 
@@ -32,7 +31,7 @@ module EDTF
       end
 
       describe '#edtf' do
-        let(:subject) { Season.new(2004, 21) }
+        subject { Season.new(2004, 21) }
 
         it 'includes uncertain/approximate markers' do
           expect(subject.uncertain!.edtf).to eq('2004-21?')
@@ -40,7 +39,7 @@ module EDTF
           expect(subject.certain!.edtf).to eq('2004-21~')
         end
 
-        it 'puts the markers before the qualifier' do
+        it 'puts the markers before the qualifier', legacy: true do
           subject.qualifier = 'southernHemisphere'
           expect(subject.approximate!.edtf).to eq('2004-21~^southernHemisphere')
         end
