@@ -1,150 +1,95 @@
-Given('the date {string}') do |date|
-  @date = Date.parse(date)
-end
+# Features describe parse results in terms of values,
+# qualified parts, unspecified digits and bounds.
+module EDTFHelpers
+  PARTS = %i[year month day].freeze
 
-Given('the date {string} with precision set to {string}') do |date, precision|
-  @date = Date.parse(date)
-  @date.precision = precision
-end
+  def parse(string)
+    EDTF.parse!(string)
+  end
 
-When('I convert the date') do
-  @string = @date.edtf
-end
+  # "2004-06" -> [2004, 6]; "-0999" -> [-999]
+  def values(date)
+    date.match(/\A(-?\d+)(?:-(\d\d))?(?:-(\d\d))?\z/).captures.compact.map(&:to_i)
+  end
 
-Then('the EDTF string should be {string}') do |edtf|
-  expect(@string).to eq(edtf)
-end
+  # "year, month" -> [:year, :month]; "none" -> []
+  def parts(list)
+    list == 'none' ? [] : list.split(/,\s*/).map(&:to_sym)
+  end
 
-When('I parse the string {string}') do |string|
-  @date = EDTF.parse!(string)
-end
-
-Then('the year should be {string}') do |year|
-  expect(@date.year).to eq(year.to_i)
-end
-
-Then('the month should be {string}') do |month|
-  expect(@date.month).to eq(month.to_i)
-end
-
-Then('the day should be {string}') do |day|
-  expect(@date.day).to eq(day.to_i)
-end
-
-Then('the hours should be {string}') do |hours|
-  expect(@date.hour).to eq(hours.to_i)
-end
-
-Then('the year should be {string} \(UTC)') do |year|
-  expect(@date.to_time.utc.year).to eq(year.to_i)
-end
-
-Then('the month should be {string} \(UTC)') do |month|
-  expect(@date.to_time.utc.month).to eq(month.to_i)
-end
-
-Then('the day should be {string} \(UTC)') do |day|
-  expect(@date.to_time.utc.day).to eq(day.to_i)
-end
-
-Then('the hours should be {string} \(UTC)') do |hours|
-  expect(@date.to_time.utc.hour).to eq(hours.to_i)
-end
-
-Then('the minutes should be {string}') do |minutes|
-  expect(@date.min).to eq(minutes.to_i)
-end
-
-Then('the seconds should be {string}') do |seconds|
-  expect(@date.sec).to eq(seconds.to_i)
-end
-
-Then('the duration should range from {string} to {string}') do |from, to|
-  expect([@date.begin.year.to_s, @date.end.year.to_s]).to eq([from, to])
-end
-
-Then('the interval should start at {string}') do |date|
-  expect(@date.begin.to_s).to eq(date)
-end
-
-Then('the interval should end at {string}') do |date|
-  expect(@date.end.to_s).to eq(date)
-end
-
-Then('the interval should include the date {string}') do |date|
-  expect(@date).to include(Date.parse(date))
-end
-
-Then('the interval should cover the date {string}') do |date|
-  expect(@date).to be_cover(Date.parse(date))
-end
-
-Then('the date should be uncertain? {string}') do |answer|
-  expect(@date.uncertain?).to eq(!!(answer =~ /y(es)?/i))
-end
-
-Then('the year should be uncertain? {string}') do |answer|
-  expect(@date.uncertain?(:year)).to eq(!!(answer =~ /y(es)?/i))
-end
-
-Then('the month should be uncertain? {string}') do |answer|
-  expect(@date.uncertain?(:month)).to eq(!!(answer =~ /y(es)?/i))
-end
-
-Then('the day should be uncertain? {string}') do |answer|
-  expect(@date.uncertain?(:day)).to eq(!!(answer =~ /y(es)?/i))
-end
-
-Then('the date should be approximate? {string}') do |answer|
-  expect(@date.approximate?).to eq(!!(answer =~ /y(es)?/i))
-end
-
-Then('the year should be approximate? {string}') do |answer|
-  expect(@date.approximate?(:year)).to eq(!!(answer =~ /y(es)?/i))
-end
-
-Then('the month should be approximate? {string}') do |answer|
-  expect(@date.approximate?(:month)).to eq(!!(answer =~ /y(es)?/i))
-end
-
-Then('the day should be approximate? {string}') do |answer|
-  expect(@date.approximate?(:day)).to eq(!!(answer =~ /y(es)?/i))
-end
-
-Then('the result should be an Unknown') do
-  expect(@date).to be_an(EDTF::Unknown)
-end
-
-Then('the unspecified string code be {string}') do |code|
-  expect(@date.unspecified.to_s).to eq(code)
-end
-
-When('I parse the following strings an error should be raised:') do |table|
-  table.raw.each do |row|
-    expect { Date.edtf!(row[0]) }.to raise_error(ArgumentError)
+  def qualified_parts(predicate)
+    PARTS.select { |part| @result.public_send(predicate, part) }
   end
 end
 
-When('the year is uncertain: {string}') do |answer|
-  @date.uncertain!(:year) if answer =~ /y(es)?/i
+World(EDTFHelpers)
+
+Given('the date {string}') do |date|
+  v = values(date)
+  @result = Date.new(*v)
+  @result.precision = EDTFHelpers::PARTS[v.length - 1]
 end
 
-When('the month is uncertain: {string}') do |answer|
-  @date.uncertain!(:month) if answer =~ /y(es)?/i
+Given('the date {string} with {word} precision') do |date, precision|
+  @result = Date.parse(date)
+  @result.precision = precision
 end
 
-When('the day is uncertain: {string}') do |answer|
-  @date.uncertain!(:day) if answer =~ /y(es)?/i
+When('the uncertain parts are {string}') do |list|
+  parts(list).each { |part| @result.uncertain!(part) }
 end
 
-When('the year is approximate: {string}') do |answer|
-  @date.approximate!(:year) if answer =~ /y(es)?/i
+When('the approximate parts are {string}') do |list|
+  parts(list).each { |part| @result.approximate!(part) }
 end
 
-When('the month is approximate: {string}') do |answer|
-  @date.approximate!(:month) if answer =~ /y(es)?/i
+When('I parse {string}') do |string|
+  @result = parse(string)
 end
 
-When('the day is approximate {string}') do |answer|
-  @date.approximate!(:day) if answer =~ /y(es)?/i
+Then('it should be the date {string}') do |date|
+  expect(@result.values).to eq(values(date))
+end
+
+Then('it should be the date-time {string}') do |date_time|
+  expect(@result.strftime('%FT%T')).to eq(date_time)
+end
+
+Then('in UTC it should be {string}') do |date_time|
+  expect(@result.to_time.utc.strftime('%FT%T')).to eq(date_time)
+end
+
+Then('the uncertain parts should be {string}') do |list|
+  expect(qualified_parts(:uncertain?)).to eq(parts(list))
+end
+
+Then('the approximate parts should be {string}') do |list|
+  expect(qualified_parts(:approximate?)).to eq(parts(list))
+end
+
+# The mask marks unspecified digits with X, e.g. "YYYX-MM-DD".
+Then('the unspecified digits should be {string}') do |mask|
+  expect(@result.unspecified.to_s).to eq(mask.tr('YMD', 's'))
+end
+
+Then('it should be unknown') do
+  expect(@result).to be_an(EDTF::Unknown)
+end
+
+Then('it should cover {string}') do |date|
+  expect(@result).to be_cover(Date.parse(date))
+end
+
+Then('it should span {string} to {string}') do |from, to|
+  expect([@result.begin, @result.end].map(&:iso8601)).to eq([from, to])
+end
+
+Then('the following strings should be rejected:') do |table|
+  table.raw.flatten.each do |string|
+    expect { parse(string) }.to raise_error(ArgumentError)
+  end
+end
+
+Then('its EDTF string should be {string}') do |edtf|
+  expect(@result.edtf).to eq(edtf)
 end

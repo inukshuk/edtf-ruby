@@ -1,34 +1,37 @@
-Feature: Parse unspecified date strings
+Feature: Parse unspecified dates
   As a user of EDTF-Ruby
-  I want to be able to parse date strings containing unspecified elements
+  I want to parse dates with unspecified digits
 
-  Scenario Outline: parse unspecified dates
-    When I parse the string "<string>"
-    Then the year should be "<year>"
-    And the month should be "<month>"
-    And the day should be "<day>"
-    And the unspecified string code be "<unspecified>"
+  Scenario Outline: Unspecified digits
+    When I parse "<string>"
+    Then it should be the date "<date>"
+    And the unspecified digits should be "<unspecified>"
 
-    @102 @level1 @draft
-    Scenarios: examples from the specification draft
-      | string     | year | month | day | unspecified |
-      | 199u       | 1990 | 1     | 1   | sssX-ss-ss  |
-      | 19uu       | 1900 | 1     | 1   | ssXX-ss-ss  |
-      | 1999-uu    | 1999 | 1     | 1   | ssss-XX-ss  |
-      | 1999-02-uu | 1999 | 2     | 1   | ssss-ss-XX  |
-      | 1999-uu-uu | 1999 | 1     | 1   | ssss-XX-XX  |
+    @level1
+    Examples: Unspecified digits from the right
+      | string     | date       | unspecified |
+      | 199X       | 1990       | YYYX-MM-DD  |
+      | 19XX       | 1900       | YYXX-MM-DD  |
+      | 1999-XX    | 1999-01    | YYYY-XX-DD  |
+      | 1999-02-XX | 1999-02-01 | YYYY-MM-XX  |
+      | 1999-XX-XX | 1999-01-01 | YYYY-XX-XX  |
 
-    @102 @level1 @final
-    Scenarios: examples from the specification draft
-      | string     | year | month | day | unspecified |
-      | 199X       | 1990 | 1     | 1   | sssX-ss-ss  |
-      | 19XX       | 1900 | 1     | 1   | ssXX-ss-ss  |
-      | 1999-XX    | 1999 | 1     | 1   | ssss-XX-ss  |
-      | 1999-02-XX | 1999 | 2     | 1   | ssss-ss-XX  |
-      | 1999-XX-XX | 1999 | 1     | 1   | ssss-XX-XX  |
+    @level1 @legacy
+    Examples: Draft syntax: u for unspecified digits
+      | string     | date       | unspecified |
+      | 199u       | 1990       | YYYX-MM-DD  |
+      | 19uu       | 1900       | YYXX-MM-DD  |
+      | 1999-uu    | 1999-01    | YYYY-XX-DD  |
+      | 1999-02-uu | 1999-02-01 | YYYY-MM-XX  |
+      | 1999-uu-uu | 1999-01-01 | YYYY-XX-XX  |
 
-  Scenario: Completely unknown
-    When I parse the string "uuuu"
-    Then the result should be an Unknown
-    When I parse the string "XXXX"
-    Then the result should be an Unknown
+  # Quirk: in ISO 8601-2, XXXX is a level 1 date with an unspecified year.
+  @level1 @legacy
+  Scenario Outline: Unknown dates
+    When I parse "<string>"
+    Then it should be unknown
+
+    Examples:
+      | string |
+      | uuuu   |
+      | XXXX   |

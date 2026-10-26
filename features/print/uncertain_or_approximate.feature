@@ -1,131 +1,99 @@
 Feature: Print uncertain or approximate dates
-	As a Ruby programmer
-	I want to convert Date/Time objects to EDTF strings
+  As a Ruby programmer
+  I want to convert uncertain or approximate dates to EDTF strings
 
-	@201 @level2
-	Scenario Outline: Prints uncertain or approximate dates
-		Given the date "<date>" with precision set to "<precision>"
-		When the year is uncertain: "<?-year>"
-		And the month is uncertain: "<?-month>"
-		And the day is uncertain: "<?-day>"
-		And the year is approximate: "<~-year>"
-		And the month is approximate: "<~-month>"
-		And the day is approximate "<~-day>"
-		When I convert the date
-		Then the EDTF string should be "<string>"
+  # The expected strings use the pre-ISO syntax:
+  # they change with the switch to ISO 8601-2 output.
+  Scenario Outline: Uncertain or approximate dates
+    Given the date "<date>"
+    When the uncertain parts are "<uncertain>"
+    And the approximate parts are "<approximate>"
+    Then its EDTF string should be "<edtf>"
 
-		Scenarios: Uncertain or approximate dates, day precision
-			| date       | precision | string            | ?-year  | ?-month | ?-day   | ~-year  | ~-month | ~-day   |
-			| 2004-06-01 | day       | 2004-06-01?~      | yes     | yes     | yes     | yes     | yes     | yes     |
-			| 2004-06-01 | day       | 2004-06~-01?      | yes     | yes     | yes     | yes     | yes     | no      |
-#			| 2004-06-01 | day       | (2004~-06-(01)~)? | yes     | yes     | yes     | yes     | no      | yes     |
-			| 2004-06-01 | day       | 2004~-06?-(01)?~  | yes     | yes     | yes     | yes     | no      | yes     |
-			| 2004-06-01 | day       | 2004~-06-01?      | yes     | yes     | yes     | yes     | no      | no      |
-#			| 2004-06-01 | day       | (2004-(06-01)~)?  | yes     | yes     | yes     | no      | yes     | yes     |
-			| 2004-06-01 | day       | 2004?-(06-01)?~   | yes     | yes     | yes     | no      | yes     | yes     |
-#			| 2004-06-01 | day       | (2004-(06)~-01)?  | yes     | yes     | yes     | no      | yes     | no      |
-			| 2004-06-01 | day       | 2004?-(06)?~-01?  | yes     | yes     | yes     | no      | yes     | no      |
-#			| 2004-06-01 | day       | (2004-06-(01)~)?  | yes     | yes     | yes     | no      | no      | yes     |
-			| 2004-06-01 | day       | 2004-06?-(01)?~   | yes     | yes     | yes     | no      | no      | yes     |
-			| 2004-06-01 | day       | 2004-06-01?       | yes     | yes     | yes     | no      | no      | no      |
-			| 2004-06-01 | day       | 2004-06?-01~      | yes     | yes     | no      | yes     | yes     | yes     |
-			| 2004-06-01 | day       | 2004-06?~-01      | yes     | yes     | no      | yes     | yes     | no      |
-			| 2004-06-01 | day       | 2004~-06?-(01)~   | yes     | yes     | no      | yes     | no      | yes     |
-			| 2004-06-01 | day       | 2004~-06?-01      | yes     | yes     | no      | yes     | no      | no      |
-#			| 2004-06-01 | day       | 2004-(06?-01)~    | yes     | yes     | no      | no      | yes     | yes     | is this correct?
-#			| 2004-06-01 | day       | 2004?-((06)?-01)~ | yes     | yes     | no      | no      | yes     | yes     |
-			| 2004-06-01 | day       | 2004?-(06)?~-01~  | yes     | yes     | no      | no      | yes     | yes     |
-#			| 2004-06-01 | day       | (2004-(06)~)?-01  | yes     | yes     | no      | no      | yes     | no      |
-			| 2004-06-01 | day       | 2004?-(06)?~-01   | yes     | yes     | no      | no      | yes     | no      |
-			| 2004-06-01 | day       | 2004-06?-(01)~    | yes     | yes     | no      | no      | no      | yes     |
-			| 2004-06-01 | day       | 2004-06?-01       | yes     | yes     | no      | no      | no      | no      |
-#			| 2004-06-01 | day       | (2004?-06-(01)?)~ | yes     | no      | yes     | yes     | yes     | yes     |
-			| 2004-06-01 | day       | 2004?-06~-(01)?~  | yes     | no      | yes     | yes     | yes     | yes     |
-			| 2004-06-01 | day       | 2004?-06~-(01)?   | yes     | no      | yes     | yes     | yes     | no      |
-			| 2004-06-01 | day       | 2004?~-06-(01)?~  | yes     | no      | yes     | yes     | no      | yes     |
-			| 2004-06-01 | day       | 2004?~-06-(01)?   | yes     | no      | yes     | yes     | no      | no      |
-#			| 2004-06-01 | day       | 2004?-(06-(01)?)~ | yes     | no      | yes     | no      | yes     | yes     |
-			| 2004-06-01 | day       | 2004?-(06)~-01?~  | yes     | no      | yes     | no      | yes     | yes     |
-			| 2004-06-01 | day       | 2004?-(06)~-01?   | yes     | no      | yes     | no      | yes     | no      |
-			| 2004-06-01 | day       | 2004?-06-(01)?~   | yes     | no      | yes     | no      | no      | yes     |
-			| 2004-06-01 | day       | 2004?-06-(01)?    | yes     | no      | yes     | no      | no      | no      |
-			| 2004-06-01 | day       | 2004?-06-01~      | yes     | no      | no      | yes     | yes     | yes     |
-			| 2004-06-01 | day       | 2004?-06~-01      | yes     | no      | no      | yes     | yes     | no      |
-			| 2004-06-01 | day       | 2004?~-06-(01)~   | yes     | no      | no      | yes     | no      | yes     |
-			| 2004-06-01 | day       | 2004?~-06-01      | yes     | no      | no      | yes     | no      | no      |
-			| 2004-06-01 | day       | 2004?-(06-01)~    | yes     | no      | no      | no      | yes     | yes     |
-			| 2004-06-01 | day       | 2004?-(06)~-01    | yes     | no      | no      | no      | yes     | no      |
-			| 2004-06-01 | day       | 2004?-06-(01)~    | yes     | no      | no      | no      | no      | yes     |
-			| 2004-06-01 | day       | 2004?-06-01       | yes     | no      | no      | no      | no      | no      |
-#			| 2004-06-01 | day       | (2004-(06-01)?)~  | no      | yes     | yes     | yes     | yes     | yes     |
-			| 2004-06-01 | day       | 2004~-(06-01)?~   | no      | yes     | yes     | yes     | yes     | yes     |
-#			| 2004-06-01 | day       | 2004-(06~-01)?    | no      | yes     | yes     | yes     | yes     | no      | is this correct?
-#			| 2004-06-01 | day       | 2004~-((06)~-01)? | no      | yes     | yes     | yes     | yes     | no      |
-			| 2004-06-01 | day       | 2004~-(06)?~-01?  | no      | yes     | yes     | yes     | yes     | no      |
-#			| 2004-06-01 | day       | 2004~-(06-(01)~)? | no      | yes     | yes     | yes     | no      | yes     |
-			| 2004-06-01 | day       | 2004~-(06)?-01?~  | no      | yes     | yes     | yes     | no      | yes     |
-			| 2004-06-01 | day       | 2004~-(06-01)?    | no      | yes     | yes     | yes     | no      | no      |
-			| 2004-06-01 | day       | 2004-(06-01)?~    | no      | yes     | yes     | no      | yes     | yes     |
-#			| 2004-06-01 | day       | 2004-((06)~-01)?  | no      | yes     | yes     | no      | yes     | no      |
-			| 2004-06-01 | day       | 2004-(06)?~-01?   | no      | yes     | yes     | no      | yes     | no      |
-#			| 2004-06-01 | day       | 2004-(06-(01)~)?  | no      | yes     | yes     | no      | no      | yes     |
-			| 2004-06-01 | day       | 2004-(06)?-01?~   | no      | yes     | yes     | no      | no      | yes     |
-			| 2004-06-01 | day       | 2004-(06-01)?     | no      | yes     | yes     | no      | no      | no      |
-#			| 2004-06-01 | day       | (2004-(06)?-01)~  | no      | yes     | no      | yes     | yes     | yes     |
-			| 2004-06-01 | day       | 2004~-(06)?~-01~  | no      | yes     | no      | yes     | yes     | yes     |
-#			| 2004-06-01 | day       | (2004-(06)?)~-01  | no      | yes     | no      | yes     | yes     | no      |
-			| 2004-06-01 | day       | 2004~-(06)?~-01   | no      | yes     | no      | yes     | yes     | no      |
-			| 2004-06-01 | day       | 2004~-(06)?-01~   | no      | yes     | no      | yes     | no      | yes     |
-			| 2004-06-01 | day       | 2004~-(06)?-01    | no      | yes     | no      | yes     | no      | no      |
-#			| 2004-06-01 | day       | 2004-((06)?-01)~  | no      | yes     | no      | no      | yes     | yes     |
-			| 2004-06-01 | day       | 2004-(06)?~-01~   | no      | yes     | no      | no      | yes     | yes     |
-			| 2004-06-01 | day       | 2004-(06)?~-01    | no      | yes     | no      | no      | yes     | no      |
-			| 2004-06-01 | day       | 2004-(06)?-01~    | no      | yes     | no      | no      | no      | yes     |
-			| 2004-06-01 | day       | 2004-(06)?-01     | no      | yes     | no      | no      | no      | no      |
-#			| 2004-06-01 | day       | (2004-06-(01)?)~  | no      | no      | yes     | yes     | yes     | yes     |
-			| 2004-06-01 | day       | 2004-06~-(01)?~   | no      | no      | yes     | yes     | yes     | yes     |
-			| 2004-06-01 | day       | 2004-06~-(01)?    | no      | no      | yes     | yes     | yes     | no      |
-			| 2004-06-01 | day       | 2004~-06-(01)?~   | no      | no      | yes     | yes     | no      | yes     |
-			| 2004-06-01 | day       | 2004~-06-(01)?    | no      | no      | yes     | yes     | no      | no      |
-#			| 2004-06-01 | day       | 2004-(06-(01)?)~  | no      | no      | yes     | no      | yes     | yes     |
-			| 2004-06-01 | day       | 2004-(06)~-01?~   | no      | no      | yes     | no      | yes     | yes     |
-			| 2004-06-01 | day       | 2004-(06)~-01?    | no      | no      | yes     | no      | yes     | no      |
-			| 2004-06-01 | day       | 2004-06-(01)?~    | no      | no      | yes     | no      | no      | yes     |
-			| 2004-06-01 | day       | 2004-06-(01)?     | no      | no      | yes     | no      | no      | no      |
-			| 2004-06-01 | day       | 2004-06-01~       | no      | no      | no      | yes     | yes     | yes     |
-			| 2004-06-01 | day       | 2004-06~-01       | no      | no      | no      | yes     | yes     | no      |
-			| 2004-06-01 | day       | 2004~-06-(01)~    | no      | no      | no      | yes     | no      | yes     |
-			| 2004-06-01 | day       | 2004~-06-01       | no      | no      | no      | yes     | no      | no      |
-			| 2004-06-01 | day       | 2004-(06-01)~     | no      | no      | no      | no      | yes     | yes     |
-			| 2004-06-01 | day       | 2004-(06)~-01     | no      | no      | no      | no      | yes     | no      |
-			| 2004-06-01 | day       | 2004-06-(01)~     | no      | no      | no      | no      | no      | yes     |
-			| 2004-06-01 | day       | 2004-06-01        | no      | no      | no      | no      | no      | no      |
-
-		Scenarios: Uncertain or approximate dates, month precision
-			| date       | precision | string            | ?-year  | ?-month | ?-day   | ~-year  | ~-month | ~-day   |
-			| 2004-06-01 | month     | 2004-06?~         | yes     | yes     | no      | yes     | yes     | no      |
-			| 2004-06-01 | month     | 2004~-06?         | yes     | yes     | no      | yes     | no      | no      | 
-#     | 2004-06-01 | month     | (2004-(06)~)?     | yes     | yes     | no      | no      | yes     | no      |
-      | 2004-06-01 | month     | 2004?-(06)?~      | yes     | yes     | no      | no      | yes     | no      |
-			| 2004-06-01 | month     | 2004-06?          | yes     | yes     | no      | no      | no      | no      |
-			| 2004-06-01 | month     | 2004?-06~         | yes     | no      | no      | yes     | yes     | no      |
-			| 2004-06-01 | month     | 2004?~-06         | yes     | no      | no      | yes     | no      | no      |
-			| 2004-06-01 | month     | 2004?-(06)~       | yes     | no      | no      | no      | yes     | no      |
-			| 2004-06-01 | month     | 2004?-06          | yes     | no      | no      | no      | no      | no      |
-#			| 2004-06-01 | month     | (2004-(06)?)~     | no      | yes     | no      | yes     | yes     | no      |
-			| 2004-06-01 | month     | 2004~-(06)?~      | no      | yes     | no      | yes     | yes     | no      |
-			| 2004-06-01 | month     | 2004~-(06)?       | no      | yes     | no      | yes     | no      | no      |
-			| 2004-06-01 | month     | 2004-(06)?~       | no      | yes     | no      | no      | yes     | no      |
-			| 2004-06-01 | month     | 2004-(06)?        | no      | yes     | no      | no      | no      | no      |
-			| 2004-06-01 | month     | 2004-06~          | no      | no      | no      | yes     | yes     | no      |
-			| 2004-06-01 | month     | 2004~-06          | no      | no      | no      | yes     | no      | no      |
-			| 2004-06-01 | month     | 2004-(06)~        | no      | no      | no      | no      | yes     | no      |
-			| 2004-06-01 | month     | 2004-06           | no      | no      | no      | no      | no      | no      |
-
-
-		Scenarios: Uncertain or approximate dates, year precision
-			| date       | precision | string            | ?-year  | ?-month | ?-day   | ~-year  | ~-month | ~-day   |
-			| 2004-06-01 | year      | 2004?~            | yes     | no      | no      | yes     | no      | no      |
-			| 2004-06-01 | year      | 2004?             | yes     | no      | no      | no      | no      | no      |
-			| 2004-06-01 | year      | 2004~             | no      | no      | no      | yes     | no      | no      |
-			| 2004-06-01 | year      | 2004              | no      | no      | no      | no      | no      | no      |
+    @level2
+    Examples:
+      | date       | uncertain        | approximate      | edtf             |
+      | 2004-06-01 | year, month, day | year, month, day | 2004-06-01?~     |
+      | 2004-06-01 | year, month, day | year, month      | 2004-06~-01?     |
+      | 2004-06-01 | year, month, day | year, day        | 2004~-06?-(01)?~ |
+      | 2004-06-01 | year, month, day | year             | 2004~-06-01?     |
+      | 2004-06-01 | year, month, day | month, day       | 2004?-(06-01)?~  |
+      | 2004-06-01 | year, month, day | month            | 2004?-(06)?~-01? |
+      | 2004-06-01 | year, month, day | day              | 2004-06?-(01)?~  |
+      | 2004-06-01 | year, month, day | none             | 2004-06-01?      |
+      | 2004-06-01 | year, month      | year, month, day | 2004-06?-01~     |
+      | 2004-06-01 | year, month      | year, month      | 2004-06?~-01     |
+      | 2004-06-01 | year, month      | year, day        | 2004~-06?-(01)~  |
+      | 2004-06-01 | year, month      | year             | 2004~-06?-01     |
+      | 2004-06-01 | year, month      | month, day       | 2004?-(06)?~-01~ |
+      | 2004-06-01 | year, month      | month            | 2004?-(06)?~-01  |
+      | 2004-06-01 | year, month      | day              | 2004-06?-(01)~   |
+      | 2004-06-01 | year, month      | none             | 2004-06?-01      |
+      | 2004-06-01 | year, day        | year, month, day | 2004?-06~-(01)?~ |
+      | 2004-06-01 | year, day        | year, month      | 2004?-06~-(01)?  |
+      | 2004-06-01 | year, day        | year, day        | 2004?~-06-(01)?~ |
+      | 2004-06-01 | year, day        | year             | 2004?~-06-(01)?  |
+      | 2004-06-01 | year, day        | month, day       | 2004?-(06)~-01?~ |
+      | 2004-06-01 | year, day        | month            | 2004?-(06)~-01?  |
+      | 2004-06-01 | year, day        | day              | 2004?-06-(01)?~  |
+      | 2004-06-01 | year, day        | none             | 2004?-06-(01)?   |
+      | 2004-06-01 | year             | year, month, day | 2004?-06-01~     |
+      | 2004-06-01 | year             | year, month      | 2004?-06~-01     |
+      | 2004-06-01 | year             | year, day        | 2004?~-06-(01)~  |
+      | 2004-06-01 | year             | year             | 2004?~-06-01     |
+      | 2004-06-01 | year             | month, day       | 2004?-(06-01)~   |
+      | 2004-06-01 | year             | month            | 2004?-(06)~-01   |
+      | 2004-06-01 | year             | day              | 2004?-06-(01)~   |
+      | 2004-06-01 | year             | none             | 2004?-06-01      |
+      | 2004-06-01 | month, day       | year, month, day | 2004~-(06-01)?~  |
+      | 2004-06-01 | month, day       | year, month      | 2004~-(06)?~-01? |
+      | 2004-06-01 | month, day       | year, day        | 2004~-(06)?-01?~ |
+      | 2004-06-01 | month, day       | year             | 2004~-(06-01)?   |
+      | 2004-06-01 | month, day       | month, day       | 2004-(06-01)?~   |
+      | 2004-06-01 | month, day       | month            | 2004-(06)?~-01?  |
+      | 2004-06-01 | month, day       | day              | 2004-(06)?-01?~  |
+      | 2004-06-01 | month, day       | none             | 2004-(06-01)?    |
+      | 2004-06-01 | month            | year, month, day | 2004~-(06)?~-01~ |
+      | 2004-06-01 | month            | year, month      | 2004~-(06)?~-01  |
+      | 2004-06-01 | month            | year, day        | 2004~-(06)?-01~  |
+      | 2004-06-01 | month            | year             | 2004~-(06)?-01   |
+      | 2004-06-01 | month            | month, day       | 2004-(06)?~-01~  |
+      | 2004-06-01 | month            | month            | 2004-(06)?~-01   |
+      | 2004-06-01 | month            | day              | 2004-(06)?-01~   |
+      | 2004-06-01 | month            | none             | 2004-(06)?-01    |
+      | 2004-06-01 | day              | year, month, day | 2004-06~-(01)?~  |
+      | 2004-06-01 | day              | year, month      | 2004-06~-(01)?   |
+      | 2004-06-01 | day              | year, day        | 2004~-06-(01)?~  |
+      | 2004-06-01 | day              | year             | 2004~-06-(01)?   |
+      | 2004-06-01 | day              | month, day       | 2004-(06)~-01?~  |
+      | 2004-06-01 | day              | month            | 2004-(06)~-01?   |
+      | 2004-06-01 | day              | day              | 2004-06-(01)?~   |
+      | 2004-06-01 | day              | none             | 2004-06-(01)?    |
+      | 2004-06-01 | none             | year, month, day | 2004-06-01~      |
+      | 2004-06-01 | none             | year, month      | 2004-06~-01      |
+      | 2004-06-01 | none             | year, day        | 2004~-06-(01)~   |
+      | 2004-06-01 | none             | year             | 2004~-06-01      |
+      | 2004-06-01 | none             | month, day       | 2004-(06-01)~    |
+      | 2004-06-01 | none             | month            | 2004-(06)~-01    |
+      | 2004-06-01 | none             | day              | 2004-06-(01)~    |
+      | 2004-06-01 | none             | none             | 2004-06-01       |
+      | 2004-06    | year, month      | year, month      | 2004-06?~        |
+      | 2004-06    | year, month      | year             | 2004~-06?        |
+      | 2004-06    | year, month      | month            | 2004?-(06)?~     |
+      | 2004-06    | year, month      | none             | 2004-06?         |
+      | 2004-06    | year             | year, month      | 2004?-06~        |
+      | 2004-06    | year             | year             | 2004?~-06        |
+      | 2004-06    | year             | month            | 2004?-(06)~      |
+      | 2004-06    | year             | none             | 2004?-06         |
+      | 2004-06    | month            | year, month      | 2004~-(06)?~     |
+      | 2004-06    | month            | year             | 2004~-(06)?      |
+      | 2004-06    | month            | month            | 2004-(06)?~      |
+      | 2004-06    | month            | none             | 2004-(06)?       |
+      | 2004-06    | none             | year, month      | 2004-06~         |
+      | 2004-06    | none             | year             | 2004~-06         |
+      | 2004-06    | none             | month            | 2004-(06)~       |
+      | 2004-06    | none             | none             | 2004-06          |
+      | 2004       | year             | year             | 2004?~           |
+      | 2004       | year             | none             | 2004?            |
+      | 2004       | none             | year             | 2004~            |
+      | 2004       | none             | none             | 2004             |
