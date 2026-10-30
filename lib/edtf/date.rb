@@ -24,13 +24,13 @@ class Date
     end
     
     def edtf(input, options = {})
-      edtf!(input, options)
-    rescue
-      nil
+      warn '`Date.edtf` is deprecated, use `EDTF.parse`', category: :deprecated, uplevel: 1
+      ::EDTF.parse(input, options)
     end
 
     def edtf!(input, options = {})
-      ::EDTF::Parser.new(options).parse!(input)
+      warn '`Date.edtf!` is deprecated, use `EDTF.parse!` or `EDTF()`', category: :deprecated, uplevel: 1
+      ::EDTF.parse!(input, options)
     end
   end
 
@@ -79,6 +79,17 @@ class Date
     d
   end
 
+
+  # Returns a copy with the given EDTF attributes replaced.
+  def with(precision: self.precision,
+           uncertain: PRECISION.select { |p| uncertain?(p) },
+           approximate: PRECISION.select { |p| approximate?(p) })
+    date = dup
+    date.precision = precision
+    date.uncertain.certain!.uncertain!(uncertain)
+    date.approximate.certain!.uncertain!(approximate)
+    date
+  end
 
   # Returns this Date's precision.
   def precision

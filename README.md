@@ -29,17 +29,52 @@ because of many functional overlaps
 ### ISO 8601-2
 
 A variation of EDTF has been adopted by the ISO 8601-2 standard.
-EDTF-Ruby does not support this new version of EDTF yet,
-but if you are curious,
-[EDTF.js](https://github.com/inukshuk/edtf.js), an ES6 implementation
-is already available.
+EDTF-Ruby 5.0 will switch to this version of EDTF.
+
+Preparing for EDTF-Ruby 5.0
+---------------------------
+EDTF-Ruby 5.0 will accept the older draft syntax
+only in an opt-in legacy mode, and print ISO 8601-2 syntax only.
+Version 4.1 helps you prepare.
+
+Enable deprecation warnings
+to see which input uses legacy syntax
+and which methods will go away:
+
+    $ RUBYOPT=-W:deprecated bundle exec rake
+    EDTF "2004/open": `open` is legacy syntax, use `..`
+
+In code, use `Warning[:deprecated] = true` instead.
+To audit stored dates without warnings, use `EDTF.legacy?`,
+e.g. to print each line of a file that uses legacy syntax:
+
+    $ ruby -redtf -ne 'print if EDTF.legacy?($_.chomp)' dates.txt
+
+You can switch most legacy syntax to ISO 8601-2 right away.
+Parentheses and masked precision (`198x`) have no replacement in 4.1;
+EDTF-Ruby 5.0 converts them in legacy mode.
+Calendars and season qualifiers (`^…`) are not part of ISO 8601-2;
+EDTF-Ruby 5.0 converts hemispheres to seasons (`2001-21^southern` to `2001-29`).
+
+In your code:
+* Replace `Date.edtf` and `Date.edtf!`
+  with `EDTF.parse`, `EDTF.parse!`, or `EDTF()`.
+  `EDTF()` converts strings, times, and dates to EDTF objects,
+  raising an error if it cannot.
+* EDTF objects will be immutable.
+  Instead of the bang! methods, use `with` for a modified copy:
+
+      > EDTF('2004-06-11').with(precision: :year, approximate: :year).edtf
+      => "2004~"
+
+* `XXXX` will be a date with an unspecified year instead of an `EDTF::Unknown`.
 
 Quickstart
 ----------
 EDTF Ruby is implemented as an extension to the regular Ruby date/time classes.
-You can parse EDTF strings either using `Date.edtf` or `EDTF.parse`
-(both methods come with an alternative bang! version,
-that will raise an error if the string cannot be parsed
+You can parse EDTF strings using `EDTF.parse`
+(or its bang! version `EDTF.parse!`, or `EDTF()`,
+which will raise an error if the string cannot be parsed
 instead of silently returning nil);
 if given a valid EDTF string
 the return value will either be an (extended) `Date`,
@@ -130,7 +165,7 @@ whilst uncertain could be something completely different
 Here are a few examples of how you can access
 the uncertain/approximate state of dates in Ruby:
 
-    > d = Date.edtf('1984?')
+    > d = EDTF('1984?')
     > d.uncertain?
     => true
     > d.uncertain? :year
@@ -151,7 +186,7 @@ In addition, EDTF supports *unspecified* date parts.
 EDTF-Ruby provides parsing for both the draft and finalized EDTF specifications,
 with output meeting the requirements of the final specification:
 
-    > d = Date.edtf('1999-03-XX')
+    > d = EDTF('1999-03-XX')
     > d.unspecified?
     => true
     > d.unspecified? :year
@@ -162,7 +197,7 @@ with output meeting the requirements of the final specification:
     > d.edtf
     => "1999-XX-XX"
 
-    > draft_d = Date.edtf('1999-03-uu')
+    > draft_d = EDTF('1999-03-uu')    # legacy syntax
     > draft_d.edtf
     => "1999-03-XX"
 
@@ -172,12 +207,12 @@ do not factor into date calculations
 
 EDTF long or scientific years are mapped to normal date instances.
 
-    > Date.edtf('y-17e7').year
+    > EDTF('Y-17E7').year
     => -170000000
 
 When printing date strings, EDTF-Ruby will try to avoid nested parentheses:
 
-    > Date.edtf("(1999-(02)~-23)?").edtf
+    > EDTF("(1999-(02)~-23)?").edtf
     => "1999?-(02)?~-23?"
 
 
@@ -188,7 +223,7 @@ the EDTF-Ruby parser will return an instance of `EDTF::Interval`;
 intervals mimic regular Ruby ranges,
 but offer additional functionality.
 
-    > d = Date.edtf('1984-06?/2004-08?')
+    > d = EDTF('1984-06?/2004-08?')
     > d.from.uncertain?
     => true
     > d.include?(Date.new(1987,04,13))
@@ -215,7 +250,7 @@ There are 243 months between 1984-06-01 and 2004-08-31.
 Here we iterate through the interval in 36-month steps
 and map each date to the year.
 
-    > Date.edtf('1582-10-01/1582-10-31').length
+    > EDTF('1582-10-01/1582-10-31').length
     => 31
 
 This interval has day precision,
@@ -225,9 +260,9 @@ so the ten days skipped by the Gregorian calendar reform are included.
 
 Intervals can be open or have unknown start or end dates.
 
-    > Date.edtf('2004/open').open?
+    > EDTF('2004/..').open?
     => true
-    > Date.edtf('2004/open').cover?(Date.today)
+    > EDTF('2004/..').cover?(Date.today)
     => true
 
 ### Sets
@@ -238,7 +273,7 @@ or inclusive lists.
 In EDTF-Ruby, these are covered by the class `EDTF::Set`
 and the `choice` attribute.
 
-    > s = Date.edtf('{1667,1668, 1670..1672}')
+    > s = EDTF('{1667,1668, 1670..1672}')
     > s.choice?
     => false
     > s.choice!
@@ -249,9 +284,9 @@ As you can see above,
 EDTF-Ruby remembers which parts of the set were specified as a range;
 ranges are however enumerated for membership tests:
 
-    > s.include?(Date.edtf('1669'))
+    > s.include?(EDTF('1669'))
     => false
-    > s.include?(Date.edtf('1671'))
+    > s.include?(EDTF('1671'))
     => true
 
 Even though we're still aware
@@ -282,7 +317,7 @@ to define decades or centuries.
 EDTF-Ruby maps these to dedicated intervals
 which always cover 10 or 100 years, respectively.
 
-    > d = Date.edtf!('196x')
+    > d = EDTF('196x')
     > d.edtf
     => "196x"
     > d.class
@@ -306,7 +341,7 @@ which allow you to access the seasons by the names
 spring, summer, autumn (or fall), and winter, respectively.
 You can also use the more neutral taxonomy of first, second, third, fourth.
 
-    > w = Date.edtf!('2003-24')
+    > w = EDTF('2003-24')
     > w.winter?
     => true
     > s = w.succ

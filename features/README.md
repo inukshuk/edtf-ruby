@@ -7,7 +7,7 @@ and with the non-standard extensions.
 | Tag           | Meaning                                              |
 |---------------|------------------------------------------------------|
 | `@level<n>`   | EDTF / ISO 8601-2 level 0, 1 or 2                    |
-| `@legacy`     | Legacy mode only: draft syntax, EDTF-Ruby extensions |
+| `@legacy`     | Legacy mode only: draft syntax                       |
 | `@ext-<name>` | Non-standard extension, enabled by default           |
 | `@wip`        | Valid input that is not supported yet                |
 

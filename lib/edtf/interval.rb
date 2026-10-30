@@ -11,12 +11,12 @@ module EDTF
   # containing exactly four dates with year precision. This is also reflected
   # in membership tests.
   #
-  #     Date.edtf('2003/2006').length                           -> 4
+  #     EDTF('2003/2006').length                     -> 4
   #
-  #     Date.edtf('2003/2006').include? Date.edtf('2004')       -> true
-  #     Date.edtf('2003/2006').include? Date.edtf('2004-03')    -> false
+  #     EDTF('2003/2006').include? EDTF('2004')      -> true
+  #     EDTF('2003/2006').include? EDTF('2004-03')   -> false
   #
-  #     Date.edtf('2003/2006').cover? Date.edtf('2004-03')      -> true
+  #     EDTF('2003/2006').cover? EDTF('2004-03')     -> true
   #
   class Interval
 

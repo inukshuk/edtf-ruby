@@ -70,7 +70,7 @@ Feature: Parse seasons
     And the season qualifier should be "<qualifier>"
 
     @legacy
-    Examples: EDTF-Ruby extensions: season qualifiers
+    Examples: Draft syntax: season qualifiers
       | string           | season  | qualifier |
       | 2003-23^european | 2003-23 | european  |
       | 2001-21^southern | 2001-21 | southern  |
