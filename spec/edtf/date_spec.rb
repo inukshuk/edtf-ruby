@@ -5,6 +5,31 @@ describe 'Date/DateTime' do
       expect(Date).to respond_to(:edtf)
     end
 
+    describe 'edtf and edtf!' do
+      around do |example|
+        original = Warning[:deprecated]
+        Warning[:deprecated] = true
+        example.run
+      ensure
+        Warning[:deprecated] = original
+      end
+
+      it 'are deprecated' do
+        expect { Date.edtf('2004') }.to output(/`Date.edtf` is deprecated/).to_stderr
+        expect { Date.edtf!('2004') }.to output(/`Date.edtf!` is deprecated/).to_stderr
+      end
+
+      it 'still parse' do
+        Warning[:deprecated] = false
+        expect(Date.edtf('2004?')).to eql(EDTF.parse('2004?'))
+        expect(Date.edtf('xyz')).to be_nil
+      end
+
+      it 'are not used by EDTF.parse' do
+        expect { EDTF.parse('2004') }.not_to output.to_stderr
+      end
+    end
+
     describe 'gregorian' do
       it 'returns a proleptic Gregorian date for pre-Gregorian dates' do
         date = Date.gregorian(1582, 9, 30)
@@ -166,6 +191,53 @@ describe 'Date/DateTime' do
           expect(date.uncertain?(other)).to eq(false)
         end
       end
+    end
+  end
+
+  describe '#with' do
+    let(:date) { EDTF.parse('2004-06?-11') }
+
+    def parts(date, predicate)
+      Date::PRECISION.select { |part| date.public_send(predicate, part) }
+    end
+
+    it 'returns a copy' do
+      expect(date.with).to eql(date)
+      expect(date.with).not_to equal(date)
+    end
+
+    it 'replaces the precision' do
+      expect(date.with(precision: :month)).to be_month_precision
+    end
+
+    it 'replaces the uncertain parts' do
+      expect(parts(date.with(uncertain: :day), :uncertain?)).to eq([:day])
+      expect(parts(date.with(uncertain: [:year, :day]), :uncertain?)).to eq([:year, :day])
+      expect(date.with(uncertain: [])).not_to be_uncertain
+    end
+
+    it 'replaces the approximate parts' do
+      copy = date.with(approximate: [:year, :month])
+      expect(parts(copy, :approximate?)).to eq([:year, :month])
+      expect(parts(copy, :uncertain?)).to eq([:year, :month])
+    end
+
+    it 'keeps the attributes not given' do
+      copy = date.with(approximate: :day)
+      expect(copy.precision).to eq(:day)
+      expect(parts(copy, :uncertain?)).to eq([:year, :month])
+    end
+
+    it 'does not change the original' do
+      expect { date.with(uncertain: [], precision: :year) }.not_to change { date.edtf }
+    end
+
+    it 'rejects unknown attributes' do
+      expect { date.with(year: 2005) }.to raise_error(ArgumentError)
+    end
+
+    it 'rejects invalid precisions' do
+      expect { date.with(precision: :week) }.to raise_error(ArgumentError)
     end
   end
 

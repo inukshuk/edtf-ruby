@@ -34,7 +34,7 @@ require 'edtf/extensions'
 # Date/Time Format (EDTF). See the `EDTF::ExtendedDate` module for an
 # overview of the features added to the Ruby `Date` class.
 #
-# To parse EDTF strings use either `Date.edtf` of `EDTF.parse`.
+# To parse EDTF strings use `EDTF.parse` or `EDTF()`.
 #
 module EDTF
 
@@ -47,11 +47,31 @@ module EDTF
   end
   
   def parse!(input, options = {})
-    ::Date.edtf!(input, options)
+    Parser.new(options).parse!(input)
   end
 
   def legacy?(input)
     parser = Parser.new(warn: false)
     !parser.parse(input).nil? && parser.legacy?
+  end
+end
+
+module Kernel
+  private
+
+  # Converts value to an EDTF object:
+  # strings are parsed, times become date-times,
+  # dates and other EDTF objects are returned unchanged.
+  def EDTF(value)
+    case value
+    when String
+      EDTF.parse!(value)
+    when Time
+      value.to_datetime
+    when Date, EDTF::Season, EDTF::Epoch, EDTF::Interval, EDTF::Set, EDTF::Unknown
+      value
+    else
+      raise TypeError, "can't convert #{value.class} into EDTF"
+    end
   end
 end

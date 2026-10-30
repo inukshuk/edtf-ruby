@@ -70,7 +70,7 @@ rule
 
   year_month : year '-' month { result = [val[0], val[2]] }
 
-  # We raise an exception if there are two many days for the month, but
+  # We raise an exception if there are too many days for the month, but
   # do not consider leap years, as the EDTF BNF did not either.
   # NB: an exception will be raised regardless, because the Ruby Date
   # implementation calculates leap years.
@@ -519,10 +519,7 @@ require 'strscan'
 
   class << self; attr_reader :defaults; end
 
-  attr_reader :options
-
-  # The deprecations found by the last successful parse.
-  attr_reader :deprecations
+  attr_reader :options, :deprecations
 
   def initialize(options = {})
     @options = Parser.defaults.merge(options)

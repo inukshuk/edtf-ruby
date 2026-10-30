@@ -45,10 +45,7 @@ module_eval(<<'...end parser.y/module_eval...', 'parser.y', 489)
 
   class << self; attr_reader :defaults; end
 
-  attr_reader :options
-
-  # The deprecations found by the last successful parse.
-  attr_reader :deprecations
+  attr_reader :options, :deprecations
 
   def initialize(options = {})
     @options = Parser.defaults.merge(options)
