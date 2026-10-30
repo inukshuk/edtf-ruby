@@ -1,137 +1,72 @@
-Feature: Print Date/Time objects as Level 1 EDTF strings
+Feature: Print level 1 EDTF strings
   As a Ruby programmer
-  I want to convert Date/Time objects to EDTF strings
+  I want to convert dates to EDTF strings
 
-  @101 @level1
-	Scenario: Uncertain or approximate dates
-		When I parse the string "2001?"
-		When I convert the date
-		Then the EDTF string should be "2001?"
+  Scenario Outline: Round trips
+    When I parse "<string>"
+    Then its EDTF string should be "<edtf>"
 
-		When I parse the string "2004-06?"
-		When I convert the date
-		Then the EDTF string should be "2004-06?"
+    @level1
+    Examples: Uncertain or approximate dates
+      | string      | edtf        |
+      | 2001?       | 2001?       |
+      | 2004-06?    | 2004-06?    |
+      | 2004-06-11? | 2004-06-11? |
+      | 1984~       | 1984~       |
 
-		When I parse the string "2004-06-11?"
-		When I convert the date
-		Then the EDTF string should be "2004-06-11?"
+    @level1 @legacy
+    Examples: Draft syntax: combined qualifiers
+      | string | edtf   |
+      | 1984?~ | 1984?~ |
 
-		When I parse the string "1984~"
-		When I convert the date
-		Then the EDTF string should be "1984~"
+    @level1
+    Examples: Unspecified dates
+      | string     | edtf       |
+      | 199X       | 199X       |
+      | 19XX       | 19XX       |
+      | 1999-XX    | 1999-XX    |
+      | 1999-01-XX | 1999-01-XX |
+      | 1999-XX-XX | 1999-XX-XX |
 
-		When I parse the string "1984?~"
-		When I convert the date
-		Then the EDTF string should be "1984?~"
+    @level1 @legacy
+    Examples: Draft syntax: u for unspecified digits
+      | string     | edtf       |
+      | 199u       | 199X       |
+      | 19uu       | 19XX       |
+      | 1999-uu    | 1999-XX    |
+      | 1999-01-uu | 1999-01-XX |
 
-	@102 @level1 @draft
-	Scenario: Unspecified dates
-		When I parse the string "199u"
-		When I convert the date
-		Then the EDTF string should be "199X"
+    @level1
+    Examples: Extended intervals
+      | string                  | edtf                    |
+      | 1984~/2004-06           | 1984~/2004-06           |
+      | 1984/2004-06~           | 1984/2004-06~           |
+      | 1984~/2004~             | 1984~/2004~             |
+      | 1984-06?/2004-08?       | 1984-06?/2004-08?       |
+      | 1984-06-02?/2004-08-08~ | 1984-06-02?/2004-08-08~ |
 
-		When I parse the string "19uu"
-		When I convert the date
-		Then the EDTF string should be "19XX"
+    @level1 @legacy
+    Examples: Draft syntax: unknown and open interval ends
+      | string              | edtf                |
+      | unknown/2006        | unknown/2006        |
+      | 2004-06-01/unknown  | 2004-06-01/unknown  |
+      | 2004-01-01/open     | 2004-01-01/open     |
+      | 1984-06-02?/unknown | 1984-06-02?/unknown |
+      | 1984?/2004?~        | 1984?/2004?~        |
 
-		When I parse the string "1999-uu"
-		When I convert the date
-		Then the EDTF string should be "1999-XX"
+    @level1
+    Examples: Years with more than four digits
+      | string      | edtf        |
+      | Y170000002  | Y170000002  |
+      | Y-170000002 | Y-170000002 |
 
-		When I parse the string "1999-01-uu"
-		When I convert the date
-		Then the EDTF string should be "1999-01-XX"
+    @level1 @legacy
+    Examples: Draft syntax: lowercase y
+      | string      | edtf        |
+      | y170000002  | Y170000002  |
+      | y-170000002 | Y-170000002 |
 
-		When I parse the string "1999-XX-XX"
-		When I convert the date
-		Then the EDTF string should be "1999-XX-XX"
-
-  @102 @level1 @final
-  Scenario: Unspecified dates
-    When I parse the string "199X"
-    When I convert the date
-    Then the EDTF string should be "199X"
-
-    When I parse the string "19XX"
-		When I convert the date
-		Then the EDTF string should be "19XX"
-
-		When I parse the string "1999-XX"
-		When I convert the date
-		Then the EDTF string should be "1999-XX"
-
-		When I parse the string "1999-01-XX"
-		When I convert the date
-		Then the EDTF string should be "1999-01-XX"
-
-		When I parse the string "1999-XX-XX"
-		When I convert the date
-		Then the EDTF string should be "1999-XX-XX"
-
-	@103 @level1 @interval
-	Scenario: Prints L1 Extended Intervals
-		When I parse the string "unknown/2006"
-		When I convert the date
-		Then the EDTF string should be "unknown/2006"
-
-		When I parse the string "2004-06-01/unknown"
-		When I convert the date
-		Then the EDTF string should be "2004-06-01/unknown"
-
-		When I parse the string "2004-01-01/open"
-		When I convert the date
-		Then the EDTF string should be "2004-01-01/open"
-
-		When I parse the string "1984~/2004-06"
-		When I convert the date
-		Then the EDTF string should be "1984~/2004-06"
-
-		When I parse the string "1984/2004-06~"
-		When I convert the date
-		Then the EDTF string should be "1984/2004-06~"
-
-		When I parse the string "1984~/2004~"
-		When I convert the date
-		Then the EDTF string should be "1984~/2004~"
-
-		When I parse the string "1984?/2004?~"
-		When I convert the date
-		Then the EDTF string should be "1984?/2004?~"
-
-		When I parse the string "1984-06?/2004-08?"
-		When I convert the date
-		Then the EDTF string should be "1984-06?/2004-08?"
-
-		When I parse the string "1984-06-02?/2004-08-08~"
-		When I convert the date
-		Then the EDTF string should be "1984-06-02?/2004-08-08~"
-
-		When I parse the string "1984-06-02?/unknown"
-		When I convert the date
-		Then the EDTF string should be "1984-06-02?/unknown"
-
-	@104 @level1 @draft
-	Scenario: Prints years with more than four digits
-		When I parse the string "y170000002"
-		When I convert the date
-		Then the EDTF string should be "Y170000002"
-
-		When I parse the string "y-170000002"
-		When I convert the date
-		Then the EDTF string should be "Y-170000002"
-
-  @104 @level1 @final
-  Scenario: Prints years with more than four digits
-    When I parse the string "Y170000002"
-		When I convert the date
-		Then the EDTF string should be "Y170000002"
-
-		When I parse the string "Y-170000002"
-		When I convert the date
-		Then the EDTF string should be "Y-170000002"
-
-	@105 @level1 @season
-	Scenario: Prints seasons
-		When I parse the string "2001-21"
-		When I convert the date
-		Then the EDTF string should be "2001-21"
+    @level1
+    Examples: Seasons
+      | string  | edtf    |
+      | 2001-21 | 2001-21 |

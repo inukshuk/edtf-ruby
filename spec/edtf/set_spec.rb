@@ -1,5 +1,5 @@
 module EDTF
-  describe 'Sets' do
+  describe Set do
 
     describe 'constructor' do
 
@@ -20,32 +20,32 @@ module EDTF
       end
 
       it 'returns {1984} if the set contains the year 1984' do
-        expect(Set.new(Date.edtf('1984')).edtf).to eq('{1984}')
+        expect(Set.new(EDTF.parse('1984')).edtf).to eq('{1984}')
       end
 
       it 'returns {1984, 1985-10} for the set containing these dates' do
-        expect(Set.new(Date.edtf('1984'), Date.new(1984,10).month_precision).edtf).to eq('{1984,1984-10}')
+        expect(Set.new(EDTF.parse('1984'), Date.new(1984,10).month_precision).edtf).to eq('{1984,1984-10}')
       end
 
       it 'returns {..1984, 1985-10} for the set containing these dates and earlier == true' do
-        expect(Set.new(Date.edtf('1984'), Date.new(1984,10).month_precision).earlier!.edtf).to eq('{..1984,1984-10}')
+        expect(Set.new(EDTF.parse('1984'), Date.new(1984,10).month_precision).earlier!.edtf).to eq('{..1984,1984-10}')
       end
 
       it 'returns {1984, 1985-10..} for the set containing these dates and later == true' do
-        expect(Set.new(Date.edtf('1984'), Date.new(1984,10).month_precision).later!.edtf).to eq('{1984,1984-10..}')
+        expect(Set.new(EDTF.parse('1984'), Date.new(1984,10).month_precision).later!.edtf).to eq('{1984,1984-10..}')
       end
 
       it 'returns [1667, 1668, 1670..1672] for the years 1667, 1668 and the interval 1670..1672' do
         s = Set.new.choice!
-        s << Date.edtf('1667') << Date.edtf('1668')
-        s << (Date.edtf('1670') .. Date.edtf('1672'))
+        s << EDTF.parse('1667') << EDTF.parse('1668')
+        s << (EDTF.parse('1670') .. EDTF.parse('1672'))
         expect(s.edtf).to eq('[1667,1668,1670..1672]')
       end
 
     end
 
     describe 'the set [1667, 1668, 1670..1672]' do
-      let(:set) { Set.new(Date.edtf('1667'), Date.edtf('1668'), Date.edtf('1670')..Date.edtf('1672')).choice! }
+      let(:set) { Set.new(EDTF.parse('1667'), EDTF.parse('1668'), EDTF.parse('1670')..EDTF.parse('1672')).choice! }
 
       it 'includes the year 1671' do
         expect(set).to include(Date.new(1671).year_precision!)
@@ -69,8 +69,8 @@ module EDTF
     end
 
     describe 'the set [1984,1985-10-01..]' do
-      let(:s1) { Set.new(Date.edtf('1984'), Date.edtf('1985-10-01')).later! }
-      let(:s2) { Date.edtf('[1984,1985-10-01..]') }
+      let(:s1) { Set.new(EDTF.parse('1984'), EDTF.parse('1985-10-01')).later! }
+      let(:s2) { EDTF.parse('[1984,1985-10-01..]') }
 
       it 'has varying precision' do
         expect(s1.map(&:precision)).to eq([:year, :day])
@@ -79,34 +79,34 @@ module EDTF
     end
 
     describe 'the set [1760-12..1761-03]' do
-      let(:set) { Date.edtf('[1760-12..1761-03]') }
-      
+      let(:set) { EDTF.parse('[1760-12..1761-03]') }
+
       it "is a choice" do
         expect(set).to be_choice
       end
-      
+
       it "maps to the 4 months 1760-12 through 1761-03" do
-        expected_months = %w[1760-12 1761-01 1761-02 1761-03].map { |m| Date.edtf(m) }
+        expected_months = %w[1760-12 1761-01 1761-02 1761-03].map { |m| EDTF.parse(m) }
         expect(set.to_a).to eq(expected_months)
       end
     end
 
     describe 'the set {1760-12..1761-03}' do
-      let(:set) { Date.edtf('{1760-12..1761-03}') }
+      let(:set) { EDTF.parse('{1760-12..1761-03}') }
 
       it "is not a choice" do
         expect(set).not_to be_choice
       end
 
       it "maps to the 4 months 1760-12 through 1761-03" do
-        expected_months = %w[1760-12 1761-01 1761-02 1761-03].map { |m| Date.edtf(m) }
+        expected_months = %w[1760-12 1761-01 1761-02 1761-03].map { |m| EDTF.parse(m) }
         expect(set.to_a).to eq(expected_months)
       end
     end
 
     context "open sets" do
       describe 'the set {..1984}' do
-        let(:set) { Date.edtf('{..1984}') }
+        let(:set) { EDTF.parse('{..1984}') }
 
         it "is not a choice" do
           expect(set).not_to be_choice
@@ -126,7 +126,7 @@ module EDTF
       end
 
       describe 'the set {..1984-05-11}' do
-        let(:set) { Date.edtf('{..1984-05-11}') }
+        let(:set) { EDTF.parse('{..1984-05-11}') }
 
         it "is not a choice" do
           expect(set).not_to be_choice
@@ -146,7 +146,7 @@ module EDTF
       end
 
       describe 'the set {1984..}' do
-        let(:set) { Date.edtf('{1984..}') }
+        let(:set) { EDTF.parse('{1984..}') }
 
         it "is not a choice" do
           expect(set).not_to be_choice
@@ -166,7 +166,7 @@ module EDTF
       end
 
       describe 'the set {1984-05-11..}' do
-        let(:set) { Date.edtf('{1984-05-11..}') }
+        let(:set) { EDTF.parse('{1984-05-11..}') }
 
         it "is not a choice" do
           expect(set).not_to be_choice
@@ -186,7 +186,7 @@ module EDTF
       end
 
       describe 'the set [..1984]' do
-        let(:set) { Date.edtf('[..1984]') }
+        let(:set) { EDTF.parse('[..1984]') }
 
         it "is a choice" do
           expect(set).to be_choice
@@ -206,7 +206,7 @@ module EDTF
       end
 
       describe 'the set [..1984-05-11]' do
-        let(:set) { Date.edtf('[..1984-05-11]') }
+        let(:set) { EDTF.parse('[..1984-05-11]') }
 
         it "is a choice" do
           expect(set).to be_choice
@@ -226,7 +226,7 @@ module EDTF
       end
 
       describe 'the set [1984..]' do
-        let(:set) { Date.edtf('[1984..]') }
+        let(:set) { EDTF.parse('[1984..]') }
 
         it "is a choice" do
           expect(set).to be_choice
@@ -246,7 +246,7 @@ module EDTF
       end
 
       describe 'the set [1984-05-11..]' do
-        let(:set) { Date.edtf('[1984-05-11..]') }
+        let(:set) { EDTF.parse('[1984-05-11..]') }
 
         it "is a choice" do
           expect(set).to be_choice

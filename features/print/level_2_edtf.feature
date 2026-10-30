@@ -1,39 +1,33 @@
-Feature: Print Date/Time objects as Level 2 EDTF strings
+Feature: Print level 2 EDTF strings
   As a Ruby programmer
-  I want to convert Date/Time objects to EDTF strings
+  I want to convert dates to EDTF strings
 
-  @202 @level2
-	Scenario: Prints internal unspecified dates
-		When I parse the string "156u-12-25"
-		When I convert the date
-		Then the EDTF string should be "156X-12-25"
+  Scenario Outline: Round trips
+    When I parse "<string>"
+    Then its EDTF string should be "<edtf>"
 
-    When I parse the string "156X-12-25"
-		When I convert the date
-		Then the EDTF string should be "156X-12-25"
+    @level2
+    Examples: Unspecified digits anywhere
+      | string     | edtf       |
+      | 156X-12-25 | 156X-12-25 |
 
-  @205 @level2 @interval
-	Scenario: Prints L2 extended intervals
-		# When I parse the string "2004-06-(01)~/2004-06-(20)~"
-		# When I convert the date
-		# Then the EDTF string should be "2004-06-(01)~/2004-06-(20)~"
+    @level2 @legacy
+    Examples: Draft syntax: u for unspecified digits
+      | string     | edtf       |
+      | 156u-12-25 | 156X-12-25 |
 
-		When I parse the string "2004-06-uu/2004-07-03"
-		When I convert the date
-		Then the EDTF string should be "2004-06-XX/2004-07-03"
+    @level2
+    Examples: Extended intervals
+      | string                | edtf                  |
+      | 2004-06-XX/2004-07-03 | 2004-06-XX/2004-07-03 |
 
-    When I parse the string "2004-06-XX/2004-07-03"
-		When I convert the date
-		Then the EDTF string should be "2004-06-XX/2004-07-03"
+    @level2 @legacy
+    Examples: Draft syntax: u in extended intervals
+      | string                | edtf                  |
+      | 2004-06-uu/2004-07-03 | 2004-06-XX/2004-07-03 |
 
-  @209 @level2 @season
-	Scenario: Prints qualified seasons
-		When I parse the string "2001-21^southernHemisphere"
-		When I convert the date
-		Then the EDTF string should be "2001-21^southernHemisphere"
-
-  @207 @level2 @calendar
-	Scenario: Prints calendar string
-		When I parse the string "2001-02-03^xyz"
-		When I convert the date
-		Then the EDTF string should be "2001-02-03^xyz"
+    @level2 @legacy
+    Examples: EDTF-Ruby extensions: qualified seasons and calendars
+      | string                     | edtf                       |
+      | 2001-21^southernHemisphere | 2001-21^southernHemisphere |
+      | 2001-02-03^xyz             | 2001-02-03^xyz             |

@@ -1,89 +1,90 @@
-Feature: EDTF parser parses date strings
+Feature: Parse dates
+  As a user of EDTF-Ruby
+  I want to parse EDTF date strings
 
-  In order to use dates in EDTF
-  As a user of edtf-ruby
-  I want to parse date strings formatted in EDTF
-    
-  Scenario Outline: EDTF parses a date string
-    When I parse the string "<string>"
-    Then the year should be "<year>"
-    And the month should be "<month>"
-    And the day should be "<day>"
+  Scenario Outline: Dates
+    When I parse "<string>"
+    Then it should be the date "<date>"
 
-    @001 @level0
-    Scenarios: simple dates
-      | string     | year | month | day |
-      | 2001-02-03 | 2001 | 2     | 3   |
-      | 2008-12    | 2008 | 12    | 1   |
-      | 2008       | 2008 | 1     | 1   |
-      | -0999      | -999 | 1     | 1   |
-      | 0000       | 0    | 1     | 1   |
+    @level0
+    Examples: Year, month and day
+      | string     | date       |
+      | 2001-02-03 | 2001-02-03 |
+      | 1985-04-12 | 1985-04-12 |
+      | 2016-05-31 | 2016-05-31 |
+      | 2008-12    | 2008-12    |
+      | 1985-04    | 1985-04    |
+      | 2008       | 2008       |
+      | 1985       | 1985       |
+      | 0409       | 0409       |
+      | 9999       | 9999       |
+      | 0000       | 0000       |
+      | 0000-01-01 | 0000-01-01 |
+      | -0002      | -0002      |
+      | -0999      | -0999      |
+      | -1985      | -1985      |
+      | -2101      | -2101      |
+      | -2323      | -2323      |
+      | -9999      | -9999      |
 
+    @level0
+    Examples: Leap days and the Gregorian reform
+      | string     | date       |
+      | 2016-02-29 | 2016-02-29 |
+      | 2000-02-29 | 2000-02-29 |
+      | 1582-10-10 | 1582-10-10 |
 
-  Scenario Outline: EDTF parses uncertain date strings
-    When I parse the string "<string>"
-    Then the year should be "<year>"
-    And the year should be uncertain? "<uncertain-year>"
-    And the month should be "<month>"
-    And the month should be uncertain? "<uncertain-month>"
-    And the day should be "<day>"
-    And the day should be uncertain? "<uncertain-day>"
+    @level1
+    Examples: Years with more than four digits
+      | string      | date       |
+      | Y10000      | 10000      |
+      | Y170000002  | 170000002  |
+      | Y-170000002 | -170000002 |
 
-    @101 @level1
-    Scenarios: uncertain date examples from the specification
-     | string      | year | uncertain-year | month | uncertain-month | day | uncertain-day |
-     | 1992?       | 1992 | yes            | 1     | no              | 1   | no            |
-     | 1984?       | 1984 | yes            | 1     | no              | 1   | no            |
-     | 2004-06?    | 2004 | yes            | 6     | yes             | 1   | no            |
-     | 2004-06-11? | 2004 | yes            | 6     | yes             | 11  | yes           |
+    @level2
+    Examples: Years in exponential form
+      | string | date       |
+      | Y17E7  | 170000000  |
+      | Y-17E7 | -170000000 |
 
+    @level1 @legacy
+    Examples: Draft syntax: lowercase y
+      | string      | date       |
+      | y170000002  | 170000002  |
+      | y-170000002 | -170000002 |
 
-  Scenario Outline: EDTF parses uncertain or approximate date strings
-    When I parse the string "<string>"
-    Then the year should be "<year>"
-    And the month should be "<month>"
-    And the day should be "<day>"
-    And the date should be uncertain? "<uncertain>"
-    And the date should be approximate? "<approximate>"
+    @level2 @legacy
+    Examples: Draft syntax: lowercase y and e
+      | string | date       |
+      | y17e7  | 170000000  |
+      | y-17e7 | -170000000 |
+      | Y17e7  | 170000000  |
 
-    @101 @level1
-    Scenarios: uncertain date examples from the specification
-      | string      | year | month | day | uncertain | approximate |
-      | 1984~       | 1984 | 1     | 1   | no        | yes         |
-      | 1984?~      | 1984 | 1     | 1   | yes       | yes         |
+    # Quirk: edtf.js rejects -0000.
+    @level0 @legacy
+    Examples: Quirks: negative year zero
+      | string | date |
+      | -0000  | 0000 |
 
-  Scenario Outline: EDTF parses uncertain or approximate dates
-    When I parse the string "<string>"
-    And the year should be uncertain? "<?-year>"
-    And the month should be uncertain? "<?-month>"
-    And the day should be uncertain? "<?-day>"
-    And the year should be approximate? "<~-year>"
-    And the month should be approximate? "<~-month>"
-    And the day should be approximate? "<~-day>"
+  @level2 @wip
+  Scenario Outline: Significant digits
+    When I parse "<string>"
+    Then it should be the date "<date>"
+    And the significant digits should be <digits>
 
-  @201 @level2
-  Scenarios: uncertain date examples from the specification
-   | string          	 | ~-year | ?-year | ~-month | ?-month | ~-day | ?-day |
-	 | 2004?-06-11     	 | no     | yes    | no      | no      | no    | no    |
-	 | 2004-06~-11     	 | yes    | no     | yes     | no      | no    | no    |
-	 | 2004-(06)?-11   	 | no     | no     | no      | yes     | no    | no    |
-	 | 2004-06-(11)~   	 | no     | no     | no      | no      | yes   | no    |
-	 | 2004-(06)?~     	 | no     | no     | yes     | yes     | no    | no    |
-	 | 2004-(06-11)?   	 | no     | no     | no      | yes     | no    | yes   |
-	 | 2004?-06-(11)~  	 | no     | yes    | no      | no      | yes   | no    |
-	 | (2004-(06)~)?   	 | no     | yes    | yes     | yes     | no    | no    |
-	 | 2004-06-(01)~   	 | no     | no     | no      | no      | yes   | no    |
-	 | (2004-(06-01)~)?	 | no     | yes    | yes     | yes     | yes   | yes   |
-	 | (2004-(06)?-01)~	 | yes    | no     | yes     | yes     | yes   | no    |
-	 | 2004-06?-(01)~	   | no     | yes    | no      | yes     | yes   | no    |
-	 | 2004~-(06)?-01~   | yes    | no     | no      | yes     | yes   | no    |
-	 | 2004~-(06-(01)~)? | yes    | no     | no      | yes     | yes   | yes   |
+    Examples:
+      | string       | date      | digits |
+      | 1950S2       | 1950      | 2      |
+      | Y171010000S3 | 171010000 | 3      |
+      | Y3388E2S3    | 338800    | 3      |
 
+  Scenario Outline: Calendars
+    When I parse "<string>"
+    Then it should be the date "<date>"
+    And the calendar should be "<calendar>"
 
-	Scenario: Invalid dates
-		When I parse the following strings an error should be raised:
-			| xyz           |
-			| x2009         |
-			| 2004-04-(1)?1 |
-		
-	
+    @legacy
+    Examples: EDTF-Ruby extensions: calendar names
+      | string            | date       | calendar |
+      | 2001-02-03^xyz    | 2001-02-03 | xyz      |
+      | 2001-02-03^julian | 2001-02-03 | julian   |
