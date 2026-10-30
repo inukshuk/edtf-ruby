@@ -84,7 +84,7 @@ Feature: Parse dates
     And the calendar should be "<calendar>"
 
     @legacy
-    Examples: EDTF-Ruby extensions: calendar names
+    Examples: Draft syntax: calendar names
       | string            | date       | calendar |
       | 2001-02-03^xyz    | 2001-02-03 | xyz      |
       | 2001-02-03^julian | 2001-02-03 | julian   |

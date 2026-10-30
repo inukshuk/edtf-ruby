@@ -499,17 +499,18 @@ require 'strscan'
   LEGACY = {
     combined_qualifier: '`?~` is legacy syntax, use `%`',
     parentheses: 'parentheses are legacy syntax, ' \
-      'qualify a part from the left instead, e.g. `2004-?06-11`',
+      'EDTF-Ruby 5.0 qualifies parts from the left instead, e.g. `2004-?06-11`',
     open: '`open` is legacy syntax, use `..`',
     unknown: '`unknown` is legacy syntax, leave the interval end empty',
     unspecified: '`u` is legacy syntax, use `X`',
     masked: 'masked precision (`198x`) is legacy syntax, ' \
-      'use a decade (`198`) or century (`19`)',
+      'EDTF-Ruby 5.0 reads it as a decade (`198`) or century (`19`)',
     lowercase_y: '`y` is legacy syntax, use `Y`',
     lowercase_e: '`e` is legacy syntax, use `E`',
     negative_zero: '`-0000` is legacy syntax, use `0000`',
-    caret: 'calendars and season qualifiers (`^…`) are legacy syntax ' \
-      'and will be lost when converting to ISO 8601-2'
+    caret: 'calendars and season qualifiers (`^…`) are legacy syntax, ' \
+      'EDTF-Ruby 5.0 converts hemispheres to seasons, e.g. `2001-21^southern` ' \
+      'to `2001-29`, and drops the rest'
   }.freeze
 
   CHANGED = {
