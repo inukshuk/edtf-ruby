@@ -89,13 +89,13 @@ Feature: Parse unspecified dates
       | 19uu-01-uu | 1900-01-01 | YYXX-MM-XX  |
       | 1999-uu-01 | 1999-01-01 | YYYY-XX-DD  |
 
-  # Quirk: in ISO 8601-2, XXXX is a level 1 date with an unspecified year.
   @level1 @legacy
-  Scenario Outline: Unknown dates
-    When I parse "<string>"
+  Scenario: Draft syntax: unknown dates
+    When I parse "uuuu"
     Then it should be unknown
 
-    Examples:
-      | string |
-      | uuuu   |
-      | XXXX   |
+  # Quirk: in ISO 8601-2, XXXX is a level 1 date with an unspecified year.
+  @level1
+  Scenario: Unknown dates
+    When I parse "XXXX"
+    Then it should be unknown

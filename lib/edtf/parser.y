@@ -56,7 +56,10 @@ rule
                    ;
 
   year : positive_year
-       | '-' positive_year { result = -val[1] }
+       | '-' positive_year {
+         result = -val[1]
+         deprecate :negative_zero if result.zero?
+       }
 
   positive_year : digit digit digit digit {
     result = val.zip([1000,100,10,1]).reduce(0) { |s,(a,b)| s += a * b }
@@ -91,7 +94,10 @@ rule
   # NB: Uncertain/approximate Dates are covered by the Level 2 rules
   level_1_expression : unknown | unspecified | level_1_interval | long_year_simple | season
 
-  unknown : U U U U { result = EDTF::Unknown.new }
+  unknown : U U U U {
+    result = EDTF::Unknown.new
+    deprecate :unknown_date
+  }
 
   # uncertain_or_approximate_date : date UA { result = uoa(val[0], val[1]) }
 
@@ -483,12 +489,40 @@ require 'strscan'
 
   @defaults = {
     :level => 2,
-    :debug => false
+    :debug => false,
+    :warn => true
+  }.freeze
+
+  # Input that EDTF-Ruby 5.0 parses differently.
+  # Legacy syntax will be accepted only in legacy mode;
+  # lossy legacy syntax has no ISO 8601-2 equivalent.
+  LEGACY = {
+    combined_qualifier: '`?~` is legacy syntax, use `%`',
+    parentheses: 'parentheses are legacy syntax, ' \
+      'qualify a part from the left instead, e.g. `2004-?06-11`',
+    open: '`open` is legacy syntax, use `..`',
+    unknown: '`unknown` is legacy syntax, leave the interval end empty',
+    unspecified: '`u` is legacy syntax, use `X`',
+    masked: 'masked precision (`198x`) is legacy syntax, ' \
+      'use a decade (`198`) or century (`19`)',
+    lowercase_y: '`y` is legacy syntax, use `Y`',
+    lowercase_e: '`e` is legacy syntax, use `E`',
+    negative_zero: '`-0000` is legacy syntax, use `0000`',
+    caret: 'calendars and season qualifiers (`^…`) are legacy syntax ' \
+      'and will be lost when converting to ISO 8601-2'
+  }.freeze
+
+  CHANGED = {
+    unknown_date: 'EDTF-Ruby 5.0 parses this as a date ' \
+      'with an unspecified year instead of EDTF::Unknown'
   }.freeze
 
   class << self; attr_reader :defaults; end
 
   attr_reader :options
+
+  # The deprecations found by the last successful parse.
+  attr_reader :deprecations
 
   def initialize(options = {})
     @options = Parser.defaults.merge(options)
@@ -508,12 +542,31 @@ require 'strscan'
   def parse!(input)
     @yydebug = debug?
     @src = StringScanner.new(input)
-    do_parse
+    @deprecations = []
+    result = do_parse
+    @deprecations.uniq!
+    warn_deprecations(input) if options[:warn]
+    result
+  end
+
+  # Returns true if the last successful parse used legacy syntax.
+  def legacy?
+    deprecations.any? { |d| LEGACY.key?(d) }
   end
 
   def on_error(tid, value, stack)
     raise ArgumentError,
       "failed to parse date: unexpected '#{value}' at #{stack.inspect}"
+  end
+
+  def deprecate(name)
+    @deprecations << name
+  end
+
+  def warn_deprecations(input)
+    return if deprecations.empty?
+    messages = deprecations.map { |d| LEGACY[d] || CHANGED[d] }
+    warn "EDTF #{input.inspect}: #{messages.join('; ')}", category: :deprecated
   end
 
   def apply_uncertainty(date, uncertainty, scope = nil)
@@ -532,6 +585,7 @@ require 'strscan'
     # when @src.scan(/\s+/)
       # ignore whitespace
     when @src.scan(/\(/)
+      deprecate :parentheses
       ['(', @src.matched]
     # when @src.scan(/\)\?~-/)
     #   [:PUA, [:uncertain!, :approximate!]]
@@ -554,6 +608,7 @@ require 'strscan'
     when @src.scan(/Z/)
       [:Z, @src.matched]
     when @src.scan(/\?~/)
+      deprecate :combined_qualifier
       [:UA, [:uncertain!, :approximate!]]
     when @src.scan(/%/)
       [:UA, [:uncertain!, :approximate!]]
@@ -562,22 +617,29 @@ require 'strscan'
     when @src.scan(/~/)
       [:UA, [:approximate!]]
     when @src.scan(/open/i)
+      deprecate :open
       [:OPEN, :open]
     when @src.scan(/unkn?own/i) # matches 'unkown' typo too
+      deprecate :unknown
       [:UNKNOWN, :unknown]
     when @src.scan(/u/)
+      deprecate :unspecified
       [:U, @src.matched]
     when @src.scan(/X/)
       [:U, @src.matched]
     when @src.scan(/x/)
+      deprecate :masked
       [:X, @src.matched]
     when @src.scan(/y/i)
+      deprecate :lowercase_y if @src.matched == 'y'
       [:LONGYEAR, @src.matched]
     when @src.scan(/e/i)
+      deprecate :lowercase_e if @src.matched == 'e'
       [:E, @src.matched]
     when @src.scan(/\+/)
       ['+', @src.matched]
     when @src.scan(/-\(/)
+      deprecate :parentheses
       ['-(', @src.matched]
     when @src.scan(/-/)
       ['-', @src.matched]
@@ -590,6 +652,7 @@ require 'strscan'
     when @src.scan(/\s*,\s*/)
       [',', ',']
     when @src.scan(/\^\w+/)
+      deprecate :caret
       ['^', @src.matched[1..-1]]
     when @src.scan(/\d/)
       [@src.matched, @src.matched.to_i]

@@ -37,6 +37,12 @@ end
 
 World(EDTFHelpers)
 
+# Input in @legacy examples must be recognized as legacy syntax,
+# all other input must not.
+Before do |scenario|
+  @legacy = scenario.source_tag_names.include?('@legacy')
+end
+
 Given('the date {string}') do |date|
   v = values(date)
   @result = Date.new(*v)
@@ -58,6 +64,7 @@ end
 
 When('I parse {string}') do |string|
   @result = parse(string)
+  expect(EDTF.legacy?(string)).to eq(@legacy)
 end
 
 Then('it should be the date {string}') do |date|
