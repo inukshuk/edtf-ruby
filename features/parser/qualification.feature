@@ -37,6 +37,7 @@ Feature: Parse uncertain or approximate dates
       | 2016-05-03~ | 2016-05-03 | none             | year, month, day |
       | 2004-06%    | 2004-06    | year, month      | year, month      |
       | 2004-06-11% | 2004-06-11 | year, month, day | year, month, day |
+      | -0385~      | -0385      | none             | year             |
 
     @level2
     Examples: Parts of the date are qualified
