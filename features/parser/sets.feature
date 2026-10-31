@@ -20,9 +20,10 @@ Feature: Parse sets
       | [1760..]                    | one of | 1760                         | later   |
       | {..1984}                    | all of | 1984                         | earlier |
       | {1760..}                    | all of | 1760                         | later   |
+      | [1953]                      | one of | 1953                         | none    |
 
     @level2 @ext-set-whitespace
-    Examples: Spaces around commas
+    Examples: Spaces around commas and ranges
       | string                        | kind   | members                      | open  |
       | {1667,1668, 1670..1672}       | all of | 1667, 1668, 1670, 1671, 1672 | none  |
       | {1960, 1961-12}               | all of | 1960, 1961-12                | none  |
@@ -32,6 +33,7 @@ Feature: Parse sets
       | {1667, 1670..1672}            | all of | 1667, 1670, 1671, 1672       | none  |
       | {1960 ,  1961-12}             | all of | 1960, 1961-12                | none  |
       | [1984, 1990?]                 | one of | 1984, 1990?                  | none  |
+      | [1864 ..]                     | one of | 1864                         | later |
 
     @level2
     Examples: Qualified members

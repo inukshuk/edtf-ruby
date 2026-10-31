@@ -24,9 +24,11 @@ Feature: Parse intervals
 
     @level0
     Examples: Dates
-      | string       | start   | end  |
-      | 2007/2008    | 2007    | 2008 |
-      | 1980-08/1994 | 1980-08 | 1994 |
+      | string          | start   | end        |
+      | 2007/2008       | 2007    | 2008       |
+      | 1980-08/1994    | 1980-08 | 1994       |
+      | 1075/1137-12-04 | 1075    | 1137-12-04 |
+      | -0060/-0055     | -0060   | -0055      |
 
     @level1
     Examples: Uncertain or approximate dates
@@ -36,6 +38,7 @@ Feature: Parse intervals
       | 1985~/1990?             | 1985~       | 1990?       |
       | 1964/2008?              | 1964        | 2008?       |
       | 2004-06-11?/2004-06-12  | 2004-06-11? | 2004-06-12  |
+      | 1640%/1650%             | 1640%       | 1650%       |
 
     @level1
     Examples: Open or unknown ends
@@ -56,11 +59,14 @@ Feature: Parse intervals
       | /1985-04-12   | unknown    | 1985-04-12 |
       | /1985-04      | unknown    | 1985-04    |
       | /1985         | unknown    | 1985       |
+      | 1930~/..      | 1930~      | open       |
+      | 1922?/        | 1922?      | unknown    |
 
     @level2
     Examples: Unspecified digits
       | string                | start      | end        |
       | 2004-06-XX/2004-07-03 | 2004-06-XX | 2004-07-03 |
+      | 05XX/15XX             | 05XX       | 15XX       |
 
     @level1 @legacy
     Examples: Draft syntax: open and unknown
