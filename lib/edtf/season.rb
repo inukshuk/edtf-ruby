@@ -20,7 +20,7 @@ module EDTF
 
     class << self
       def current
-        Date.today.season
+        ::Date.today.season
       end
     end
 
@@ -52,17 +52,17 @@ module EDTF
 
       if arguments.length == 1
         case arguments[0]
-        when Date
+        when ::Date
           @year, @season = arguments[0].year, NORTHERN_MONTHS[arguments[0]]
         when Symbol, String
-          @year, @season = Date.today.year, SEASONS[CODES[arguments[0].to_sym]]
+          @year, @season = ::Date.today.year, SEASONS[CODES[arguments[0].to_sym]]
         else
           self.year = arguments[0]
-          @season = NORTHERN_MONTHS[Date.today.month]
+          @season = NORTHERN_MONTHS[::Date.today.month]
         end
       else
-        self.year      = arguments[0] || Date.today.year
-        self.season    = arguments[1] || NORTHERN_MONTHS[Date.today.month]
+        self.year      = arguments[0] || ::Date.today.year
+        self.season    = arguments[1] || NORTHERN_MONTHS[::Date.today.month]
         self.qualifier = qualifier
       end
     end
@@ -144,7 +144,7 @@ module EDTF
 
     def <=>(other)
       case other
-      when Date
+      when ::Date
         cover?(other) ? 0 : to_date <=> other
       when Interval
         (c = other <=> self) && -c
@@ -166,7 +166,7 @@ module EDTF
     end
 
     def to_date
-      Date.new(year, month, 1)
+      ::Date.new(year, month, 1)
     end
 
     alias min to_date

@@ -1,26 +1,33 @@
 module EDTF
 
-  # Builds the 4.x objects from parse results.
-  # Each type moves to its 5.0 class in its own step;
-  # this module goes once all types have moved.
+  # Builds objects from parse results while the types move to
+  # their 5.0 classes one at a time (step 2); goes in step 2.10.
+  # Members of intervals and sets stay 4.x objects until
+  # their parent type has moved.
   module Adapter
 
     module_function
 
     def build(result)
+      if result.is_a?(Hash) && result[:type] == :date && !result[:calendar]
+        Date.new(*result[:values], **result.slice(:uncertain, :approximate, :unspecified))
+      else
+        member(result)
+      end
+    end
+
+    # Builds 4.x objects. Legacy calendar dates stay 4.x dates,
+    # because EDTF::Date has no calendar.
+    def member(result)
       case result
       when :open, :unknown then result
-      when Array then build(result[0])..build(result[1])
+      when Array then member(result[0])..member(result[1])
       else send(result[:type], result)
       end
     end
 
     def date(result)
       values = result[:values]
-
-      # XXXX is still EDTF::Unknown until EDTF::Date switches.
-      return Unknown.new if values == [0] && result[:unspecified] == Bitmask::XXXX
-
       date = ::Date.gregorian(*values)
       date.precision = ::Date::PRECISION[values.length - 1]
       date.calendar = result[:calendar]
@@ -55,7 +62,7 @@ module EDTF
     end
 
     def interval(result)
-      Interval.new(*result[:values].map { |value| build(value) })
+      Interval.new(*result[:values].map { |value| member(value) })
     end
 
     def set(result)
@@ -63,7 +70,7 @@ module EDTF
     end
 
     def list(result)
-      set = Set.new(*result[:values].map { |value| build(value) })
+      set = Set.new(*result[:values].map { |value| member(value) })
       set.earlier! if result[:earlier]
       set.later! if result[:later]
       set

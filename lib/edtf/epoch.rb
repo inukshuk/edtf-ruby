@@ -10,7 +10,7 @@ module EDTF
       attr_reader :duration, :format
 
       def current
-        new(Date.today.year)
+        new(::Date.today.year)
       end
 
       private :new, :current
@@ -42,7 +42,7 @@ module EDTF
 
     def <=>(other)
       case other
-      when Date
+      when ::Date
         cover?(other) ? 0 : to_date <=> other
       when Interval
         (c = other <=> self) && -c
@@ -72,7 +72,7 @@ module EDTF
     end
 
     def to_date
-      Date.new(year).year_precision!
+      ::Date.new(year).year_precision!
     end
 
     alias min to_date

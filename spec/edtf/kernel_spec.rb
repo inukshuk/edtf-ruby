@@ -13,9 +13,15 @@ describe 'EDTF()' do
     expect(EDTF(time).to_time).to eq(time)
   end
 
-  it 'returns dates unchanged' do
-    date = Date.new(2004, 6, 11)
+  it 'returns EDTF dates unchanged' do
+    date = EDTF.parse('2004-06?')
     expect(EDTF(date)).to equal(date)
+  end
+
+  it 'converts plain dates to EDTF dates with day precision' do
+    date = EDTF(Date.new(2004, 6, 11))
+    expect(date).to be_an(EDTF::Date)
+    expect(date.edtf).to eq('2004-06-11')
   end
 
   %w[2004-06~ 2004-22 199X 2004/2006 {2004,2006} [2004,2006]].each do |string|

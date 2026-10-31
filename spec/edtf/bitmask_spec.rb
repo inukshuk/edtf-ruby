@@ -107,8 +107,10 @@ module EDTF
         expect(bm('yyyymxdd').min([2019, 11])).to eq([2019, 10])
         expect(bm('yyyymxdd').min([2019, 12])).to eq([2019, 10])
 
-        expect(bm('yyyyxmdd').min([2019, 3])).to eq([2019, 1])
-        expect(bm('yyyyxmdd').min([2019, 12])).to eq([2019, 1])
+        # edtf.js returns January for any XM mask
+        expect(bm('yyyyxmdd').min([2019, 3])).to eq([2019, 3])
+        expect(bm('yyyyxmdd').min([2019, 12])).to eq([2019, 2])
+        expect(bm('yyyyxmdd').min([2019, 10])).to eq([2019, 10])
       end
 
       it 'day' do
@@ -122,7 +124,8 @@ module EDTF
         expect(bm('yyyymmxd').min([2019, 1, 3])).to eq([2019, 1, 3])
         expect(bm('yyyymmxd').min([2019, 1, 13])).to eq([2019, 1, 3])
         expect(bm('yyyymmxd').min([2019, 1, 31])).to eq([2019, 1, 1])
-        expect(bm('yyyymmxd').min([2019, 1, 30])).to eq([2019, 1, 1])
+        # edtf.js returns the 1st for X0
+        expect(bm('yyyymmxd').min([2019, 1, 30])).to eq([2019, 1, 10])
       end
     end
 

@@ -38,23 +38,23 @@ module EDTF
       end
 
       it 'does not include christmas day 2009' do
-        expect(interval).not_to be_include(Date.new(2009, 12, 24))
+        expect(interval).not_to be_include(::Date.new(2009, 12, 24))
       end
 
       it 'christmas day 2009 is less than max' do
-        expect(Date.new(2009, 12, 24)).to be < interval.max
+        expect(::Date.new(2009, 12, 24)).to be < interval.max
       end
 
       it 'christmas day 2009 is greater than min' do
-        expect(Date.new(2009, 12, 24)).to be > interval.min
+        expect(::Date.new(2009, 12, 24)).to be > interval.min
       end
 
       it 'covers christmas day 2009' do
-        expect(interval).to be_cover(Date.new(2009, 12, 24))
+        expect(interval).to be_cover(::Date.new(2009, 12, 24))
       end
 
       it 'covers 2011-12-31' do
-        expect(interval).to be_cover(Date.new(2011, 12, 31))
+        expect(interval).to be_cover(::Date.new(2011, 12, 31))
       end
     end
 
@@ -62,15 +62,15 @@ module EDTF
       let(:interval) { EDTF.parse('2008-08-23/2011-07-01') }
 
       it 'includes christmas day 2009' do
-        expect(interval).to be_include(Date.new(2009, 12, 24))
+        expect(interval).to be_include(::Date.new(2009, 12, 24))
       end
 
       it 'covers christmas day 2009' do
-        expect(interval).to be_cover(Date.new(2009, 12, 24))
+        expect(interval).to be_cover(::Date.new(2009, 12, 24))
       end
 
       it 'does not cover 2011-07-02' do
-        expect(interval).not_to be_cover(Date.new(2011, 7, 2))
+        expect(interval).not_to be_cover(::Date.new(2011, 7, 2))
       end
     end
 
@@ -84,7 +84,7 @@ module EDTF
       it { expect(interval).not_to be_unknown_end }
 
       it 'the min date is 2008-08-23' do
-        expect(interval.min).to eq(Date.new(2008, 8, 23))
+        expect(interval.min).to eq(::Date.new(2008, 8, 23))
       end
 
       it 'the max date is nil' do
@@ -92,15 +92,15 @@ module EDTF
       end
 
       it 'includes christmas day 2009' do
-        expect(interval).to be_include(Date.new(2009, 12, 24))
+        expect(interval).to be_include(::Date.new(2009, 12, 24))
       end
 
       it 'covers christmas day 2009' do
-        expect(interval).to be_cover(Date.new(2009, 12, 24))
+        expect(interval).to be_cover(::Date.new(2009, 12, 24))
       end
 
       it 'covers 2023-07-02' do
-        expect(interval).to be_cover(Date.new(2023, 7, 2))
+        expect(interval).to be_cover(::Date.new(2023, 7, 2))
       end
     end
 
@@ -115,7 +115,7 @@ module EDTF
       it { expect(interval).not_to be_unknown_end }
 
       it 'the max date is 2008-08-23' do
-        expect(interval.max).to eq(Date.new(2008, 8, 23))
+        expect(interval.max).to eq(::Date.new(2008, 8, 23))
       end
 
       it 'the min date is nil' do
@@ -123,15 +123,15 @@ module EDTF
       end
 
       it 'includes christmas day 2007' do
-        expect(interval).to be_include(Date.new(2007, 12, 24))
+        expect(interval).to be_include(::Date.new(2007, 12, 24))
       end
 
       it 'covers christmas day 2007' do
-        expect(interval).to be_cover(Date.new(2007, 12, 24))
+        expect(interval).to be_cover(::Date.new(2007, 12, 24))
       end
 
       it 'covers 2003-07-02' do
-        expect(interval).to be_cover(Date.new(2003, 7, 2))
+        expect(interval).to be_cover(::Date.new(2003, 7, 2))
       end
     end
 
@@ -241,30 +241,30 @@ module EDTF
         let(:interval) { EDTF.parse('2004/2005') }
 
         it 'is equal to covered dates' do
-          expect(interval <=> Date.new(2004, 6, 1)).to eq(0)
-          expect(Date.new(2004, 6, 1) <=> interval).to eq(0)
+          expect(interval <=> ::Date.new(2004, 6, 1)).to eq(0)
+          expect(::Date.new(2004, 6, 1) <=> interval).to eq(0)
         end
 
         it 'is greater than earlier dates' do
-          expect(interval <=> Date.new(1990, 1, 1)).to eq(1)
-          expect(Date.new(1990, 1, 1) <=> interval).to eq(-1)
+          expect(interval <=> ::Date.new(1990, 1, 1)).to eq(1)
+          expect(::Date.new(1990, 1, 1) <=> interval).to eq(-1)
         end
 
         it 'is less than later dates' do
-          expect(interval <=> Date.new(2010, 1, 1)).to eq(-1)
-          expect(Date.new(2010, 1, 1) <=> interval).to eq(1)
+          expect(interval <=> ::Date.new(2010, 1, 1)).to eq(-1)
+          expect(::Date.new(2010, 1, 1) <=> interval).to eq(1)
         end
 
         it 'compares open starts' do
           interval = EDTF.parse('../2005')
-          expect(interval <=> Date.new(1990, 1, 1)).to eq(0)
-          expect(interval <=> Date.new(2010, 1, 1)).to eq(-1)
+          expect(interval <=> ::Date.new(1990, 1, 1)).to eq(0)
+          expect(interval <=> ::Date.new(2010, 1, 1)).to eq(-1)
         end
 
         it 'compares seasons and epochs' do
-          expect(Date.new(2004, 4, 1) <=> Season.new(2004, :spring)).to eq(0)
-          expect(Date.new(2010, 1, 1) <=> Season.new(2004, :spring)).to eq(1)
-          expect(Date.new(1980, 1, 1) <=> Decade.new(1990)).to eq(-1)
+          expect(::Date.new(2004, 4, 1) <=> Season.new(2004, :spring)).to eq(0)
+          expect(::Date.new(2010, 1, 1) <=> Season.new(2004, :spring)).to eq(1)
+          expect(::Date.new(1980, 1, 1) <=> Decade.new(1990)).to eq(-1)
         end
       end
     end
@@ -272,20 +272,20 @@ module EDTF
     describe 'coverage with open or unknown ends' do
       it '2008/ covers dates from 2008 onward' do
         interval = EDTF.parse('2008/')
-        expect(interval).to be_cover(Date.new(2008, 6, 1))
-        expect(interval).to be_cover(Date.new(2030, 1, 1))
-        expect(interval).not_to be_cover(Date.new(2007, 12, 31))
+        expect(interval).to be_cover(::Date.new(2008, 6, 1))
+        expect(interval).to be_cover(::Date.new(2030, 1, 1))
+        expect(interval).not_to be_cover(::Date.new(2007, 12, 31))
       end
 
       it '/2008 covers dates up to 2008' do
         interval = EDTF.parse('/2008')
-        expect(interval).to be_cover(Date.new(1900, 1, 1))
-        expect(interval).to be_cover(Date.new(2008, 12, 31))
-        expect(interval).not_to be_cover(Date.new(2009, 1, 1))
+        expect(interval).to be_cover(::Date.new(1900, 1, 1))
+        expect(interval).to be_cover(::Date.new(2008, 12, 31))
+        expect(interval).not_to be_cover(::Date.new(2009, 1, 1))
       end
 
       it 'unbounded intervals cover everything' do
-        expect(Interval.new(:unknown, :open)).to be_cover(Date.today)
+        expect(Interval.new(:unknown, :open)).to be_cover(::Date.today)
       end
 
       it '2000/.. covers 2004/..' do

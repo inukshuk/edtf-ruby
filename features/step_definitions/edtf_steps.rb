@@ -17,8 +17,22 @@ module EDTFHelpers
     list == 'none' ? [] : list.split(/,\s*/).map(&:to_sym)
   end
 
-  def qualified_parts(predicate)
-    PARTS.select { |part| @result.public_send(predicate, part) }
+  def qualified_parts(predicate, date = @result)
+    PARTS.select { |part| date.public_send(predicate, part) }
+  end
+
+  # The unspecified digits as a mask like "YYYX-MM-DD". 4.x dates
+  # (still used as interval and set members) mark them as "sssX-ss-ss".
+  def unspecified_mask(date)
+    mask = date.unspecified.to_s
+    return mask if date.is_a?(EDTF::Date)
+
+    mask.chars.zip('YYYY-MM-DD'.chars).map { |c, m| c == 'X' ? c : m }.join
+  end
+
+  # Compares 4.x and 5.0 dates by values, qualifiers and unspecified digits.
+  def describe(date)
+    [date.values, qualified_parts(:uncertain?, date), qualified_parts(:approximate?, date), unspecified_mask(date)]
   end
 
   # "open" and "unknown" are interval ends without a date.
@@ -26,7 +40,7 @@ module EDTFHelpers
     if %w[open unknown].include?(expected)
       expect(actual).to eq(expected.to_sym)
     else
-      expect(actual).to eql(parse(expected))
+      expect(describe(actual)).to eq(describe(parse(expected)))
     end
   end
 
@@ -44,22 +58,19 @@ Before do |scenario|
 end
 
 Given('the date {string}') do |date|
-  v = values(date)
-  @result = Date.new(*v)
-  @result.precision = EDTFHelpers::PARTS[v.length - 1]
+  @result = EDTF::Date.new(*values(date))
 end
 
 Given('the date {string} with {word} precision') do |date, precision|
-  @result = Date.parse(date)
-  @result.precision = precision
+  @result = EDTF::Date.new(*values(date)).with(precision: precision)
 end
 
 When('the uncertain parts are {string}') do |list|
-  parts(list).each { |part| @result.uncertain!(part) }
+  @result = @result.with(uncertain: parts(list))
 end
 
 When('the approximate parts are {string}') do |list|
-  parts(list).each { |part| @result.approximate!(part) }
+  @result = @result.with(approximate: parts(list))
 end
 
 When('I parse {string}') do |string|
@@ -91,11 +102,7 @@ end
 
 # The mask marks unspecified digits with X, e.g. "YYYX-MM-DD".
 Then('the unspecified digits should be {string}') do |mask|
-  expect(@result.unspecified.to_s).to eq(mask.tr('YMD', 's'))
-end
-
-Then('it should be unknown') do
-  expect(@result).to be_an(EDTF::Unknown)
+  expect(unspecified_mask(@result)).to eq(mask)
 end
 
 Then('it should cover {string}') do |date|
@@ -150,7 +157,7 @@ Then('it should be {string} the members {string}') do |kind, members|
   expect(@result.choice?).to eq(kind == 'one of')
   expected = members.split(/,\s*/)
   expect(@result.to_a.length).to eq(expected.length)
-  @result.to_a.zip(expected).each { |actual, member| expect(actual).to eql(parse(member)) }
+  @result.to_a.zip(expected).each { |actual, member| expect(describe(actual)).to eq(describe(parse(member))) }
 end
 
 Then('the open end should be {string}') do |open|
