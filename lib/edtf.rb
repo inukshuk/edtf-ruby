@@ -27,6 +27,7 @@ require 'edtf/interval'
 require 'edtf/set'
 require 'edtf/unknown'
 require 'edtf/parser'
+require 'edtf/adapter'
 require 'edtf/extensions'
 
 # = EDTF-Ruby
@@ -48,7 +49,7 @@ module EDTF
   end
   
   def parse!(input, options = {})
-    Parser.new(options).parse!(input)
+    Adapter.build(Parser.new(options).parse!(input))
   end
 
   def legacy?(input)

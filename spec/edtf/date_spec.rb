@@ -42,6 +42,14 @@ describe 'Date/DateTime' do
         expect(date).to be_gregorian
         expect(date).to eq(Date.new(1582, 10, 30))
       end
+
+      it 'is used for parsed dates across the 10-day correction' do
+        (4..15).each do |mday|
+          date = EDTF.parse('1582-10-%02d' % mday)
+          expect(date).to be_gregorian
+          expect([date.year, date.month, date.mday]).to eq([1582, 10, mday])
+        end
+      end
     end
   end
 
