@@ -21,15 +21,16 @@ rule
                      ;
 
   date :
-    year             { result = Date.gregorian(val[0]).year_precision! }
-    | year_month     { result = Date.gregorian(*val.flatten).month_precision! }
-    | year_month_day { result = Date.gregorian(*val.flatten).day_precision! }
+    year             { result = date(val[0]) }
+    | year_month     { result = date(*val[0]) }
+    | year_month_day { result = date(*val[0]) }
     ;
 
 
   date_time : date T time {
-    result = DateTime.new(val[0].year, val[0].month, val[0].day, *val[2])
-    result.skip_timezone = (val[2].length == 3)
+    year, month, day = val[0][:values]
+    result = { type: :date_time, values: [year, month || 1, day || 1, *val[2][0, 3]] }
+    result[:offset] = val[2][3] if val[2].length > 3
   }
 
   time : base_time
@@ -50,9 +51,9 @@ rule
                        ;
 
 
-  zone_offset_hour : d01_13 ':' minute   { result = Rational(val[0] * 60 + val[2], 1440) }
-                   | '1' '4' ':' '0' '0' { result = Rational(840, 1440) }
-                   | '0' '0' ':' d01_59  { result = Rational(val[3], 1440) }
+  zone_offset_hour : d01_13 ':' minute   { result = val[0] * 60 + val[2] }
+                   | '1' '4' ':' '0' '0' { result = 840 }
+                   | '0' '0' ':' d01_59  { result = val[3] }
                    ;
 
   year : positive_year
@@ -70,15 +71,8 @@ rule
 
   year_month : year '-' month { result = [val[0], val[2]] }
 
-  # We raise an exception if there are too many days for the month, but
-  # do not consider leap years, as the EDTF BNF did not either.
-  # NB: an exception will be raised regardless, because the Ruby Date
-  # implementation calculates leap years.
   year_month_day : year_month '-' day {
-    result = val[0] << val[2]
-    if result[2] > 31 || (result[2] > 30 && [2,4,6,9,11].include?(result[1])) || (result[2] > 29 && result[1] == 2)
-      raise ArgumentError, "invalid date (invalid days #{result[2]} for month #{result[1]})"
-    end
+    result = check_day(*val[0], val[2])
   }
 
   hour   : d00_23
@@ -95,17 +89,13 @@ rule
   level_1_expression : unknown | unspecified | level_1_interval | long_year_simple | season
 
   unknown : U U U U {
-    result = EDTF::Unknown.new
+    result = date(0, unspecified: Bitmask::XXXX)
     deprecate :unknown_date
   }
 
   # uncertain_or_approximate_date : date UA { result = uoa(val[0], val[1]) }
 
-  unspecified : unspecified_year
-              {
-                result = Date.gregorian(val[0][0]).year_precision!
-                result.unspecified.year[2,2] = val[0][1]
-              }
+  unspecified : unspecified_year { result = date(val[0][0], unspecified: val[0][1]) }
               | unspecified_month
               | unspecified_day
               | unspecified_day_and_month
@@ -121,40 +111,39 @@ rule
   positive_unspecified_year :
     digit digit digit U
     {
-      result = [val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }, [false,true]]
+      result = [val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }, Bitmask::YYYX]
     }
     | digit digit U U
     {
-      result = [val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }, [true, true]]
+      result = [val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }, Bitmask::YYXX]
     }
 
   unspecified_month : year '-' U U {
-    result = Date.gregorian(val[0]).unspecified!(:month)
-    result.precision = :month
+    result = date(val[0], 1, unspecified: Bitmask::MONTH)
   }
 
   unspecified_day : year_month '-' U U {
-    result = Date.gregorian(*val[0]).unspecified!(:day)
+    result = date(*val[0], 1, unspecified: Bitmask::DAY)
   }
 
   unspecified_day_and_month : year '-' U U '-' U U {
-    result = Date.gregorian(val[0]).unspecified!([:day,:month])
+    result = date(val[0], 1, 1, unspecified: Bitmask::MD)
   }
 
   level_1_interval : level_1_interval_closed | level_1_interval_open | level_1_interval_unknown
 
   level_1_interval_closed : level_1_start '/' level_1_end {
-    result = Interval.new(val[0], val[2])
+    result = interval(val[0], val[2])
   }
 
   level_1_interval_open : level_1_interval_open_start | level_1_interval_open_end 
 
   level_1_interval_open_start : open_start_or_end '/' level_1_end {
-    result = Interval.new(:open, val[2])
+    result = interval(:open, val[2])
   }
 
   level_1_interval_open_end : level_1_start '/' open_start_or_end {
-    result = Interval.new(val[0], :open)
+    result = interval(val[0], :open)
   }
 
   open_start_or_end : OPEN | DOTS 
@@ -162,19 +151,19 @@ rule
   level_1_interval_unknown : level_1_interval_empty_start | level_1_interval_empty_end | level_1_interval_unknown_start | level_1_interval_unknown_end
 
   level_1_interval_empty_start : '/' level_1_end {
-    result = Interval.new(:unknown, val[1])
+    result = interval(:unknown, val[1])
   }
 
   level_1_interval_empty_end : level_1_start '/' {
-    result = Interval.new(val[0], :unknown)
+    result = interval(val[0], :unknown)
   }
 
   level_1_interval_unknown_start : UNKNOWN '/' level_1_end {
-    result = Interval.new(:unknown, val[2])
+    result = interval(:unknown, val[2])
   }
 
   level_1_interval_unknown_end : level_1_start '/' UNKNOWN {
-    result = Interval.new(val[0], :unknown)
+    result = interval(val[0], :unknown)
   }
 
   level_1_start : date | partial_uncertain_or_approximate | unspecified | partial_unspecified
@@ -183,16 +172,8 @@ rule
 
 
   long_year_simple :
-    LONGYEAR long_year
-    {
-      result = Date.gregorian(val[1])
-      result.precision = :year
-    }
-    | LONGYEAR '-' long_year
-    {
-      result = Date.gregorian(-1 * val[2])
-      result.precision = :year
-    }
+    LONGYEAR long_year       { result = year(val[1], 1) }
+    | LONGYEAR '-' long_year { result = year(-val[2], 1) }
     ;
 
   long_year :
@@ -204,8 +185,7 @@ rule
 
 
   season : year '-' season_number ua {
-    result = Season.new(val[0], val[2])
-    val[3].each { |ua| result.send(ua) }
+    result = uoa({ type: :season, values: [val[0], val[2]] }, val[3], Bitmask::YM)
   }
 
   season_number : '2' '1' { result = 21 }
@@ -229,57 +209,46 @@ rule
                      ;
 
 
-  season_qualified : season '^' { result = val[0]; result.qualifier = val[1] }
+  season_qualified : season '^' { result = val[0]; result[:qualifier] = val[1] }
 
 
   long_year_scientific :
-    long_year_simple E integer
-    {
-      result = Date.gregorian(val[0].year * 10 ** val[2]).year_precision!
-    }
-    | LONGYEAR int1_4 E integer
-    {
-      result = Date.gregorian(val[1] * 10 ** val[3]).year_precision!
-    }
-    | LONGYEAR '-' int1_4 E integer
-    {
-      result = Date.gregorian(-1 * val[2] * 10 ** val[4]).year_precision!
-    }
+    long_year_simple E integer      { result = year(val[0][:values][0] * 10 ** val[2], 2) }
+    | LONGYEAR int1_4 E integer       { result = year(val[1] * 10 ** val[3], 2) }
+    | LONGYEAR '-' int1_4 E integer   { result = year(-val[2] * 10 ** val[4], 2) }
     ;
 
 
-  date_and_calendar : date '^' { result = val[0]; result.calendar = val[1] }
+  date_and_calendar : date '^' { result = val[0]; result[:calendar] = val[1] }
 
 
   masked_precision :
     digit digit digit X
     {
-      d = val[0,3].zip([1000,100,10]).reduce(0) { |s,(a,b)| s += a * b }
-      result = EDTF::Decade.new(d)
+      result = { type: :decade, values: [val[0,3].zip([100,10,1]).reduce(0) { |s,(a,b)| s += a * b }] }
     }
     | digit digit X X
     {
-      d = val[0,2].zip([1000,100]).reduce(0) { |s,(a,b)| s += a * b }
-      result = EDTF::Century.new(d)
+      result = { type: :century, values: [val[0] * 10 + val[1]] }
     }
     ;
 
 
-  choice_list : '[' list ']'   { result = val[1].choice! }
+  choice_list : '[' list ']'   { result = { type: :set, **val[1] } }
 
-  inclusive_list : '{' list '}' { result = val[1] }
+  inclusive_list : '{' list '}' { result = { type: :list, **val[1] } }
 
-  list : earlier                              { result = EDTF::Set.new(val[0]).earlier! }
-       | earlier ',' list_elements ',' later  { result = EDTF::Set.new([val[0]] + val[2] + [val[4]]).earlier!.later! }
-       | earlier ',' list_elements            { result = EDTF::Set.new([val[0]] + val[2]).earlier! }
-       | earlier ',' later                    { result = EDTF::Set.new([val[0]] + [val[2]]).earlier!.later! }
-       | list_elements ',' later              { result = EDTF::Set.new(val[0] + [val[2]]).later! }
-       | list_elements                        { result = EDTF::Set.new(*val[0]) }
-       | later                                { result = EDTF::Set.new(val[0]).later! }
+  list : earlier                              { result = { values: [val[0]], earlier: true } }
+       | earlier ',' list_elements ',' later  { result = { values: [val[0], *val[2], val[4]], earlier: true, later: true } }
+       | earlier ',' list_elements            { result = { values: [val[0], *val[2]], earlier: true } }
+       | earlier ',' later                    { result = { values: [val[0], val[2]], earlier: true, later: true } }
+       | list_elements ',' later              { result = { values: [*val[0], val[2]], later: true } }
+       | list_elements                        { result = { values: val[0] } }
+       | later                                { result = { values: [val[0]], later: true } }
        ;
 
-  list_elements : list_element                   { result = [val[0]].flatten }
-                | list_elements ',' list_element { result = val[0] + [val[2]].flatten }
+  list_elements : list_element                   { result = [val[0]] }
+                | list_elements ',' list_element { result = val[0] + [val[2]] }
                 ;
 
   list_element : atomic
@@ -293,50 +262,41 @@ rule
 
   earlier : DOTS date { result = val[1] }
 
-  later : year_month_day DOTS { result = Date.gregorian(*val[0]).day_precision! }
-        | year_month DOTS     { result = Date.gregorian(*val[0]).month_precision! }
-        | year DOTS           { result = Date.gregorian(val[0]).year_precision! }
+  later : year_month_day DOTS { result = date(*val[0]) }
+        | year_month DOTS     { result = date(*val[0]) }
+        | year DOTS           { result = date(val[0]) }
         ;
 
-  consecutives : year_month_day DOTS year_month_day { result = (Date.gregorian(*val[0]).day_precision! .. Date.gregorian(*val[2]).day_precision!) }
-               | year_month DOTS year_month         { result = (Date.gregorian(*val[0]).month_precision! .. Date.gregorian(*val[2]).month_precision!) }
-               | year DOTS year                     { result = (Date.gregorian(val[0]).year_precision! .. Date.gregorian(val[2]).year_precision!) }
+  consecutives : year_month_day DOTS year_month_day { result = [date(*val[0]), date(*val[2])] }
+               | year_month DOTS year_month         { result = [date(*val[0]), date(*val[2])] }
+               | year DOTS year                     { result = [date(val[0]), date(val[2])] }
                ;
 
   partial_unspecified :
     unspecified_year '-' month '-' day
     {
-      result = Date.gregorian(val[0][0], val[2], val[4])
-      result.unspecified.year[2,2] = val[0][1]
+      check_day(val[0][0], val[2], val[4], leap: true)
+      result = date(val[0][0], val[2], val[4], unspecified: val[0][1])
     }
     | unspecified_year '-' month
     {
-      result = Date.gregorian(val[0][0], val[2], 1)
-      result.month_precision!
-      result.unspecified.year[2,2] = val[0][1]
+      result = date(val[0][0], val[2], unspecified: val[0][1])
     }
     | unspecified_year '-' U U '-' day
     {
-      result = Date.gregorian(val[0][0], 1, val[5])
-      result.unspecified.year[2,2] = val[0][1]
-      result.unspecified!(:month)
+      result = date(val[0][0], 1, val[5], unspecified: val[0][1] | Bitmask::MONTH)
     }
     | unspecified_year '-' U U '-' U U
     {
-      result = Date.gregorian(val[0][0], 1, 1)
-      result.unspecified.year[2,2] = val[0][1]
-      result.unspecified!([:month, :day])
+      result = date(val[0][0], 1, 1, unspecified: val[0][1] | Bitmask::MD)
     }
     | unspecified_year '-' month '-' U U
     {
-      result = Date.gregorian(val[0][0], val[2], 1)
-      result.unspecified.year[2,2] = val[0][1]
-      result.unspecified!(:day)
+      result = date(val[0][0], val[2], 1, unspecified: val[0][1] | Bitmask::DAY)
     }
     | year '-' U U '-' day
     {
-      result = Date.gregorian(val[0], 1, val[5])
-      result.unspecified!(:month)
+      result = date(val[0], 1, val[5], unspecified: Bitmask::MONTH)
     }
     ;
 
@@ -344,57 +304,57 @@ rule
     | '(' pua_base ')' UA { result = uoa(val[1], val[3]) }
 
   pua_base :
-    pua_year             { result = val[0].year_precision! }
-    | pua_year_month     { result = val[0][0].month_precision! }
-    | pua_year_month_day { result = val[0].day_precision! }
+    pua_year
+    | pua_year_month     { result = val[0][0] }
+    | pua_year_month_day
 
-  pua_year : year UA { result = uoa(Date.gregorian(val[0]), val[1], :year) }
+  pua_year : year UA { result = uoa(date(val[0]), val[1], :year) }
 
   pua_year_month :
     pua_year '-' month ua {
-      result = [uoa(val[0].change(:month => val[2]), val[3], [:month, :year])]
+      result = [uoa(extend_date(val[0], val[2]), val[3], [:month, :year])]
     }
     | year '-' month UA {
-        result = [uoa(Date.gregorian(val[0], val[2]), val[3], [:year, :month])]
+        result = [uoa(date(val[0], val[2]), val[3], [:year, :month])]
     }
     | year '-(' month ')' UA {
-        result = [uoa(Date.gregorian(val[0], val[2]), val[4], [:month]), true]
+        result = [uoa(date(val[0], val[2]), val[4], [:month]), true]
     }
     | pua_year '-(' month ')' UA {
-        result = [uoa(val[0].change(:month => val[2]), val[4], [:month]), true]
+        result = [uoa(extend_date(val[0], val[2]), val[4], [:month]), true]
     }
     ;
 
   pua_year_month_day :
     pua_year_month '-' day ua {
-      result = uoa(val[0][0].change(:day => val[2]), val[3], val[0][1] ? [:day] : nil)
+      result = uoa(extend_date(val[0][0], val[2]), val[3], val[0][1] ? [:day] : nil)
     }
     | pua_year_month '-(' day ')' UA {
-        result = uoa(val[0][0].change(:day => val[2]), val[4], [:day])
+        result = uoa(extend_date(val[0][0], val[2]), val[4], [:day])
     }
     | year '-(' month ')' UA day ua {
-        result = uoa(uoa(Date.gregorian(val[0], val[2], val[5]), val[4], :month), val[6], :day)
+        result = uoa(uoa(date(val[0], val[2], val[5]), val[4], :month), val[6], :day)
     }
     | year_month '-' day UA {
-        result = uoa(Date.gregorian(val[0][0], val[0][1], val[2]), val[3])
+        result = uoa(date(val[0][0], val[0][1], val[2]), val[3])
     }
     | year_month '-(' day ')' UA {
-        result = uoa(Date.gregorian(val[0][0], val[0][1], val[2]), val[4], [:day])
+        result = uoa(date(val[0][0], val[0][1], val[2]), val[4], [:day])
     }
     | year '-(' month '-' day ')' UA {
-        result = uoa(Date.gregorian(val[0], val[2], val[4]), val[6], [:month, :day])
+        result = uoa(date(val[0], val[2], val[4]), val[6], [:month, :day])
     }
     | year '-(' month '-(' day ')' UA ')' UA {
-        result = Date.gregorian(val[0], val[2], val[4])
+        result = date(val[0], val[2], val[4])
         result = uoa(result, val[6], [:day])
         result = uoa(result, val[8], [:month, :day])
     }
     | pua_year '-(' month '-' day ')' UA {
-        result = val[0].change(:month => val[2], :day => val[4])
+        result = extend_date(val[0], val[2], val[4])
         result = uoa(result, val[6], [:month, :day])
     }
     | pua_year '-(' month '-(' day ')' UA ')' UA {
-        result = val[0].change(:month => val[2], :day => val[4])
+        result = extend_date(val[0], val[2], val[4])
         result = uoa(result, val[6], [:day])
         result = uoa(result, val[8], [:month, :day])
     }
@@ -538,14 +498,19 @@ require 'strscan'
     nil
   end
 
+  # Returns the parse result: a frozen Hash with the edtf.js structure
+  # (`type`, `level`, `values` with 1-based months, and bitmask integers
+  # for qualified or unspecified digits). Results for legacy syntax
+  # carry `legacy: true`.
   def parse!(input)
     @yydebug = debug?
     @src = StringScanner.new(input)
     @deprecations = []
-    result = do_parse
+    result = finish(do_parse)
+    result[:legacy] = true if legacy?
     @deprecations.uniq!
     warn_deprecations(input) if options[:warn]
-    result
+    deep_freeze(result)
   end
 
   # Returns true if the last successful parse used legacy syntax.
@@ -568,14 +533,112 @@ require 'strscan'
     warn "EDTF #{input.inspect}: #{messages.join('; ')}", category: :deprecated
   end
 
-  def apply_uncertainty(date, uncertainty, scope = nil)
+  PARTS = { year: Bitmask::YEAR, month: Bitmask::MONTH, day: Bitmask::DAY }.freeze
+
+  # The qualifier masks that cover a whole date of each precision.
+  WHOLE = [nil, Bitmask::YEAR, Bitmask::YM, Bitmask::YMD].freeze
+
+  # Unspecified digits allowed at level 1, by precision.
+  UNSPECIFIED = [
+    nil,
+    [Bitmask::YYYX, Bitmask::YYXX, Bitmask::XXXX],
+    [Bitmask::MONTH, Bitmask::XXXX | Bitmask::MONTH],
+    [Bitmask::DAY, Bitmask::MD, Bitmask::YMD]
+  ].freeze
+
+  # Rejects days the month cannot have. With leap: true,
+  # February 29 is allowed in any year (unspecified years
+  # always include a leap year).
+  def check_day(year, month, day, leap: false)
+    max = Bitmask::MAXDAYS[month - 1]
+    max = 28 if month == 2 && !leap && !::Date.gregorian_leap?(year)
+    raise ArgumentError, "invalid date (invalid days #{day} for month #{month})" if day > max
+    [year, month, day]
+  end
+
+  def date(*values, **attributes)
+    { type: :date, values: values, **attributes }
+  end
+
+  def extend_date(result, *values)
+    result.merge(values: result[:values] + values)
+  end
+
+  def year(value, level)
+    { type: :year, level: level, values: [value] }
+  end
+
+  def interval(from, to)
+    { type: :interval, values: [from, to] }
+  end
+
+  # Qualifies the given parts (a Symbol, an Array, or a mask) of a result,
+  # or the whole date if no parts are given.
+  def apply_uncertainty(result, uncertainty, parts = nil)
+    mask = case parts
+      when nil then WHOLE[result[:values].length]
+      when Integer then parts
+      else Array(parts).sum { |part| PARTS[part] }
+      end
+
     uncertainty.each do |u|
-      scope.nil? ? date.send(u) : date.send(u, scope)
+      result[u] = (result[u] || 0) | mask
     end
-    date
+    result
   end
 
   alias uoa apply_uncertainty
+
+  # Adds the level of a result and its members.
+  def finish(result)
+    case result
+    when Array
+      result.each { |member| finish(member) }
+    when Hash
+      result[:values].each { |value| finish(value) }
+      result[:level] ||= level(result)
+    end
+    result
+  end
+
+  def level(result)
+    case result[:type]
+    when :date
+      n = result[:values].length
+      level = 0
+      level = 2 if result[:calendar]
+
+      if (unspecified = result[:unspecified])
+        level = [level, UNSPECIFIED[n].include?(unspecified) ? 1 : 2].max
+      end
+
+      qualifiers = result.values_at(:uncertain, :approximate).compact
+      unless qualifiers.empty?
+        level = [level, qualifiers.all?(WHOLE[n]) ? 1 : 2].max
+      end
+
+      level
+    when :date_time
+      0
+    when :decade, :century, :set, :list
+      2
+    when :season
+      result.key?(:uncertain) || result.key?(:approximate) || result[:qualifier] ? 2 : 1
+    when :interval
+      # Open or unknown ends are level 1, unspecified digits level 2.
+      result[:values].map { |value|
+        !value.is_a?(Hash) ? 1 : value[:unspecified] ? 2 : value[:level]
+      }.max
+    end
+  end
+
+  def deep_freeze(result)
+    case result
+    when Array then result.each { |member| deep_freeze(member) }
+    when Hash then result.each_value { |value| deep_freeze(value) }
+    end
+    result.freeze
+  end
 
   def next_token
     case
@@ -608,13 +671,13 @@ require 'strscan'
       [:Z, @src.matched]
     when @src.scan(/\?~/)
       deprecate :combined_qualifier
-      [:UA, [:uncertain!, :approximate!]]
+      [:UA, [:uncertain, :approximate]]
     when @src.scan(/%/)
-      [:UA, [:uncertain!, :approximate!]]
+      [:UA, [:uncertain, :approximate]]
     when @src.scan(/\?/)
-      [:UA, [:uncertain!]]
+      [:UA, [:uncertain]]
     when @src.scan(/~/)
-      [:UA, [:approximate!]]
+      [:UA, [:approximate]]
     when @src.scan(/open/i)
       deprecate :open
       [:OPEN, :open]
