@@ -223,17 +223,14 @@ module EDTF
           expect(EDTF.parse('2004/..')).to be > EDTF.parse('2004/2005')
         end
 
-        it 'can be compared to seasons and epochs' do
+        it 'can be compared to seasons' do
           interval = EDTF.parse('2004/..')
           expect(interval).to be < Season.new(2004, :summer)
           expect(Season.new(2004, :summer)).to be > interval
-          expect(interval).to be > Decade.new(1990)
-          expect(Decade.new(1990)).to be < interval
         end
 
-        it 'compares seasons and epochs with the same start' do
+        it 'compares seasons with the same start' do
           expect(Season.new(2004, :spring) <=> EDTF.parse('2004-03-01/..')).to eq(-1)
-          expect(Decade.new(1990) <=> EDTF.parse('1990/..')).to eq(-1)
         end
       end
 
@@ -261,10 +258,9 @@ module EDTF
           expect(interval <=> ::Date.new(2010, 1, 1)).to eq(-1)
         end
 
-        it 'compares seasons and epochs' do
+        it 'compares seasons' do
           expect(::Date.new(2004, 4, 1) <=> Season.new(2004, :spring)).to eq(0)
           expect(::Date.new(2010, 1, 1) <=> Season.new(2004, :spring)).to eq(1)
-          expect(::Date.new(1980, 1, 1) <=> Decade.new(1990)).to eq(-1)
         end
       end
     end

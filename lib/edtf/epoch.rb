@@ -1,109 +1,125 @@
 module EDTF
 
+  # The shared base of Decade and Century: the years that begin
+  # with the given digits (196 is 1960 to 1969, -19 is -1999 to
+  # -1900). Qualifiers apply to the whole epoch: 196~ is an
+  # approximate decade, not an approximate year.
   class Epoch
-    extend Forwardable
-
-    include Enumerable
-    include Comparable
+    include Period
 
     class << self
-      attr_reader :duration, :format
-
-      def current
-        new(::Date.today.year)
-      end
-
-      private :new, :current
+      # The number of years, the number of digits, and the precision.
+      attr_reader :span, :digits, :precision
     end
 
-    attr_reader :year
+    attr_reader :value
 
-    def_delegators :to_range, *Range.instance_methods(false).reject { |m|
-        m.to_s =~ /^(each|min|max|cover\?|inspect|to_s)$|^\W/
-    }
+    def initialize(value, uncertain: false, approximate: false)
+      @value = Integer(value)
+      raise ArgumentError, "invalid #{precision}: #{value}" unless @value.abs < 10**self.class.digits
 
-
-    def initialize(year = 0)
-      self.year = year
+      @uncertain = qualified?(uncertain)
+      @approximate = qualified?(approximate)
+      freeze
     end
 
-    def year=(year)
-      @year = (year / self.class.duration) * self.class.duration
+    def precision
+      self.class.precision
     end
 
-    alias get year
-    alias set year=
-
-    def cover?(other)
-      return false unless other.respond_to?(:day_precision)
-      other = other.day_precision
-      min.day_precision! <= other && other <= max.day_precision!
+    def values
+      [value]
     end
 
-    def <=>(other)
-      case other
-      when ::Date
-        cover?(other) ? 0 : to_date <=> other
-      when Interval
-        (c = other <=> self) && -c
-      when Season
-        [min, max] <=> [other.min, other.max]
-      when Epoch
-        [year, self.class.duration] <=> [other.year, other.class.duration]
-      else
-        nil
-      end
-    rescue
-      nil
+    def uncertain?
+      @uncertain
     end
 
-    def ===(other)
-      (self <=> other) == 0
-    rescue
-      false
+    def approximate?
+      @approximate
     end
 
-    def each(&block)
-      if block_given?
-        to_range.each(&block)
-      else
-        to_enum
-      end
+    def with(**changes)
+      return self if changes.empty?
+
+      unknown = changes.keys - %i[value uncertain approximate]
+      raise ArgumentError, "unknown keyword#{'s' if unknown.length > 1}: #{unknown.join(', ')}" unless unknown.empty?
+
+      self.class.new(
+        changes.fetch(:value, value),
+        uncertain: changes.fetch(:uncertain, uncertain?),
+        approximate: changes.fetch(:approximate, approximate?)
+      )
     end
 
-    def to_date
-      ::Date.new(year).year_precision!
+    def begin
+      ::Date.new(span.first, 1, 1, ::Date::GREGORIAN)
     end
 
-    alias min to_date
-
-    def max
-      to_date.advance(:years => self.class.duration - 1).end_of_year
+    def end
+      ::Date.new(span.last, 12, 31, ::Date::GREGORIAN)
     end
 
-    def to_range
-      min..max
+    alias include? cover?
+
+    def succ(by = 1)
+      with(value: value + by)
+    end
+
+    alias next succ
+
+    def prev(by = 1)
+      succ(-by)
+    end
+
+    def eql?(other)
+      other.instance_of?(self.class) && state == other.state
+    end
+
+    def hash
+      [self.class, *state].hash
     end
 
     def edtf
-      self.class.format % (year / self.class.duration)
+      string = "#{'-' if value.negative?}#{format("%0#{self.class.digits}d", value.abs)}"
+      string += '?' if uncertain?
+      string += '~' if approximate?
+      string.sub('?~', '%')
     end
 
     alias to_s edtf
 
-  end
+    def inspect
+      "#<#{self.class} #{edtf}>"
+    end
 
-  class Century < Epoch
-    @duration = 100.freeze
-    @format = '%02dxx'.freeze
+    protected
 
-    public_class_method :current, :new
+    def state
+      [value, uncertain?, approximate?]
+    end
+
+    private
+
+    # The first and last year.
+    def span
+      low = value.abs * self.class.span
+      high = low + self.class.span - 1
+      value.negative? ? -high..-low : low..high
+    end
+
+    # Qualifiers may also be given as bitmasks, as in parse results.
+    def qualified?(qualifier)
+      qualifier.is_a?(Integer) ? !qualifier.zero? : !!qualifier
+    end
   end
 
   class Decade < Epoch
-    @duration = 10.freeze
-    @format = '%03dx'.freeze
-
-    public_class_method :current, :new
+    @span, @digits, @precision = 10, 3, :decade
   end
+
+  class Century < Epoch
+    @span, @digits, @precision = 100, 2, :century
+  end
+
 end

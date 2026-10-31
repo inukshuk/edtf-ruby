@@ -165,5 +165,5 @@ Then('the open end should be {string}') do |open|
 end
 
 Then('the significant digits should be {int}') do |digits|
-  expect(@result.significant_digits).to eq(digits)
+  expect(@result.significant).to eq(digits)
 end

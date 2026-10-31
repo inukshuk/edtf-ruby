@@ -42,15 +42,15 @@ module EDTF
     end
 
     def year(result)
-      ::Date.gregorian(result[:values][0]).year_precision!
+      Date.new(result[:values][0], significant: result[:significant])
     end
 
     def decade(result)
-      Decade.new(result[:values][0] * 10)
+      Decade.new(result[:values][0], **result.slice(:uncertain, :approximate))
     end
 
     def century(result)
-      Century.new(result[:values][0] * 100)
+      Century.new(result[:values][0], **result.slice(:uncertain, :approximate))
     end
 
     def season(result)

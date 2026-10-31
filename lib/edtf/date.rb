@@ -2,8 +2,10 @@ module EDTF
 
   # An EDTF date: a regular (proleptic Gregorian) Ruby date with
   # year, month or day precision, and bitmasks for its uncertain,
-  # approximate and unspecified digits. Dates are frozen; use `with`
-  # for a modified copy.
+  # approximate and unspecified digits. Years of any size are
+  # written with a Y prefix beyond four digits (Y170000002), and
+  # may have significant digits (1950S2 spans 1900 to 1999).
+  # Dates are frozen; use `with` for a modified copy.
   #
   # Date math (+, -, >>, <<) returns plain dates, because the result
   # no longer stands for the same EDTF string. Stepping with `succ`,
@@ -16,9 +18,9 @@ module EDTF
     # The masks that cover the whole date, by number of values.
     WHOLE = [nil, Bitmask::YEAR, Bitmask::YM, Bitmask::YMD].freeze
 
-    ATTRIBUTES = %i[precision uncertain approximate unspecified].freeze
+    ATTRIBUTES = %i[precision uncertain approximate unspecified significant].freeze
 
-    def initialize(year, month = nil, day = nil, uncertain: nil, approximate: nil, unspecified: nil)
+    def initialize(year, month = nil, day = nil, uncertain: nil, approximate: nil, unspecified: nil, significant: nil)
       values = [year, month, day].compact
       raise ArgumentError, 'day given without month' if day && month.nil?
 
@@ -28,9 +30,13 @@ module EDTF
       @uncertain = bits(uncertain)
       @approximate = bits(approximate)
       @unspecified = bits(unspecified)
+      @significant = significant && Integer(significant)
 
+      check_digits
       freeze
     end
+
+    attr_reader :significant
 
     # Instances created by Ruby's own date methods skip initialize;
     # they behave like unqualified dates with day precision.
@@ -85,6 +91,7 @@ module EDTF
 
     def begin
       return plain if atomic?
+      return ::Date.new(significant_years.first, 1, 1, ::Date::GREGORIAN) if significant
 
       year, month, day = unspecified.min(absolute_values)
       year = -unspecified.max([self.year.abs])[0] if self.year.negative?
@@ -94,6 +101,7 @@ module EDTF
 
     def end
       return plain if atomic?
+      return ::Date.new(significant_years.last, 12, 31, ::Date::GREGORIAN) if significant
 
       year, month, day = unspecified.max(absolute_values)
       year = -unspecified.min([self.year.abs])[0] if self.year.negative?
@@ -121,7 +129,7 @@ module EDTF
         else (::Date.new(year, month, day, ::Date::GREGORIAN) + by).then { |d| [d.year, d.month, d.day] }
         end
 
-      self.class.new(*values, uncertain: uncertain, approximate: approximate, unspecified: unspecified)
+      self.class.new(*values, uncertain: uncertain, approximate: approximate, unspecified: unspecified, significant: significant)
     end
 
     alias next succ
@@ -201,6 +209,9 @@ module EDTF
     end
 
     def edtf
+      return "Y#{year}#{"S#{significant}" if significant}" if long_year?
+      return "#{'-' if year.negative?}#{format('%04d', year.abs)}S#{significant}" if significant
+
       sign = year.negative? ? '-' : ''
       values = self.values.each_with_index.map { |value, idx| format(idx.zero? ? '%04d' : '%02d', value.abs) }
 
@@ -227,7 +238,7 @@ module EDTF
     protected
 
     def state
-      [precision, uncertain.value, approximate.value, unspecified.value]
+      [precision, uncertain.value, approximate.value, unspecified.value, significant]
     end
 
     private
@@ -239,6 +250,34 @@ module EDTF
 
     def values_count
       PRECISION.index(precision) + 1
+    end
+
+    # A year beyond four digits, written with a Y prefix.
+    def long_year?
+      precision == :year && year.abs > 9999
+    end
+
+    # Masks cover four-digit years only, and EDTF does not qualify
+    # long years or years with significant digits.
+    def check_digits
+      raise ArgumentError, 'significant digits need year precision' if significant && precision != :year
+      return unless long_year? || significant
+
+      unless [uncertain, approximate, unspecified].all?(&:zero?)
+        raise ArgumentError, 'long years and significant digits cannot be qualified or unspecified'
+      end
+    end
+
+    # The first and last year the significant digits allow.
+    def significant_years
+      digits = year.abs.to_s.length
+      return year..year if significant >= digits
+
+      unit = 10**(digits - significant)
+      low = year.abs / unit * unit
+      high = low + unit - 1
+
+      year.negative? ? -high..-low : low..high
     end
 
     def qualified?(mask, part)

@@ -6,6 +6,7 @@ module EDTF
   # Including classes implement `begin` and `end` (plain dates,
   # nil when open), `precision`, and `edtf`.
   module Period
+    include Comparable
 
     # From the coarsest to the finest.
     PRECISIONS = %i[century decade year season month day].freeze

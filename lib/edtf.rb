@@ -71,7 +71,7 @@ module Kernel
       EDTF.parse!(value)
     when Time
       value.to_datetime
-    when EDTF::Date, ::DateTime, EDTF::Season, EDTF::Epoch, EDTF::Interval, EDTF::Set
+    when EDTF::Date, ::DateTime, EDTF::Epoch, EDTF::Season, EDTF::Interval, EDTF::Set
       value
     when ::Date
       EDTF::Date.new(value.year, value.month, value.day)
