@@ -264,7 +264,7 @@ module EDTF
     # covered by it.
     def <=>(other)
       case other
-      when Interval, Season, Epoch
+      when Interval, Season
         bounds <=> bounds_of(other)
       when ::Date
         case

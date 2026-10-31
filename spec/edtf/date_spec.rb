@@ -232,6 +232,72 @@ module EDTF
       end
     end
 
+    # Partly ported from edtf.js test/year.js; edtf.js needs a Year
+    # class because JavaScript dates end at +275760.
+    describe 'long years and significant digits' do
+      it_behaves_like 'a period' do
+        let(:period) { date(170000002) }
+      end
+
+      it_behaves_like 'a period' do
+        let(:period) { date(-170000002) }
+      end
+
+      it 'are what Y-years parse to' do
+        expect(EDTF.parse('Y170000002')).to eql(date(170000002))
+        expect(EDTF.parse('Y-17E7')).to eql(date(-170000000))
+      end
+
+      it 'use the Y prefix beyond four digits' do
+        expect(date(12015).edtf).to eq('Y12015')
+        expect(date(-10001).edtf).to eq('Y-10001')
+      end
+
+      it 'add significant digits' do
+        expect(date(2015, significant: 2).edtf).to eq('2015S2')
+        expect(date(-24, significant: 2).edtf).to eq('-0024S2')
+        expect(date(12345, significant: 1).edtf).to eq('Y12345S1')
+      end
+
+      {
+        [1950, 2] => %w[1900-01-01 1999-12-31],
+        [1950, 4] => %w[1950-01-01 1950-12-31],
+        [1950, 5] => %w[1950-01-01 1950-12-31],
+        [171010000, 3] => %w[171000000-01-01 171999999-12-31],
+        [338800, 3] => %w[338000-01-01 338999-12-31],
+        [-1950, 2] => %w[-1999-01-01 -1900-12-31]
+      }.each do |(year, significant), bounds|
+        it "cover the significant range: #{year}S#{significant}" do
+          d = date(year, significant: significant)
+          expect([d.begin, d.end].map(&:iso8601)).to eq(bounds)
+        end
+      end
+
+      it 'compare by period; eql? includes significant digits' do
+        expect(date(1950, significant: 2)).to eq(date(1999, significant: 2))
+        expect(date(1950, significant: 2)).not_to eql(date(1999, significant: 2))
+        expect(date(1950, significant: 2)).not_to eq(Century.new(19))
+        expect(date(170000002)).to be > date(10000)
+      end
+
+      it 'step by year' do
+        expect(date(10000).succ.edtf).to eq('Y10001')
+        expect(date(10000).prev.edtf).to eq('9999')
+        expect(date(1950, significant: 2).succ.edtf).to eq('1951S2')
+      end
+
+      it 'cannot be qualified or unspecified' do
+        expect { date(12345, uncertain: :year) }.to raise_error(ArgumentError)
+        expect { date(12345, unspecified: Bitmask::YYYX) }.to raise_error(ArgumentError)
+        expect { date(1950, significant: 2).with(approximate: true) }.to raise_error(ArgumentError)
+      end
+
+      it 'need year precision for significant digits' do
+        expect { date(1950, 6, significant: 2) }.to raise_error(ArgumentError)
+        expect(date(1950, significant: 2).with(significant: nil, precision: :month).edtf).to eq('1950-01')
+      end
+    end
+
     describe 'date math' do
       let(:d) { EDTF.parse('2004-06?') }
 

@@ -71,12 +71,13 @@ Feature: Parse dates
     When I parse "<string>"
     Then it should be the date "<date>"
     And the significant digits should be <digits>
+    And it should span "<from>" to "<to>"
 
     Examples:
-      | string       | date      | digits |
-      | 1950S2       | 1950      | 2      |
-      | Y171010000S3 | 171010000 | 3      |
-      | Y3388E2S3    | 338800    | 3      |
+      | string       | date      | digits | from                | to                  |
+      | 1950S2       | 1950      | 2      | 1900-01-01          | 1999-12-31          |
+      | Y171010000S3 | 171010000 | 3      | 171000000-01-01     | 171999999-12-31     |
+      | Y3388E2S3    | 338800    | 3      | 338000-01-01        | 338999-12-31        |
 
   Scenario Outline: Calendars
     When I parse "<string>"

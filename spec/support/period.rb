@@ -2,7 +2,8 @@
 #   it_behaves_like 'a period' do
 #     let(:period) { ... }
 #   end
-shared_examples 'a period' do
+# Pass parses: false for syntax the grammar doesn't read yet.
+shared_examples 'a period' do |parses: true|
   it 'is frozen' do
     expect(period).to be_frozen
   end
@@ -36,6 +37,7 @@ shared_examples 'a period' do
   end
 
   it 'round-trips through its EDTF string' do
+    pending 'the grammar reads it from step 4' unless parses
     expect(EDTF.parse(period.edtf)).to eql(period)
   end
 
