@@ -508,6 +508,7 @@ require 'strscan'
     lowercase_y: '`y` is legacy syntax, use `Y`',
     lowercase_e: '`e` is legacy syntax, use `E`',
     negative_zero: '`-0000` is legacy syntax, use `0000`',
+    whitespace: 'spaces around `,` and `..` are legacy syntax, remove them',
     caret: 'calendars and season qualifiers (`^…`) are legacy syntax, ' \
       'EDTF-Ruby 5.0 converts hemispheres to seasons, e.g. `2001-21^southern` ' \
       'to `2001-29`, and drops the rest'
@@ -646,8 +647,10 @@ require 'strscan'
     when @src.scan(/\//)
       ['/', @src.matched]
     when @src.scan(/\s*\.\.\s*/)
+      deprecate :whitespace if @src.matched.length > 2
       [:DOTS, '..']
     when @src.scan(/\s*,\s*/)
+      deprecate :whitespace if @src.matched.length > 1
       [',', ',']
     when @src.scan(/\^\w+/)
       deprecate :caret

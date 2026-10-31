@@ -27,6 +27,9 @@ module EDTF
         'y170000002' => [:lowercase_y],
         'Y17e7' => [:lowercase_e],
         '-0000' => [:negative_zero],
+        '{1960, 1961-12}' => [:whitespace],
+        '[1864 ..]' => [:whitespace],
+        '2004/ ..' => [:whitespace],
         '2001-02-03^xyz' => [:caret],
         'XXXX' => [:unknown_date],
         'uuuu' => [:unspecified, :unknown_date],
@@ -34,7 +37,9 @@ module EDTF
         '2004/..' => [],
         '2004/' => [],
         '199X' => [],
-        'Y17E7' => []
+        'Y17E7' => [],
+        '{1960,1961-12}' => [],
+        '[1864..]' => []
       }.each do |input, deprecations|
         it "are #{deprecations.inspect} for #{input.inspect}" do
           parser.parse!(input)
