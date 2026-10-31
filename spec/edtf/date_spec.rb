@@ -1,360 +1,388 @@
-describe 'Date/DateTime' do
-
-  describe 'class methods' do
-    it 'responds to edtf' do
-      expect(Date).to respond_to(:edtf)
+# Largely ported from edtf.js test/date.js; months are 1-based here.
+module EDTF
+  describe Date do
+    def date(*values, **qualifiers)
+      Date.new(*values, **qualifiers)
     end
 
-    describe 'edtf and edtf!' do
-      around do |example|
-        original = Warning[:deprecated]
-        Warning[:deprecated] = true
-        example.run
-      ensure
-        Warning[:deprecated] = original
-      end
-
-      it 'are deprecated' do
-        expect { Date.edtf('2004') }.to output(/`Date.edtf` is deprecated/).to_stderr
-        expect { Date.edtf!('2004') }.to output(/`Date.edtf!` is deprecated/).to_stderr
-      end
-
-      it 'still parse' do
-        Warning[:deprecated] = false
-        expect(Date.edtf('2004?')).to eql(EDTF.parse('2004?'))
-        expect(Date.edtf('xyz')).to be_nil
-      end
-
-      it 'are not used by EDTF.parse' do
-        expect { EDTF.parse('2004') }.not_to output.to_stderr
-      end
+    # A date from a mask like "2X1X-0X-15": X digits are unspecified
+    # and hold the lowest value.
+    def masked(string)
+      digits = string.delete_prefix('-').delete('-')
+      mask = Bitmask.new(Bitmask.compute(digits))
+      values = mask.min(Bitmask.values(digits, normalize: false))
+      values[0] = -values[0] if string.start_with?('-')
+      Date.new(*values, unspecified: mask)
     end
 
-    describe 'gregorian' do
-      it 'returns a proleptic Gregorian date for pre-Gregorian dates' do
-        date = Date.gregorian(1582, 9, 30)
-        expect(date).to be_gregorian
-        expect(date).to eq(Date.new(1582, 9, 30, Date::GREGORIAN))
+    it_behaves_like 'a period' do
+      let(:period) { date(2004, 6, 11) }
+    end
+
+    it_behaves_like 'a period' do
+      let(:period) { EDTF.parse('2004-06?') }
+    end
+
+    it_behaves_like 'a period' do
+      let(:period) { EDTF.parse('-199X') }
+    end
+
+    describe '.new' do
+      it 'is a frozen, proleptic Gregorian Ruby date' do
+        d = date(1582, 10, 10)
+        expect(d).to be_a(::Date).and be_frozen.and be_gregorian
+        expect([d.year, d.month, d.day]).to eq([1582, 10, 10])
       end
 
-      it 'returns a Gregorian date for valid Gregorian dates' do
-        date = Date.gregorian(1582, 10, 30)
-        expect(date).to be_gregorian
-        expect(date).to eq(Date.new(1582, 10, 30))
+      it 'takes the precision from the number of values' do
+        expect([date(1980), date(1980, 2), date(1980, 2, 23)].map(&:precision))
+          .to eq(%i[year month day])
+      end
+
+      it 'accepts qualified parts as Symbols, Arrays, masks or true' do
+        expect(date(2004, 6, 11, uncertain: :month).uncertain).to eq(Bitmask.new(:month))
+        expect(date(2004, 6, 11, uncertain: [:year, :day]).uncertain).to eq(Bitmask.new(Bitmask::YEAR | Bitmask::DAY))
+        expect(date(2004, 6, 11, uncertain: Bitmask::YM).uncertain).to eq(Bitmask.new(Bitmask::YM))
+        expect(date(2004, 6, uncertain: true).uncertain).to eq(Bitmask.new(Bitmask::YM))
+      end
+
+      it 'drops qualified parts beyond the precision' do
+        expect(date(2004, uncertain: [:year, :month]).uncertain).to eq(Bitmask.new(:year))
+      end
+
+      it 'rejects invalid dates' do
+        expect { date(2015, 2, 29) }.to raise_error(ArgumentError)
+        expect { date(2015, nil, 2) }.to raise_error(ArgumentError)
       end
 
       it 'is used for parsed dates across the 10-day correction' do
         (4..15).each do |mday|
-          date = EDTF.parse('1582-10-%02d' % mday)
-          expect(date).to be_gregorian
-          expect([date.year, date.month, date.mday]).to eq([1582, 10, mday])
+          d = EDTF.parse('1582-10-%02d' % mday)
+          expect(d).to be_gregorian
+          expect([d.year, d.month, d.mday]).to eq([1582, 10, mday])
         end
       end
     end
-  end
-
-  describe 'instance methods' do
-    [:uncertain?, :approximate?, :unspecified?, :uncertain, :approximate, :unspecified].each do |method|
-      it "responds to #{method}" do
-        expect(Date.new.respond_to?(method)).to eq(true)
-      end
-    end
-  end
-
-  describe '#dup' do
-    let(:date) { EDTF.parse('2004-09%') }
-
-    it 'copies all date values' do
-      expect(date.dup.to_s).to eq('2004-09-01')
-    end
-
-    it 'copies uncertainty' do
-      expect(date.dup).to be_uncertain
-    end
-
-    it 'copies approximate' do
-      expect(date.dup).to be_approximate
-    end
-
-    it 'copies precision' do
-      expect(date.dup.precision).to eq(:month)
-    end
-
-    it 'copies uncertainty by value' do
-      expect { date.dup.certain! }.not_to change { date.uncertain? }
-    end
-  end
-
-  describe 'precisions' do
-    let(:date) { Date.today }
-
-    it 'has day precision by default' do
-      expect(date).to be_day_precision
-    end
-
-    it '#day_precision returns a new date object' do
-      expect(date.day_precision).not_to equal(date)
-      expect(date.day_precision).to eq(date)
-    end
-  end
-
-  describe '#negate' do
-    let(:date) { EDTF.parse('2004?') }
-
-    it 'returns a new date with the negated year' do
-      expect(date.negate.year).to eq(date.year * -1)
-    end
-
-    it 'returns a new date with the same month' do
-      expect(date.negate.month).to eq(date.month)
-    end
-
-    it 'returns a new date with the same day' do
-      expect(date.negate.day).to eq(date.day)
-    end
-
-    it 'returns a new date with the same precision' do
-      expect(date.negate.precision).to eq(date.precision)
-    end
-  end
-
-  describe '#succ' do
-    it 'the successor of 2004 is 2005' do
-      expect(EDTF.parse('2004').succ.year).to eq(2005)
-    end
-
-    it 'the successor of 2004-03 is 2004-04' do
-      expect(EDTF.parse('2004-03').succ.strftime('%Y-%m')).to eq('2004-04')
-    end
-
-    it 'the successor of 2004-03-01 is 2004-03-02' do
-      expect(EDTF.parse('2004-03-01').succ.strftime('%Y-%m-%d')).to eq('2004-03-02')
-    end
-
-    it 'the successor of 1999 has year precision' do
-      expect(EDTF.parse('1999').succ).to be_year_precision
-    end
-  end
-
-  describe '#next' do
-    it 'returns the successor when given no argument' do
-      expect(EDTF.parse('1999').next[0].year).to eq(2000)
-    end
-
-    it 'returns an array of the next 3 elements when passed 3 as an argument' do
-      expect(EDTF.parse('1999').next(3).map(&:year)).to eq([2000, 2001, 2002])
-    end
-  end
-
-  describe '#change' do
-    let(:date) { EDTF.parse('2004-09%') }
-
-    it 'returns a copy of the date if given empty option hash' do
-      expect(date.change({})).to eq(date)
-    end
-
-    it 'the returned copy is not identical at object level' do
-      expect(date.change({})).not_to equal(date)
-    end
-
-    describe 'when given a new year' do
-      let(:changeset) { { :year => 1999 } }
-
-      it 'returns a new date instance with the changed year' do
-        expect(date.change(changeset).year).to eq(1999)
-      end
-    end
-
-    describe 'when given a new precision' do
-      let(:changeset) { { :precision => :year } }
-
-      it 'returns a new date instance with the changed precision' do
-        expect(date.change(changeset).precision).to eq(:year)
-      end
-    end
-
-    it 'copies extended values by value' do
-      expect { date.change({}).approximate! }.not_to change { date.approximate? }
-    end
-  end
-
-  describe '#uncertain?' do
-    let(:date) { Date.new }
-
-    it { expect(Date.new).not_to be_uncertain }
-
-    [:year, :month, :day].each do |part|
-      it "should not be uncertain by default (#{part})" do
-        expect(Date.new.uncertain?(part)).to eq(false)
-      end
-
-      it "should be uncertain if set to uncertain (#{part})" do
-        date.uncertain.send("#{part}=", true)
-        expect(date.uncertain?(part)).to eq(true)
-      end
-
-      ([:year, :month, :day] - [part]).each do |other|
-        it "#{other} should not be uncertain if #{part} is uncertain" do
-          date.uncertain.send("#{part}=", true)
-          expect(date.uncertain?(other)).to eq(false)
-        end
-      end
-    end
-  end
-
-  describe '#with' do
-    let(:date) { EDTF.parse('2004-06?-11') }
-
-    def parts(date, predicate)
-      Date::PRECISION.select { |part| date.public_send(predicate, part) }
-    end
-
-    it 'returns a copy' do
-      expect(date.with).to eql(date)
-      expect(date.with).not_to equal(date)
-    end
-
-    it 'replaces the precision' do
-      expect(date.with(precision: :month)).to be_month_precision
-    end
-
-    it 'replaces the uncertain parts' do
-      expect(parts(date.with(uncertain: :day), :uncertain?)).to eq([:day])
-      expect(parts(date.with(uncertain: [:year, :day]), :uncertain?)).to eq([:year, :day])
-      expect(date.with(uncertain: [])).not_to be_uncertain
-    end
-
-    it 'replaces the approximate parts' do
-      copy = date.with(approximate: [:year, :month])
-      expect(parts(copy, :approximate?)).to eq([:year, :month])
-      expect(parts(copy, :uncertain?)).to eq([:year, :month])
-    end
-
-    it 'keeps the attributes not given' do
-      copy = date.with(approximate: :day)
-      expect(copy.precision).to eq(:day)
-      expect(parts(copy, :uncertain?)).to eq([:year, :month])
-    end
-
-    it 'does not change the original' do
-      expect { date.with(uncertain: [], precision: :year) }.not_to change { date.edtf }
-    end
-
-    it 'rejects unknown attributes' do
-      expect { date.with(year: 2005) }.to raise_error(ArgumentError)
-    end
-
-    it 'rejects invalid precisions' do
-      expect { date.with(precision: :week) }.to raise_error(ArgumentError)
-    end
-  end
-
-  describe 'uncertain/approximate hash' do
-    it 'is 0 by default' do
-      expect(Date.new().send(:ua_hash)).to eq(0)
-    end
-
-    it 'is 8 for approximate year' do
-      expect(Date.new.approximate!(:year).send(:ua_hash)).to eq(8)
-    end
-  end
-
-  describe 'sorting and comparisons' do
-    let(:xmas) { Date.new(2011, 12, 24) }
-    let(:new_years_eve) { Date.new(2011, 12, 31) }
 
     describe '#values' do
-      it 'returns [2011,12,24] for christmas' do
-        expect(xmas.values).to eq([2011, 12, 24])
+      it 'has as many values as the precision' do
+        expect(date(2016).values).to eq([2016])
+        expect(date(2016, 2).values).to eq([2016, 2])
+        expect(date(2016, 2, 3).values).to eq([2016, 2, 3])
       end
 
-      it 'returns [2011,12] for christmas with month precision' do
-        expect(xmas.month_precision!.values).to eq([2011, 12])
-      end
-
-      it 'returns [2011] for christmas with year precision' do
-        expect(xmas.year_precision!.values).to eq([2011])
-      end
-    end
-
-    describe '#<=>' do
-      it '2009-12-24 should be less than 2011-12-31' do
-        expect(Date.new(2009, 12, 24)).to be < Date.new(2011, 12, 31)
-      end
-
-      it '2009-12-24 should be less than 2011-12' do
-        expect(Date.new(2009, 12, 24)).to be < EDTF.parse('2011-12')
-      end
-
-      it '2009-12-24 should be less than 2011' do
-        expect(Date.new(2009, 12, 24)).to be < EDTF.parse('2011')
+      it 'holds the lowest values of unspecified digits' do
+        expect(EDTF.parse('2016-XX').values).to eq([2016, 1])
+        expect(EDTF.parse('20XX').values).to eq([2000])
+        expect(EDTF.parse('-20XX').values).to eq([-2000])
+        expect(EDTF.parse('-201X').values).to eq([-2010])
       end
     end
 
-    describe '#eql? and #hash' do
-      it 'distinguishes dates with different EDTF attributes (#49)' do
-        a = EDTF.parse!('1972%')
-        b = EDTF.parse!('1972-XX-XX')
-        h = { a => 1, b => 2 }
-
-        expect(a).not_to eql(b)
-        expect(h.size).to eq(2)
-        expect(h[a]).to eq(1)
+    describe '#edtf' do
+      {
+        [2014] => '2014', [123] => '0123', [14] => '0014', [0] => '0000',
+        [-2] => '-0002', [-42] => '-0042', [-9999] => '-9999',
+        [2014, 4] => '2014-04', [123, 1] => '0123-01', [14, 9] => '0014-09',
+        [0, 1] => '0000-01', [-2, 12] => '-0002-12',
+        [2014, 4, 15] => '2014-04-15', [2016, 2, 29] => '2016-02-29'
+      }.each do |values, edtf|
+        it "is #{edtf} for #{values}" do
+          expect(date(*values).edtf).to eq(edtf)
+        end
       end
 
-      it 'distinguishes precision' do
-        expect(Date.new(1972)).not_to eql(Date.new(1972).year_precision!)
+      {
+        [[2014, 4, 15], :day] => '2014-04-XX',
+        [[2014, 4, 15], :month] => '2014-XX-15',
+        [[2014, 4, 15], :year] => 'XXXX-04-15',
+        [[2014, 4, 15], 'xxxxxxdd'] => 'XXXX-XX-15',
+        [[-300, 4, 15], 'yyxxmmdd'] => '-03XX-04-15',
+        [[2014, 4, 15], 'yxyxmxdd'] => '2X1X-0X-15'
+      }.each do |(values, mask), edtf|
+        it "masks unspecified digits: #{edtf}" do
+          expect(date(*values, unspecified: mask).edtf).to eq(edtf)
+        end
       end
 
-      it 'distinguishes uncertain and approximate dates' do
+      {
+        { uncertain: true } => '2014-04-15?',
+        { uncertain: :day } => '2014-04-?15',
+        { uncertain: 'xxxxxxdd' } => '2014-04?-15',
+        { uncertain: :month } => '2014-?04-15',
+        { uncertain: :year } => '2014?-04-15',
+        { uncertain: 'xxxxxxdd', approximate: :day } => '2014-04?-~15',
+        { uncertain: :month, approximate: :month } => '2014-%04-15',
+        { uncertain: :year, approximate: :year } => '2014%-04-15',
+        { uncertain: :year, approximate: 'xxxxxxdd' } => '2014?-04~-15',
+        { uncertain: 'xxxxmmxx' } => '2014?-04-?15',
+        { uncertain: 'yyyyxxxx' } => '2014-?04-?15'
+      }.each do |qualifiers, edtf|
+        it "marks qualified parts: #{edtf}" do
+          expect(date(2014, 4, 15, **qualifiers).edtf).to eq(edtf)
+        end
+      end
+
+      it 'is also the string representation' do
+        d = EDTF.parse('2004-06?')
+        expect(d.to_s).to eq('2004-06?')
+        expect(d.inspect).to eq('#<EDTF::Date 2004-06?>')
+        expect(d.iso8601).to eq('2004-06-01')
+      end
+    end
+
+    describe '#begin and #end' do
+      {
+        '2016' => %w[2016-01-01 2016-12-31],
+        '2016-02' => %w[2016-02-01 2016-02-29],
+        '2017-02' => %w[2017-02-01 2017-02-28],
+        '2016-02-01' => %w[2016-02-01 2016-02-01],
+        '2016-01-XX' => %w[2016-01-01 2016-01-31],
+        '2016-02-XX' => %w[2016-02-01 2016-02-29],
+        '2017-02-XX' => %w[2017-02-01 2017-02-28],
+        '2016-09-XX' => %w[2016-09-01 2016-09-30],
+        '2016-XX' => %w[2016-01-01 2016-12-31],
+        '20XX' => %w[2000-01-01 2099-12-31],
+        '201X' => %w[2010-01-01 2019-12-31],
+        'XXXX' => %w[0000-01-01 9999-12-31],
+        '-201X' => %w[-2019-01-01 -2010-12-31],
+        '-1999-XX' => %w[-1999-01-01 -1999-12-31]
+      }.each do |string, bounds|
+        it "are #{bounds.join(' and ')} for #{string}" do
+          d = EDTF.parse(string)
+          expect([d.begin, d.end].map(&:iso8601)).to eq(bounds)
+        end
+      end
+
+      {
+        '20XX-01-XX' => %w[2000-01-01 2099-01-31],
+        '2016-01-0X' => %w[2016-01-01 2016-01-09],
+        '2016-01-1X' => %w[2016-01-10 2016-01-19],
+        '2016-01-3X' => %w[2016-01-30 2016-01-31],
+        '2016-02-2X' => %w[2016-02-20 2016-02-29],
+        '2017-02-2X' => %w[2017-02-20 2017-02-28],
+        '2016-01-X1' => %w[2016-01-01 2016-01-31],
+        '2016-01-X2' => %w[2016-01-02 2016-01-22],
+        '2016-02-X9' => %w[2016-02-09 2016-02-29],
+        '2017-02-X9' => %w[2017-02-09 2017-02-19],
+        '2016-0X' => %w[2016-01-01 2016-09-30],
+        '2016-1X' => %w[2016-10-01 2016-12-31],
+        '2016-X1' => %w[2016-01-01 2016-11-30],
+        '2016-X2' => %w[2016-02-01 2016-12-31],
+        '2016-01-X0' => %w[2016-01-10 2016-01-30],
+        '20X3' => %w[2003-01-01 2093-12-31],
+        '2X1X' => %w[2010-01-01 2919-12-31],
+        'X0X6' => %w[0006-01-01 9096-12-31],
+        'XXX6' => %w[0006-01-01 9996-12-31],
+        '201X-02-04' => %w[2010-02-04 2019-02-04],
+        '20XX-XX-04' => %w[2000-01-04 2099-12-04],
+        '2X12-1X-X4' => %w[2012-10-04 2912-12-24],
+        '1XXX' => %w[1000-01-01 1999-12-31],
+        '-1XXX' => %w[-1999-01-01 -1000-12-31]
+      }.each do |string, bounds|
+        it "are #{bounds.join(' and ')} for #{string} (level 2)" do
+          d = masked(string)
+          expect([d.begin, d.end].map(&:iso8601)).to eq(bounds)
+        end
+      end
+
+      it 'are plain dates' do
+        expect(EDTF.parse('2004-06-11').begin).to be_instance_of(::Date)
+      end
+    end
+
+    describe '#succ and #prev' do
+      {
+        '1980' => '1981', '-0001' => '0000', '-2019' => '-2018',
+        '1980-08' => '1980-09', '-0001-12' => '0000-01', '2015-12' => '2016-01',
+        '1980-08-24' => '1980-08-25', '-0001-12-31' => '0000-01-01',
+        '2016-02-28' => '2016-02-29', '2015-02-28' => '2015-03-01'
+      }.each do |string, succ|
+        it "steps from #{string} to #{succ}" do
+          expect(EDTF.parse(string).succ.edtf).to eq(succ)
+          expect(EDTF.parse(succ).prev.edtf).to eq(string)
+        end
+      end
+
+      it 'steps over unspecified digits' do
+        d = EDTF.parse('201X')
+        expect([d.succ, d.succ.succ, d.succ.prev].map(&:edtf)).to eq(%w[202X 203X 201X])
+        expect([d.prev, d.prev.prev, d.prev.succ].map(&:edtf)).to eq(%w[200X 199X 201X])
+      end
+
+      it 'steps over unspecified digits of negative years' do
+        d = EDTF.parse('-201X')
+        expect([d.succ, d.succ.succ, d.succ.prev].map(&:edtf)).to eq(%w[-200X -199X -201X])
+        expect([d.prev, d.prev.prev, d.prev.succ].map(&:edtf)).to eq(%w[-202X -203X -201X])
+      end
+
+      it 'keeps the qualifiers' do
+        expect(EDTF.parse('2004-06?').succ.edtf).to eq('2004-07?')
+      end
+
+      it 'is also #next' do
+        expect(EDTF.parse('2004').next.edtf).to eq('2005')
+      end
+
+      it 'steps ranges and #upto/#downto by precision' do
+        expect((EDTF.parse('2001')..EDTF.parse('2003')).map(&:edtf)).to eq(%w[2001 2002 2003])
+        expect(EDTF.parse('2001-11').upto(EDTF.parse('2002-01')).map(&:edtf))
+          .to eq(%w[2001-11 2001-12 2002-01])
+        expect(EDTF.parse('2003').downto(EDTF.parse('2001')).map(&:edtf)).to eq(%w[2003 2002 2001])
+      end
+    end
+
+    describe 'date math' do
+      let(:d) { EDTF.parse('2004-06?') }
+
+      it 'returns plain dates' do
+        expect(d + 1).to be_instance_of(::Date).and eq(::Date.new(2004, 6, 2))
+        expect(d - 1).to be_instance_of(::Date).and eq(::Date.new(2004, 5, 31))
+        expect(d >> 1).to be_instance_of(::Date).and eq(::Date.new(2004, 7, 1))
+        expect(d << 1).to be_instance_of(::Date).and eq(::Date.new(2004, 5, 1))
+      end
+
+      it 'subtracts dates' do
+        expect(d - ::Date.new(2004, 5, 1)).to eq(31)
+      end
+
+      it 'returns plain dates from next_day, next_month and friends' do
+        expect(d.next_day).to be_instance_of(::Date).and eq(::Date.new(2004, 6, 2))
+        expect(d.prev_month(2)).to be_instance_of(::Date).and eq(::Date.new(2004, 4, 1))
+        expect(d.next_year).to be_instance_of(::Date).and eq(::Date.new(2005, 6, 1))
+      end
+
+      it 'returns plain dates from ActiveSupport calculations' do
+        expect(d.advance(months: 1)).to eq(::Date.new(2004, 7, 1))
+        expect(d.change(day: 15)).to eq(::Date.new(2004, 6, 15))
+        expect(d.advance(months: 1)).not_to be_uncertain
+      end
+    end
+
+    describe '#with' do
+      let(:d) { EDTF.parse('2004-06?-11') }
+
+      it 'returns self without changes' do
+        expect(d.with).to equal(d)
+      end
+
+      it 'replaces the given attributes' do
+        expect(d.with(uncertain: :day).edtf).to eq('2004-06-?11')
+        expect(d.with(uncertain: []).edtf).to eq('2004-06-11')
+        expect(d.with(approximate: true).edtf).to eq('2004-06?-11~')
+        expect(d.with(unspecified: :day).edtf).to eq('2004-06-XX')
+      end
+
+      it 'changes the precision' do
+        expect(d.with(precision: :month).edtf).to eq('2004-06?')
+        expect(d.with(precision: :year).edtf).to eq('2004?')
+        expect(EDTF.parse('2004').with(precision: :day).edtf).to eq('2004-01-01')
+      end
+
+      it 'returns a frozen copy and leaves the original unchanged' do
+        expect(d.with(uncertain: [])).to be_frozen
+        expect(d.edtf).to eq('2004-06?-11')
+      end
+
+      it 'rejects unknown attributes and precisions' do
+        expect { d.with(year: 2005) }.to raise_error(ArgumentError)
+        expect { d.with(precision: :week) }.to raise_error(ArgumentError)
+      end
+    end
+
+    describe 'qualifier predicates' do
+      let(:d) { EDTF.parse('2004?-06~') }
+
+      it 'test the whole date or a part' do
+        expect([d.uncertain?, d.uncertain?(:year), d.uncertain?(:month)]).to eq([true, true, false])
+        expect([d.approximate?, d.approximate?(:year), d.approximate?(:month)]).to eq([true, true, true])
+        expect([d.unspecified?, EDTF.parse('199X').unspecified?(:year)]).to eq([false, true])
+      end
+    end
+
+    describe 'comparison' do
+      it 'orders by begin, then end, then precision' do
+        expect(date(1980)).to be < date(1980, 7)
+        expect(EDTF.parse('198X')).to be > EDTF.parse('196X')
+        expect(date(2004)).to be > date(2004, 1, 1)
+        expect(date(2004) <=> EDTF.parse('2004-XX')).to eq(-1)
+      end
+
+      it 'compares with plain dates and times' do
+        expect(date(2004, 6, 11) <=> ::Date.new(2004, 6, 11)).to eq(0)
+        expect(date(2004) <=> ::Date.new(2004, 6, 11)).to eq(-1)
+        expect(date(2004, 6, 11) <=> Time.new(2004, 6, 11, 23, 0, 0, '-05:00')).to eq(0)
+        expect(date(2004) <=> 2004).to be_nil
+      end
+
+      it '== means the same period, ignoring qualifiers' do
+        expect(EDTF.parse('1906')).to eq(EDTF.parse('1906?'))
+        expect(EDTF.parse('1906')).not_to eq(EDTF.parse('1906-01'))
+        expect(EDTF.parse('2004-06-11?')).to eq(::Date.new(2004, 6, 11))
+      end
+
+      it 'eql? and hash include everything' do
         expect(EDTF.parse('1972')).not_to eql(EDTF.parse('1972?'))
         expect(EDTF.parse('1972?')).not_to eql(EDTF.parse('1972~'))
-      end
-
-      it 'distinguishes unspecified dates' do
         expect(EDTF.parse('1972-01-01')).not_to eql(EDTF.parse('1972-01-XX'))
-      end
+        expect(EDTF.parse('1972%')).not_to eql(EDTF.parse('1972-XX-XX'))
 
-      it 'distinguishes calendars', legacy: true do
-        expect(EDTF.parse('2001-02-03^xyz')).not_to eql(EDTF.parse('2001-02-03'))
-      end
-
-      it 'treats dates with the same EDTF attributes as equal' do
-        a, b = EDTF.parse('1972?-XX~'), EDTF.parse('1972?-XX~')
+        a = date(1972, 1, uncertain: :year, approximate: :month, unspecified: :month)
+        b = date(1972, 1, uncertain: :year, approximate: :month, unspecified: :month)
         expect(a).to eql(b)
         expect(a.hash).to eq(b.hash)
+        expect({ EDTF.parse('1972') => 1, EDTF.parse('1972?') => 2 }.size).to eq(2)
       end
 
-      it 'ignores unset or cleared EDTF attributes' do
-        a = Date.new(1972, 1, 1)
-        b = Date.new(1972, 1, 1).day_precision!.uncertain!.certain!
-
-        expect(a).to eql(b)
-        expect(a.hash).to eq(b.hash)
-      end
-
-      it 'uses the original hash for regular dates' do
-        d = Date.new(1972, 1, 1)
-        expect(d.hash).to eq(d.original_hash)
+      it 'an unqualified day eql?s a plain date, with the same hash' do
+        d = EDTF.parse('2004-06-11')
+        expect(d).to eql(::Date.new(2004, 6, 11))
+        expect(::Date.new(2004, 6, 11)).to eql(d)
+        expect(d.hash).to eq(::Date.new(2004, 6, 11).hash)
+        expect(EDTF.parse('2004-06-11?')).not_to eql(::Date.new(2004, 6, 11))
       end
     end
 
-    describe '#==' do
-      it "xmas and new year's eve are not equal" do
-        expect(xmas).not_to eq(new_years_eve)
+    describe 'coverage' do
+      let(:d) { EDTF.parse('201X') }
+
+      it 'covers dates, times and periods within its bounds' do
+        expect(d).to be_cover(::Date.new(2015, 6, 1))
+        expect(d).to be_cover(EDTF.parse('2015-06'))
+        expect(d).to be_cover(Time.new(2019, 12, 31, 23, 0, 0, '-05:00'))
+        expect(d).not_to be_cover(::Date.new(2020, 1, 1))
+        expect(d === ::Date.new(2015, 6, 1)).to be true
       end
 
-      it "xmas and new year's eve are equal using month precision" do
-        expect(xmas.month_precision!).to eq(new_years_eve.month_precision!)
+      it 'includes periods of the same precision only' do
+        expect(d).to be_include(EDTF.parse('2015'))
+        expect(d).not_to be_include(EDTF.parse('2015-06'))
       end
+    end
+  end
 
-      it 'xmas and january 24 are not equal using month precision' do
-        expect(xmas.month_precision!).not_to eq(xmas.month_precision!.next)
-      end
+  describe '::Date.edtf and edtf! (4.x)' do
+    around do |example|
+      original = Warning[:deprecated]
+      Warning[:deprecated] = true
+      example.run
+    ensure
+      Warning[:deprecated] = original
+    end
 
-      it "xmas and new year's eve are equal using year precision" do
-        expect(xmas.year_precision!).to eq(new_years_eve.year_precision!)
-      end
+    it 'are deprecated' do
+      expect { ::Date.edtf('2004') }.to output(/`Date.edtf` is deprecated/).to_stderr
+      expect { ::Date.edtf!('2004') }.to output(/`Date.edtf!` is deprecated/).to_stderr
+    end
+
+    it 'still parse' do
+      Warning[:deprecated] = false
+      expect(::Date.edtf('2004?')).to eql(EDTF.parse('2004?'))
+      expect(::Date.edtf('xyz')).to be_nil
+    end
+
+    it 'are not used by EDTF.parse' do
+      expect { EDTF.parse('2004') }.not_to output.to_stderr
     end
   end
 end

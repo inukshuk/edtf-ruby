@@ -29,7 +29,7 @@ module EDTF
     end
 
     def include?(v)
-      return false unless v.is_a?(Date)
+      return false unless v.is_a?(::Date)
       return false if empty?
 
       dates_array = to_a

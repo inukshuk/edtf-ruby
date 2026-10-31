@@ -24,15 +24,15 @@ module EDTF
       end
 
       it 'returns {1984, 1985-10} for the set containing these dates' do
-        expect(Set.new(EDTF.parse('1984'), Date.new(1984,10).month_precision).edtf).to eq('{1984,1984-10}')
+        expect(Set.new(EDTF.parse('1984'), ::Date.new(1984,10).month_precision).edtf).to eq('{1984,1984-10}')
       end
 
       it 'returns {..1984, 1985-10} for the set containing these dates and earlier == true' do
-        expect(Set.new(EDTF.parse('1984'), Date.new(1984,10).month_precision).earlier!.edtf).to eq('{..1984,1984-10}')
+        expect(Set.new(EDTF.parse('1984'), ::Date.new(1984,10).month_precision).earlier!.edtf).to eq('{..1984,1984-10}')
       end
 
       it 'returns {1984, 1985-10..} for the set containing these dates and later == true' do
-        expect(Set.new(EDTF.parse('1984'), Date.new(1984,10).month_precision).later!.edtf).to eq('{1984,1984-10..}')
+        expect(Set.new(EDTF.parse('1984'), ::Date.new(1984,10).month_precision).later!.edtf).to eq('{1984,1984-10..}')
       end
 
       it 'returns [1667, 1668, 1670..1672] for the years 1667, 1668 and the interval 1670..1672' do
@@ -48,15 +48,15 @@ module EDTF
       let(:set) { Set.new(EDTF.parse('1667'), EDTF.parse('1668'), EDTF.parse('1670')..EDTF.parse('1672')).choice! }
 
       it 'includes the year 1671' do
-        expect(set).to include(Date.new(1671).year_precision!)
+        expect(set).to include(::Date.new(1671).year_precision!)
       end
 
       it 'does not include the date 1671-01-01' do
-        expect(set.include?(Date.new(1671).day_precision!)).to be false
+        expect(set.include?(::Date.new(1671).day_precision!)).to be false
       end
 
       it 'does not include the year 1669' do
-        expect(set.include?(Date.new(1669).year_precision!)).to be false
+        expect(set.include?(::Date.new(1669).year_precision!)).to be false
       end
 
       it 'has a length of 3' do
@@ -113,15 +113,15 @@ module EDTF
         end
 
         it 'includes the date 1984' do
-          expect(set.include?(Date.new(1984).year_precision!)).to be true
+          expect(set.include?(::Date.new(1984).year_precision!)).to be true
         end
 
         it 'includes the date 1984 BCE' do
-          expect(set.include?(Date.new(-1984).year_precision!)).to be true
+          expect(set.include?(::Date.new(-1984).year_precision!)).to be true
         end
 
         it 'does not include the date 1995' do
-          expect(set.include?(Date.new(1995).year_precision!)).to be false
+          expect(set.include?(::Date.new(1995).year_precision!)).to be false
         end
       end
 
@@ -133,15 +133,15 @@ module EDTF
         end
 
         it 'includes the date 1984-05-11' do
-          expect(set.include?(Date.new(1984, 5, 11))).to be true
+          expect(set.include?(::Date.new(1984, 5, 11))).to be true
         end
 
         it 'includes the date 11 May 1984 BCE' do
-          expect(set.include?(Date.new(-1984, 5, 11))).to be true
+          expect(set.include?(::Date.new(-1984, 5, 11))).to be true
         end
 
         it 'does not include the date 1995-01-01' do
-          expect(set.include?(Date.new(1995))).to be false
+          expect(set.include?(::Date.new(1995))).to be false
         end
       end
 
@@ -153,15 +153,15 @@ module EDTF
         end
 
         it 'includes the date 1984' do
-          expect(set.include?(Date.new(1984).year_precision!)).to be true
+          expect(set.include?(::Date.new(1984).year_precision!)).to be true
         end
 
         it 'does not include the date 1984 BCE' do
-          expect(set.include?(Date.new(-1984).year_precision!)).to be false
+          expect(set.include?(::Date.new(-1984).year_precision!)).to be false
         end
 
         it 'includes the date 1995' do
-          expect(set.include?(Date.new(1995).year_precision!)).to be true
+          expect(set.include?(::Date.new(1995).year_precision!)).to be true
         end
       end
 
@@ -173,15 +173,15 @@ module EDTF
         end
 
         it 'includes the date 1984-05-11' do
-          expect(set.include?(Date.new(1984, 5, 11))).to be true
+          expect(set.include?(::Date.new(1984, 5, 11))).to be true
         end
 
         it 'does not include the date 11 May 1984 BCE' do
-          expect(set.include?(Date.new(-1984, 5, 11))).to be false
+          expect(set.include?(::Date.new(-1984, 5, 11))).to be false
         end
 
         it 'includes the date 1995-01-01' do
-          expect(set.include?(Date.new(1995))).to be true
+          expect(set.include?(::Date.new(1995))).to be true
         end
       end
 
@@ -193,15 +193,15 @@ module EDTF
         end
 
         it 'includes the date 1984' do
-          expect(set.include?(Date.new(1984).year_precision!)).to be true
+          expect(set.include?(::Date.new(1984).year_precision!)).to be true
         end
 
         it 'includes the date 1984 BCE' do
-          expect(set.include?(Date.new(-1984).year_precision!)).to be true
+          expect(set.include?(::Date.new(-1984).year_precision!)).to be true
         end
 
         it 'does not include the date 1995' do
-          expect(set.include?(Date.new(1995).year_precision!)).to be false
+          expect(set.include?(::Date.new(1995).year_precision!)).to be false
         end
       end
 
@@ -213,15 +213,15 @@ module EDTF
         end
 
         it 'includes the date 1984-05-11' do
-          expect(set.include?(Date.new(1984, 5, 11))).to be true
+          expect(set.include?(::Date.new(1984, 5, 11))).to be true
         end
 
         it 'includes the date 11 May 1984 BCE' do
-          expect(set.include?(Date.new(-1984, 5, 11))).to be true
+          expect(set.include?(::Date.new(-1984, 5, 11))).to be true
         end
 
         it 'does not include the date 1995-01-01' do
-          expect(set.include?(Date.new(1995))).to be false
+          expect(set.include?(::Date.new(1995))).to be false
         end
       end
 
@@ -233,15 +233,15 @@ module EDTF
         end
 
         it 'includes the date 1984' do
-          expect(set.include?(Date.new(1984).year_precision!)).to be true
+          expect(set.include?(::Date.new(1984).year_precision!)).to be true
         end
 
         it 'does not include the date 1984 BCE' do
-          expect(set.include?(Date.new(-1984).year_precision!)).to be false
+          expect(set.include?(::Date.new(-1984).year_precision!)).to be false
         end
 
         it 'includes the date 1995' do
-          expect(set.include?(Date.new(1995).year_precision!)).to be true
+          expect(set.include?(::Date.new(1995).year_precision!)).to be true
         end
       end
 
@@ -253,15 +253,15 @@ module EDTF
         end
 
         it 'includes the date 1984-05-11' do
-          expect(set.include?(Date.new(1984, 5, 11))).to be true
+          expect(set.include?(::Date.new(1984, 5, 11))).to be true
         end
 
         it 'does not include the date 11 May 1984 BCE' do
-          expect(set.include?(Date.new(-1984, 5, 11))).to be false
+          expect(set.include?(::Date.new(-1984, 5, 11))).to be false
         end
 
         it 'includes the date 1995-01-01' do
-          expect(set.include?(Date.new(1995))).to be true
+          expect(set.include?(::Date.new(1995))).to be true
         end
       end
     end

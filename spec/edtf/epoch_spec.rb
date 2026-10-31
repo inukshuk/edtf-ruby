@@ -12,13 +12,13 @@ module EDTF
 
     describe '#min' do
       it 'the year 1990 should be the minimum of the 1990s' do
-        expect(Decade.new(1999).min).to eq(Date.new(1990).year_precision!)
+        expect(Decade.new(1999).min).to eq(::Date.new(1990).year_precision!)
       end
     end
 
     describe '#max' do
       it 'the year 1999 should be the maximum of the 1990s' do
-        expect(Decade.new(1999).max).to eq(Date.new(1999).year_precision!)
+        expect(Decade.new(1999).max).to eq(::Date.new(1999).year_precision!)
       end
 
       it 'has year precision' do
@@ -28,7 +28,7 @@ module EDTF
 
     describe '#cover?' do
       it '1989-12-31 should be covered by the 1980s' do
-        expect(Decade.new(1980)).to be_cover(Date.new(1989,12,31))
+        expect(Decade.new(1980)).to be_cover(::Date.new(1989,12,31))
       end
     end
 

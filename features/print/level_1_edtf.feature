@@ -17,7 +17,7 @@ Feature: Print level 1 EDTF strings
     @level1 @legacy
     Examples: Draft syntax: combined qualifiers
       | string | edtf   |
-      | 1984?~ | 1984?~ |
+      | 1984?~ | 1984%  |
 
     @level1
     Examples: Unspecified dates

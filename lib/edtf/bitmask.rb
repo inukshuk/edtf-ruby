@@ -28,6 +28,7 @@ module EDTF
         when Integer then value
         when true then YMD
         when false, nil then 0
+        when Array then value.sum { |part| convert(part) }
         when Symbol, String
           case value.to_s
           when /\Adays?\z/i then DAY
@@ -210,16 +211,19 @@ module EDTF
       year = fill(year, '0') if year?
       return [year] if month.nil?
 
+      # Unlike edtf.js, X2 and X0 keep their known digit
+      # (February and the 10th, not January and the 1st).
       case value & MONTH
-      when MONTH, XM then month = 1
+      when MONTH then month = 1
       when MX then month = month < 10 ? 1 : 10
+      when XM then month = month % 10 == 0 ? 10 : month % 10
       end
       return [year, month] if day.nil?
 
       case value & DAY
       when DAY then day = 1
       when DX then day = [1, day / 10 * 10].max
-      when XD then day = [1, day % 10].max
+      when XD then day = day % 10 == 0 ? 10 : day % 10
       end
 
       [year, month, day]

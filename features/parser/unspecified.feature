@@ -25,10 +25,14 @@ Feature: Parse unspecified dates
       | -199X       | -1990       | YYYX-MM-DD  |
       | -1999-XX-XX | -1999-01-01 | YYYY-XX-XX  |
 
-    @level1 @wip
+    @level1
     Examples: Unspecified year
       | string     | date       | unspecified |
       | XXXX       | 0000       | XXXX-MM-DD  |
+
+    @level1 @wip
+    Examples: Unspecified year and month
+      | string     | date       | unspecified |
       | XXXX-XX    | 0000-01    | XXXX-XX-DD  |
       | XXXX-XX-XX | 0000-01-01 | XXXX-XX-XX  |
 
@@ -66,6 +70,7 @@ Feature: Parse unspecified dates
       | string      | date        | unspecified |
       | 199u        | 1990        | YYYX-MM-DD  |
       | 198u        | 1980        | YYYX-MM-DD  |
+      | uuuu        | 0000        | XXXX-MM-DD  |
       | 19uu        | 1900        | YYXX-MM-DD  |
       | 1999-uu     | 1999-01     | YYYY-XX-DD  |
       | 1999-02-uu  | 1999-02-01  | YYYY-MM-XX  |
@@ -88,14 +93,3 @@ Feature: Parse unspecified dates
       | 199u-01-uu | 1990-01-01 | YYYX-MM-XX  |
       | 19uu-01-uu | 1900-01-01 | YYXX-MM-XX  |
       | 1999-uu-01 | 1999-01-01 | YYYY-XX-DD  |
-
-  @level1 @legacy
-  Scenario: Draft syntax: unknown dates
-    When I parse "uuuu"
-    Then it should be unknown
-
-  # Quirk: in ISO 8601-2, XXXX is a level 1 date with an unspecified year.
-  @level1
-  Scenario: Unknown dates
-    When I parse "XXXX"
-    Then it should be unknown

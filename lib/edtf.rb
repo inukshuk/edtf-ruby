@@ -19,13 +19,14 @@ require 'edtf/compatibility'
 require 'edtf/version'
 require 'edtf/bitmask'
 require 'edtf/uncertainty'
+require 'edtf/v4/date'
+require 'edtf/period'
 require 'edtf/date'
 require 'edtf/date_time'
 require 'edtf/epoch'
 require 'edtf/season'
 require 'edtf/interval'
 require 'edtf/set'
-require 'edtf/unknown'
 require 'edtf/parser'
 require 'edtf/adapter'
 require 'edtf/extensions'
@@ -70,8 +71,10 @@ module Kernel
       EDTF.parse!(value)
     when Time
       value.to_datetime
-    when Date, EDTF::Season, EDTF::Epoch, EDTF::Interval, EDTF::Set, EDTF::Unknown
+    when EDTF::Date, ::DateTime, EDTF::Season, EDTF::Epoch, EDTF::Interval, EDTF::Set
       value
+    when ::Date
+      EDTF::Date.new(value.year, value.month, value.day)
     else
       raise TypeError, "can't convert #{value.class} into EDTF"
     end

@@ -31,13 +31,13 @@ module EDTF
 
     attr_reader :from, :to
 
-    def initialize(from = Date.today, to = :open)
+    def initialize(from = ::Date.today, to = :open)
       self.from, self.to = from, to
     end
 
     def from=(date)
       case date
-      when Date, :unknown, :open
+      when ::Date, :unknown, :open
         @from = date
       else
         throw ArgumentError.new("Intervals cannot start with: #{date}")
@@ -46,7 +46,7 @@ module EDTF
 
     def to=(date)
       case date
-      when Date, :unknown, :open
+      when ::Date, :unknown, :open
         @to = date
       else
         throw ArgumentError.new("Intervals cannot end with: #{date}")
@@ -115,7 +115,7 @@ module EDTF
         f, t, by = min, max, by.to_i
 
         unless f.nil? || t.nil? || by < 1
-          by = { Date::PRECISIONS[precision] => by }
+          by = { ::Date::PRECISIONS[precision] => by }
 
           until f > t do
             yield f
@@ -146,7 +146,7 @@ module EDTF
       when open?, unknown?
         nil
       else
-        Range.new(unknown_start? ? Date.new : @from, max)
+        Range.new(unknown_start? ? ::Date.new : @from, max)
       end
     end
 
@@ -162,7 +162,7 @@ module EDTF
     # In contrast to #include? and #member? this method does not take into
     # account the date's precision.
     def cover?(other)
-      return false unless other.is_a?(Date)
+      return false unless other.is_a?(::Date)
 
       other = other.day_precision
 
@@ -266,7 +266,7 @@ module EDTF
       case other
       when Interval, Season, Epoch
         bounds <=> bounds_of(other)
-      when Date
+      when ::Date
         case
         when cover?(other) then 0
         when unbounded_start? then -1
@@ -282,7 +282,7 @@ module EDTF
       when Interval
         (other.unbounded_start? ? unbounded_start? : cover?(other.min)) &&
           (other.unbounded_end? ? unbounded_end? : cover?(other.max))
-      when Date
+      when ::Date
         cover?(other)
       else
         false

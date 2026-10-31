@@ -115,7 +115,7 @@ module EDTF
 
       context 'for summer' do
         it 'returns true for August 24' do
-          expect(Season.new(1980, :summer)).to include(Date.new(1980,8,24))
+          expect(Season.new(1980, :summer)).to include(::Date.new(1980,8,24))
         end
       end
 
