@@ -17,6 +17,7 @@ require 'active_support/core_ext/date/conversions'
 require 'edtf/compatibility'
 
 require 'edtf/version'
+require 'edtf/bitmask'
 require 'edtf/uncertainty'
 require 'edtf/date'
 require 'edtf/date_time'
