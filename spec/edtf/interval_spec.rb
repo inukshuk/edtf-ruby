@@ -1,285 +1,200 @@
+# Partly ported from edtf.js test/interval.js.
 module EDTF
   describe Interval do
+    def interval(string)
+      EDTF.parse!(string)
+    end
 
-    describe 'the interval 2008/2011' do
-      let(:interval) { EDTF.parse('2008/2011') }
+    it_behaves_like 'a period' do
+      let(:period) { interval('2004-06/2006-08') }
+    end
 
-      it { expect(interval).not_to be_open }
-      it { expect(interval).not_to be_open_end }
-      it { expect(interval).not_to be_unknown_start }
-      it { expect(interval).not_to be_unknown_end }
+    it_behaves_like 'a period' do
+      let(:period) { interval('1984?/2004~') }
+    end
 
-      it 'has a length of 4' do
-        expect(interval.to_a.length).to eq(4)
+    it_behaves_like 'a period' do
+      let(:period) { interval('2004/..') }
+    end
+
+    it_behaves_like 'a period' do
+      let(:period) { interval('/2004') }
+    end
+
+    describe '.new' do
+      it 'takes periods, :open or :unknown' do
+        i = Interval.new(Date.new(2001), :open)
+        expect([i.from, i.to]).to eq([Date.new(2001), :open])
+        expect(Interval.new(:unknown, Season.new(2001, 21)).edtf).to eq('/2001-21')
       end
 
-      it '#step(2) yields the years 2008 and 2010' do
-        expect(interval.step(2).map(&:year)).to eq([2008, 2010])
+      it 'converts plain dates' do
+        expect(Interval.new(::Date.new(2001, 2, 3), :open).from).to be_an(EDTF::Date)
       end
 
-      it 'the max date is 2011-12-31' do
-        expect(interval.max.to_s).to eq('2011-12-31')
+      it 'rejects anything else' do
+        expect { Interval.new('2001', :open) }.to raise_error(ArgumentError)
+        expect { Interval.new(2001, :open) }.to raise_error(ArgumentError)
       end
 
-      it 'the max date has year precision' do
-        expect(interval.max).to be_year_precision
-      end
-
-      it 'the min date is 2008-01-01' do
-        expect(interval.min.to_s).to eq('2008-01-01')
-      end
-
-      it 'the min date has year precision' do
-        expect(interval.min).to be_year_precision
-      end
-
-      it 'includes the years 2008, 2009, 2010 and 2011' do
-        expect(interval.to_a.map(&:year)).to eq([2008, 2009, 2010, 2011])
-      end
-
-      it 'does not include christmas day 2009' do
-        expect(interval).not_to be_include(::Date.new(2009, 12, 24))
-      end
-
-      it 'christmas day 2009 is less than max' do
-        expect(::Date.new(2009, 12, 24)).to be < interval.max
-      end
-
-      it 'christmas day 2009 is greater than min' do
-        expect(::Date.new(2009, 12, 24)).to be > interval.min
-      end
-
-      it 'covers christmas day 2009' do
-        expect(interval).to be_cover(::Date.new(2009, 12, 24))
-      end
-
-      it 'covers 2011-12-31' do
-        expect(interval).to be_cover(::Date.new(2011, 12, 31))
+      it 'is what intervals parse to, with EDTF dates as ends' do
+        i = interval('2004-06?/2006-08')
+        expect([i.from, i.to]).to all(be_an(EDTF::Date))
+        expect(i.from).to eql(EDTF.parse('2004-06?'))
       end
     end
 
-    describe 'the interval 2008-08-23/2011-07-01' do
-      let(:interval) { EDTF.parse('2008-08-23/2011-07-01') }
-
-      it 'includes christmas day 2009' do
-        expect(interval).to be_include(::Date.new(2009, 12, 24))
+    describe 'bounds' do
+      {
+        '2001/2003' => %w[2001-01-01 2003-12-31],
+        '2004-02-01/2005' => %w[2004-02-01 2005-12-31],
+        '2004-06-XX/2004-07-03' => %w[2004-06-01 2004-07-03],
+        '2004/..' => ['2004-01-01', nil],
+        '2004/' => ['2004-01-01', nil],
+        '../2005' => [nil, '2005-12-31']
+      }.each do |string, bounds|
+        it "are #{bounds.map(&:inspect).join(' and ')} for #{string}" do
+          i = interval(string)
+          expect([i.begin, i.end].map { |bound| bound&.iso8601 }).to eq(bounds)
+        end
       end
 
-      it 'covers christmas day 2009' do
-        expect(interval).to be_cover(::Date.new(2009, 12, 24))
-      end
-
-      it 'does not cover 2011-07-02' do
-        expect(interval).not_to be_cover(::Date.new(2011, 7, 2))
+      it 'make beginless and endless ranges' do
+        expect(interval('2004/..').to_range).to eq(::Date.new(2004, 1, 1)..)
       end
     end
 
-    describe 'the interval 2008-08-23/..' do
-      let(:interval) { EDTF.parse('2008-08-23/..') }
-
-      it { expect(interval).to be_open }
-      it { expect(interval).to be_open_end }
-      it { expect(interval).not_to be_unknown }
-      it { expect(interval).not_to be_unknown_start }
-      it { expect(interval).not_to be_unknown_end }
-
-      it 'the min date is 2008-08-23' do
-        expect(interval.min).to eq(::Date.new(2008, 8, 23))
-      end
-
-      it 'the max date is nil' do
-        expect(interval.max).to be nil
-      end
-
-      it 'includes christmas day 2009' do
-        expect(interval).to be_include(::Date.new(2009, 12, 24))
-      end
-
-      it 'covers christmas day 2009' do
-        expect(interval).to be_cover(::Date.new(2009, 12, 24))
-      end
-
-      it 'covers 2023-07-02' do
-        expect(interval).to be_cover(::Date.new(2023, 7, 2))
+    describe 'open and unknown ends' do
+      it 'are reported' do
+        expect([interval('2004/..').open?, interval('2004/..').unknown?]).to eq([true, false])
+        expect([interval('/2004').open?, interval('/2004').unknown?]).to eq([false, true])
+        expect([interval('2001/2003').open?, interval('2001/2003').unknown?]).to eq([false, false])
       end
     end
 
-    describe 'the interval ../2008-08-23' do
-      let(:interval) { EDTF.parse('../2008-08-23') }
-
-      it { expect(interval).to be_open }
-      it { expect(interval).to be_open_start }
-      it { expect(interval).not_to be_open_end }
-      it { expect(interval).not_to be_unknown }
-      it { expect(interval).not_to be_unknown_start }
-      it { expect(interval).not_to be_unknown_end }
-
-      it 'the max date is 2008-08-23' do
-        expect(interval.max).to eq(::Date.new(2008, 8, 23))
-      end
-
-      it 'the min date is nil' do
-        expect(interval.min).to be nil
-      end
-
-      it 'includes christmas day 2007' do
-        expect(interval).to be_include(::Date.new(2007, 12, 24))
-      end
-
-      it 'covers christmas day 2007' do
-        expect(interval).to be_cover(::Date.new(2007, 12, 24))
-      end
-
-      it 'covers 2003-07-02' do
-        expect(interval).to be_cover(::Date.new(2003, 7, 2))
+    describe '#precision' do
+      it 'is the precision of the start, or else of the end' do
+        expect(interval('1980-08/1994').precision).to eq(:month)
+        expect(interval('../1994').precision).to eq(:year)
       end
     end
 
-    describe 'the interval 2008/' do
-      let(:interval) { EDTF.parse('2008/') }
-
-      it { expect(interval).to be_unknown }
-      it { expect(interval).to be_unknown_end }
-      it { expect(interval).not_to be_unknown_start }
-
-      it 'the min date is 2008-01-01' do
-        expect(interval.min.to_s).to eq('2008-01-01')
+    describe 'iteration' do
+      it 'yields the units of the start' do
+        expect(interval('2001/2003').map(&:edtf)).to eq(%w[2001 2002 2003])
+        expect(interval('1994-01/1994-03').map(&:edtf)).to eq(%w[1994-01 1994-02 1994-03])
+        expect(interval('1984-06/2004-08').count).to eq(243)
+        expect(interval('1582-10-01/1582-10-31').count).to eq(31)
       end
 
-      it 'the min date has year precision' do
-        expect(interval.min).to be_year_precision
+      it 'reaches the last unit that begins within the interval' do
+        # edtf.js stops at 1994-01 here.
+        expect(interval('1980-08/1994').to_a.last.edtf).to eq('1994-12')
       end
 
-      it 'the max date is nil' do
-        expect(interval.max).to be nil
-      end
-    end
-
-    describe 'the interval /2008' do
-      let(:interval) { EDTF.parse('/2008') }
-
-      it { expect(interval).to be_unknown }
-      it { expect(interval).not_to be_unknown_end }
-      it { expect(interval).to be_unknown_start }
-
-      it 'the max date is 2008-12-31' do
-        expect(interval.max.to_s).to eq('2008-12-31')
+      it 'steps seasons' do
+        expect(Interval.new(Season.new(1980, 21), Season.new(1980, 24)).map(&:edtf))
+          .to eq(%w[1980-21 1980-22 1980-23 1980-24])
       end
 
-      it 'the max date has year precision' do
-        expect(interval.max).to be_year_precision
-      end
-
-      it 'the min date is nil' do
-        expect(interval.min).to be nil
+      it 'fails for open or unknown intervals' do
+        expect { interval('2004/..').to_a }.to raise_error(RangeError)
+        expect { interval('/2004').first }.to raise_error(RangeError)
       end
     end
 
-    describe 'comparisons' do
-      it '2007/2009 should be greater than 2001/2002' do
-        expect(EDTF.parse('2007/2009')).to be > EDTF.parse('2001/2002')
+    describe 'coverage' do
+      let(:q1) { interval('1994-01/1994-03') }
+
+      it 'covers periods within its bounds' do
+        expect(q1).to be_cover(EDTF.parse('1994-02'))
+        expect(q1).to be_cover(EDTF.parse('1994-02-01'))
+        expect(q1).not_to be_cover(EDTF.parse('1994'))
+        expect(interval('2008-08-23/2011-07-01')).not_to be_cover(::Date.new(2011, 7, 2))
       end
 
-      it '2007/2009 should be less than 2011/2012' do
-        expect(EDTF.parse('2007/2009')).to be < EDTF.parse('2011/2012')
+      it 'includes covered periods of the same precision' do
+        expect(q1).to be_include(EDTF.parse('1994-02'))
+        expect(q1).not_to be_include(EDTF.parse('1994-02-01'))
+        expect(q1).not_to be_include(EDTF.parse('1994'))
       end
 
-      it '2007/2009 should be less than 2008/2009' do
-        expect(EDTF.parse('2007/2009')).to be < EDTF.parse('2008/2009')
+      it 'reaches without limit at open or unknown ends' do
+        expect(interval('2008/')).to be_cover(::Date.new(2030, 1, 1))
+        expect(interval('/2008')).to be_cover(::Date.new(1900, 1, 1))
+        expect(interval('2008/')).not_to be_cover(::Date.new(2007, 12, 31))
+        expect(interval('2000/..')).to be === interval('2004/..')
+        expect(interval('2000/2010')).not_to be === interval('2004/..')
+        expect(interval('2000/2010')).to be === interval('2004/2005')
       end
 
-      it '2007/2009 should be greater than 2007/2008' do
-        expect(EDTF.parse('2007/2009')).to be > EDTF.parse('2007/2008')
-      end
-
-      it '2007/2009 should be greater than 2006/2007' do
-        expect(EDTF.parse('2007/2009')).to be > EDTF.parse('2006/2007')
-      end
-
-      it '2007/2009 should be equal to 2007/2009' do
-        expect(EDTF.parse('2007/2009')).to eq(EDTF.parse('2007/2009'))
-      end
-
-      describe 'with open or unknown ends' do
-        it 'sorts open and unknown starts and ends as infinity' do
-          intervals = %w{
-            2004/.. 2004/2005 2003/ /2005 ../2005 2004/
-          }.map { |s| EDTF.parse(s) }
-
-          expect(intervals.sort).to eq(%w{
-            ../2005 /2005 2003/ 2004/2005 2004/ 2004/..
-          }.map { |s| EDTF.parse(s) })
-        end
-
-        it '../2005 should be equal to ../2005' do
-          expect(EDTF.parse('../2005')).to eq(EDTF.parse('../2005'))
-        end
-
-        it '../2005 should not be equal to /2005' do
-          expect(EDTF.parse('../2005')).not_to eq(EDTF.parse('/2005'))
-        end
-
-        it '2004/.. should be greater than 2004/2005' do
-          expect(EDTF.parse('2004/..')).to be > EDTF.parse('2004/2005')
-        end
-      end
-
-      describe 'with dates' do
-        let(:interval) { EDTF.parse('2004/2005') }
-
-        it 'is equal to covered dates' do
-          expect(interval <=> ::Date.new(2004, 6, 1)).to eq(0)
-          expect(::Date.new(2004, 6, 1) <=> interval).to eq(0)
-        end
-
-        it 'is greater than earlier dates' do
-          expect(interval <=> ::Date.new(1990, 1, 1)).to eq(1)
-          expect(::Date.new(1990, 1, 1) <=> interval).to eq(-1)
-        end
-
-        it 'is less than later dates' do
-          expect(interval <=> ::Date.new(2010, 1, 1)).to eq(-1)
-          expect(::Date.new(2010, 1, 1) <=> interval).to eq(1)
-        end
-
-        it 'compares open starts' do
-          interval = EDTF.parse('../2005')
-          expect(interval <=> ::Date.new(1990, 1, 1)).to eq(0)
-          expect(interval <=> ::Date.new(2010, 1, 1)).to eq(-1)
-        end
+      it 'covers seasons' do
+        s80 = Interval.new(Season.new(1980, 21), Season.new(1980, 24))
+        expect(s80).to be_cover(Season.new(1980, 22))
+        expect(s80).to be_cover(EDTF.parse('1980-09'))
+        expect(s80).to be_include(Season.new(1980, 22))
+        expect(s80).not_to be_include(EDTF.parse('1980-09'))
       end
     end
 
-    describe 'coverage with open or unknown ends' do
-      it '2008/ covers dates from 2008 onward' do
-        interval = EDTF.parse('2008/')
-        expect(interval).to be_cover(::Date.new(2008, 6, 1))
-        expect(interval).to be_cover(::Date.new(2030, 1, 1))
-        expect(interval).not_to be_cover(::Date.new(2007, 12, 31))
+    describe 'comparison' do
+      it 'orders by bounds' do
+        expect(interval('2007/2009')).to be > interval('2001/2002')
+        expect(interval('2007/2009')).to be < interval('2008/2009')
+        expect(interval('2007/2009')).to be > interval('2007/2008')
+        expect(interval('2007/2009')).to eq(interval('2007/2009'))
       end
 
-      it '/2008 covers dates up to 2008' do
-        interval = EDTF.parse('/2008')
-        expect(interval).to be_cover(::Date.new(1900, 1, 1))
-        expect(interval).to be_cover(::Date.new(2008, 12, 31))
-        expect(interval).not_to be_cover(::Date.new(2009, 1, 1))
+      it 'sorts open starts first and open ends last, unknown ends inside them' do
+        intervals = %w[2004/.. 2004/2005 2003/ /2005 ../2005 2004/].map { |s| interval(s) }
+        expect(intervals.sort.map(&:edtf)).to eq(%w[../2005 /2005 2003/ 2004/2005 2004/ 2004/..])
       end
 
-      it 'unbounded intervals cover everything' do
-        expect(Interval.new(:unknown, :open)).to be_cover(::Date.today)
+      it 'tells open and unknown ends apart' do
+        expect(interval('../2005')).to eq(interval('../2005'))
+        expect(interval('../2005')).not_to eq(interval('/2005'))
       end
 
-      it '2000/.. covers 2004/..' do
-        expect(EDTF.parse('2000/..')).to be === EDTF.parse('2004/..')
+      it 'compares with dates, seasons and epochs as periods' do
+        i = interval('2004/2005')
+        expect(i <=> ::Date.new(2004, 6, 1)).to eq(-1)
+        expect(::Date.new(2004, 6, 1) <=> i).to eq(1)
+        expect(i).to be < Season.new(2004, 22)
+        expect(Season.new(2004, 22)).to be > i
+        expect(interval('2004/..')).to be > Decade.new(199)
+        expect(Decade.new(199) <=> interval('1990/..')).to eq(-1)
       end
 
-      it '2000/2010 does not cover 2004/..' do
-        expect(EDTF.parse('2000/2010')).not_to be === EDTF.parse('2004/..')
+      it 'equals another period with the same bounds and precision' do
+        expect(interval('2004/2004')).to eq(EDTF.parse('2004'))
+        expect(interval('2004/2005')).not_to eq(interval('2004-01/2005-12'))
       end
 
-      it '2000/2010 covers 2004/2005' do
-        expect(EDTF.parse('2000/2010')).to be === EDTF.parse('2004/2005')
+      it 'eql? compares the ends, qualifiers included' do
+        expect(interval('2004/2005')).to eql(interval('2004/2005'))
+        expect(interval('2004?/2005')).not_to eql(interval('2004/2005'))
+        expect(interval('2004?/2005').hash).to eq(interval('2004?/2005').hash)
       end
+    end
+
+    describe '#edtf' do
+      it 'writes .. for open and nothing for unknown ends' do
+        expect(Interval.new(:unknown, :unknown).edtf).to eq('/')
+        expect(interval('2004-01-01/open').edtf).to eq('2004-01-01/..')
+        expect(interval('unknown/2006').edtf).to eq('/2006')
+        expect(interval('1984?/2004?~').edtf).to eq('1984?/2004%')
+      end
+    end
+
+    describe '#with' do
+      it 'replaces an end' do
+        expect(interval('2004/2005').with(to: :open).edtf).to eq('2004/..')
+        expect { interval('2004/2005').with(lower: :open) }.to raise_error(ArgumentError)
+      end
+    end
+
+    it 'accepts reversed intervals, as 4.x does' do
+      expect(interval('2008/2004').edtf).to eq('2008/2004')
     end
   end
 end

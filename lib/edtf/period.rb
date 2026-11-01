@@ -26,11 +26,13 @@ module EDTF
 
     # True if the other period, date or time lies within this period.
     # A time counts as its own calendar date in its own offset.
+    # Open or unknown ends (nil bounds) reach without limit.
     def cover?(other)
-      first, last = Period.bounds(other)
-      return false if first.nil? || last.nil?
+      return false unless other.is_a?(Period) || Period.bounds(other)
 
-      (self.begin.nil? || self.begin <= first) && (self.end.nil? || last <= self.end)
+      first, last = Period.bounds(other)
+      (self.begin.nil? || (!first.nil? && self.begin <= first)) &&
+        (self.end.nil? || (!last.nil? && last <= self.end))
     end
 
     def ===(other)
@@ -40,12 +42,8 @@ module EDTF
     # Orders periods by begin, then end, then precision; qualifiers
     # are ignored, so == means the same period.
     def <=>(other)
-      first, last = Period.bounds(other)
-      return nil if first.nil? || last.nil?
-
-      (self.begin <=> first).nonzero? ||
-        (self.end <=> last).nonzero? ||
-        PRECISIONS.index(precision) <=> PRECISIONS.index(Period.precision(other))
+      other_keys = other.is_a?(Period) ? other.send(:keys) : Period.keys(other)
+      keys <=> other_keys if other_keys
     end
 
     def self.bounds(other)
@@ -58,6 +56,25 @@ module EDTF
 
     def self.precision(other)
       other.is_a?(Period) ? other.precision : :day
+    end
+
+    # The sort keys of a plain date or time.
+    def self.keys(other)
+      first, last = bounds(other)
+      [[0, first], [0, last], PRECISIONS.index(:day)] if first
+    end
+
+    private
+
+    # The sort keys: begin, end and precision. Private, but read
+    # from other periods too (see <=>).
+    def keys
+      [[0, self.begin], [0, self.end], rank]
+    end
+
+    # Periods without a precision (intervals without dated ends) rank first.
+    def rank
+      PRECISIONS.index(precision) || -1
     end
   end
 
