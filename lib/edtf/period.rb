@@ -68,9 +68,10 @@ module EDTF
     private
 
     # The sort keys: begin, end and precision.
+    # Open bounds (nil) sort first at the start and last at the end.
     # Private, but read from other periods too (see <=>).
     def keys
-      [[0, self.begin], [0, self.end], rank]
+      [self.begin ? [0, self.begin] : [-1], self.end ? [0, self.end] : [1], rank]
     end
 
     # Periods without a precision (intervals without dated ends) rank first.

@@ -1,268 +1,169 @@
+# Partly ported from edtf.js test/set.js and test/list.js.
 module EDTF
   describe Set do
+    it_behaves_like 'a period' do
+      let(:period) { EDTF.parse('[1667,1668,1670..1672]') }
+    end
 
-    describe 'constructor' do
+    it_behaves_like 'a period' do
+      let(:period) { EDTF.parse('[..1760-12-03]') }
+    end
 
-      it 'creates a new empty set by default' do
-        expect(Set.new).to be_empty
-      end
-
+    it 'is one of a set' do
+      expect(EDTF.parse('[1667,1668]')).to be_an(EDTF::Set)
+      expect(EDTF.parse('[1667,1668]')).not_to be_an(EDTF::List)
+      expect(EDTF.parse('[1667,1668]')).not_to be_a(::Set)
     end
 
     describe '#edtf' do
-
-      it 'returns {} by default' do
-        expect(Set.new.edtf).to eq('{}')
+      it 'wraps the members in brackets' do
+        expect(Set.new.edtf).to eq('[]')
+        expect(Set.new(Date.new(2016)).edtf).to eq('[2016]')
+        expect(Set.new(Date.new(2016)..Date.new(2018)).edtf).to eq('[2016..2018]')
       end
 
-      it 'returns [] for empty choice lists' do
-        expect(Set.new.choice!.edtf).to eq('[]')
-      end
-
-      it 'returns {1984} if the set contains the year 1984' do
-        expect(Set.new(EDTF.parse('1984')).edtf).to eq('{1984}')
-      end
-
-      it 'returns {1984, 1985-10} for the set containing these dates' do
-        expect(Set.new(EDTF.parse('1984'), ::Date.new(1984,10).month_precision).edtf).to eq('{1984,1984-10}')
-      end
-
-      it 'returns {..1984, 1985-10} for the set containing these dates and earlier == true' do
-        expect(Set.new(EDTF.parse('1984'), ::Date.new(1984,10).month_precision).earlier!.edtf).to eq('{..1984,1984-10}')
-      end
-
-      it 'returns {1984, 1985-10..} for the set containing these dates and later == true' do
-        expect(Set.new(EDTF.parse('1984'), ::Date.new(1984,10).month_precision).later!.edtf).to eq('{1984,1984-10..}')
-      end
-
-      it 'returns [1667, 1668, 1670..1672] for the years 1667, 1668 and the interval 1670..1672' do
-        s = Set.new.choice!
-        s << EDTF.parse('1667') << EDTF.parse('1668')
-        s << (EDTF.parse('1670') .. EDTF.parse('1672'))
-        expect(s.edtf).to eq('[1667,1668,1670..1672]')
-      end
-
-    end
-
-    describe 'the set [1667, 1668, 1670..1672]' do
-      let(:set) { Set.new(EDTF.parse('1667'), EDTF.parse('1668'), EDTF.parse('1670')..EDTF.parse('1672')).choice! }
-
-      it 'includes the year 1671' do
-        expect(set).to include(::Date.new(1671).year_precision!)
-      end
-
-      it 'does not include the date 1671-01-01' do
-        expect(set.include?(::Date.new(1671).day_precision!)).to be false
-      end
-
-      it 'does not include the year 1669' do
-        expect(set.include?(::Date.new(1669).year_precision!)).to be false
-      end
-
-      it 'has a length of 3' do
-        expect(set.size).to eq(3)
-      end
-
-      it 'maps to the year array [1667,1668,1670,1671,1672]' do
-        expect(set.map(&:year)).to eq([1667, 1668, 1670, 1671, 1672])
+      it 'marks open starts and ends' do
+        expect(Set.new(Date.new(2016), earlier: true).edtf).to eq('[..2016]')
+        expect(Set.new(Date.new(2016), later: true).edtf).to eq('[2016..]')
+        expect(Set.new(earlier: true).edtf).to eq('[]')
       end
     end
 
-    describe 'the set [1984,1985-10-01..]' do
-      let(:s1) { Set.new(EDTF.parse('1984'), EDTF.parse('1985-10-01')).later! }
-      let(:s2) { EDTF.parse('[1984,1985-10-01..]') }
+    it 'supports varying precisions' do
+      %w[[1984,1985-10-01] [1984,1985-10-01..] [..1984,1985-10-01..]].each do |string|
+        expect(EDTF.parse(string).values.map(&:precision)).to eq(%i[year day])
+      end
+    end
+  end
 
-      it 'has varying precision' do
-        expect(s1.map(&:precision)).to eq([:year, :day])
-        expect(s2.map(&:precision)).to eq([:year, :day])
+  describe List do
+    it_behaves_like 'a period' do
+      let(:period) { EDTF.parse('{1667,1668,1670..1672}') }
+    end
+
+    it_behaves_like 'a period' do
+      let(:period) { EDTF.parse('{1984~,1985}') }
+    end
+
+    it 'is all members of a set' do
+      expect(EDTF.parse('{1667,1668}')).to be_an(EDTF::List)
+      expect(EDTF.parse('{1667,1668}')).not_to be_an(EDTF::Set)
+    end
+
+    describe '#edtf' do
+      it 'wraps the members in braces' do
+        expect(List.new.edtf).to eq('{}')
+        expect(List.new(Date.new(2016)).edtf).to eq('{2016}')
+        expect(List.new(Date.new(2016), later: true).edtf).to eq('{2016..}')
+        expect(List.new(Date.new(2016)..Date.new(2018)).edtf).to eq('{2016..2018}')
+        expect(List.new(later: true).edtf).to eq('{}')
+      end
+    end
+  end
+
+  describe Members do
+    let(:list) { EDTF.parse('{1667,1668,1670..1672}') }
+
+    describe '.new' do
+      it 'takes periods, ranges of periods, and plain dates' do
+        list = List.new(Date.new(1667), Season.new(1668, 21), ::Date.new(1669, 1, 2), Date.new(1670)..Date.new(1672))
+        expect(list.edtf).to eq('{1667,1668-21,1669-01-02,1670..1672}')
+      end
+
+      it 'rejects anything else' do
+        expect { List.new('1667') }.to raise_error(ArgumentError)
+      end
+
+      it 'is frozen' do
+        expect(list).to be_frozen
+        expect(list.values).to be_frozen
       end
     end
 
-    describe 'the set [1760-12..1761-03]' do
-      let(:set) { EDTF.parse('[1760-12..1761-03]') }
-
-      it "is a choice" do
-        expect(set).to be_choice
+    describe 'members' do
+      it 'remembers ranges as written' do
+        expect(list.values.length).to eq(3)
+        expect(list.values.last).to eq(Date.new(1670)..Date.new(1672))
       end
 
-      it "maps to the 4 months 1760-12 through 1761-03" do
-        expected_months = %w[1760-12 1761-01 1761-02 1761-03].map { |m| EDTF.parse(m) }
-        expect(set.to_a).to eq(expected_months)
-      end
-    end
-
-    describe 'the set {1760-12..1761-03}' do
-      let(:set) { EDTF.parse('{1760-12..1761-03}') }
-
-      it "is not a choice" do
-        expect(set).not_to be_choice
+      it 'enumerates ranges' do
+        expect(list.map(&:year)).to eq([1667, 1668, 1670, 1671, 1672])
+        expect(list.count).to eq(5)
       end
 
-      it "maps to the 4 months 1760-12 through 1761-03" do
-        expected_months = %w[1760-12 1761-01 1761-02 1761-03].map { |m| EDTF.parse(m) }
-        expect(set.to_a).to eq(expected_months)
+      it 'converts to a Ruby Set of the enumerated members' do
+        expect(list.to_set).to eq(::Set[*%w[1667 1668 1670 1671 1672].map { |y| EDTF.parse(y) }])
+      end
+
+      it 'cannot convert open sets' do
+        expect { EDTF.parse('{1984..}').to_set }.to raise_error(RangeError)
       end
     end
 
-    context "open sets" do
-      describe 'the set {..1984}' do
-        let(:set) { EDTF.parse('{..1984}') }
-
-        it "is not a choice" do
-          expect(set).not_to be_choice
-        end
-
-        it 'includes the date 1984' do
-          expect(set.include?(::Date.new(1984).year_precision!)).to be true
-        end
-
-        it 'includes the date 1984 BCE' do
-          expect(set.include?(::Date.new(-1984).year_precision!)).to be true
-        end
-
-        it 'does not include the date 1995' do
-          expect(set.include?(::Date.new(1995).year_precision!)).to be false
-        end
+    describe '#include?' do
+      it 'is true for enumerated members' do
+        expect(list).to be_include(EDTF.parse('1671'))
+        expect(list).not_to be_include(EDTF.parse('1669'))
+        expect(list).not_to be_include(EDTF.parse('1671-01-01'))
       end
 
-      describe 'the set {..1984-05-11}' do
-        let(:set) { EDTF.parse('{..1984-05-11}') }
-
-        it "is not a choice" do
-          expect(set).not_to be_choice
-        end
-
-        it 'includes the date 1984-05-11' do
-          expect(set.include?(::Date.new(1984, 5, 11))).to be true
-        end
-
-        it 'includes the date 11 May 1984 BCE' do
-          expect(set.include?(::Date.new(-1984, 5, 11))).to be true
-        end
-
-        it 'does not include the date 1995-01-01' do
-          expect(set.include?(::Date.new(1995))).to be false
-        end
+      it 'reaches beyond open ends at the same precision' do
+        earlier, later = EDTF.parse('{..1984}'), EDTF.parse('{1984..}')
+        expect(earlier).to be_include(EDTF.parse('1984'))
+        expect(earlier).to be_include(EDTF.parse('-1984'))
+        expect(earlier).not_to be_include(EDTF.parse('1995'))
+        expect(earlier).not_to be_include(EDTF.parse('1980-01'))
+        expect(later).to be_include(EDTF.parse('1995'))
+        expect(later).not_to be_include(EDTF.parse('-1984'))
       end
 
-      describe 'the set {1984..}' do
-        let(:set) { EDTF.parse('{1984..}') }
+      it 'is false for empty sets' do
+        expect(List.new).not_to be_include(EDTF.parse('1984'))
+      end
+    end
 
-        it "is not a choice" do
-          expect(set).not_to be_choice
-        end
-
-        it 'includes the date 1984' do
-          expect(set.include?(::Date.new(1984).year_precision!)).to be true
-        end
-
-        it 'does not include the date 1984 BCE' do
-          expect(set.include?(::Date.new(-1984).year_precision!)).to be false
-        end
-
-        it 'includes the date 1995' do
-          expect(set.include?(::Date.new(1995).year_precision!)).to be true
-        end
+    describe 'bounds' do
+      it 'span all members' do
+        expect(EDTF.parse('[1760-01,1760-12-03,1759]').to_range)
+          .to eq(::Date.new(1759, 1, 1)..::Date.new(1760, 12, 3))
       end
 
-      describe 'the set {1984-05-11..}' do
-        let(:set) { EDTF.parse('{1984-05-11..}') }
-
-        it "is not a choice" do
-          expect(set).not_to be_choice
-        end
-
-        it 'includes the date 1984-05-11' do
-          expect(set.include?(::Date.new(1984, 5, 11))).to be true
-        end
-
-        it 'does not include the date 11 May 1984 BCE' do
-          expect(set.include?(::Date.new(-1984, 5, 11))).to be false
-        end
-
-        it 'includes the date 1995-01-01' do
-          expect(set.include?(::Date.new(1995))).to be true
-        end
+      it 'are open at open starts and ends' do
+        expect(EDTF.parse('[..1760-12-03]').to_range).to eq(..::Date.new(1760, 12, 3))
+        expect(EDTF.parse('[1760-12..]').to_range).to eq(::Date.new(1760, 12, 1)..)
       end
 
-      describe 'the set [..1984]' do
-        let(:set) { EDTF.parse('[..1984]') }
-
-        it "is a choice" do
-          expect(set).to be_choice
-        end
-
-        it 'includes the date 1984' do
-          expect(set.include?(::Date.new(1984).year_precision!)).to be true
-        end
-
-        it 'includes the date 1984 BCE' do
-          expect(set.include?(::Date.new(-1984).year_precision!)).to be true
-        end
-
-        it 'does not include the date 1995' do
-          expect(set.include?(::Date.new(1995).year_precision!)).to be false
-        end
+      it 'cover the dates between the members' do
+        expect(list).to be_cover(EDTF.parse('1669'))
+        expect(list).not_to be_cover(EDTF.parse('1673'))
       end
 
-      describe 'the set [..1984-05-11]' do
-        let(:set) { EDTF.parse('[..1984-05-11]') }
+      it 'take the precision of the first member' do
+        expect(EDTF.parse('[1984,1985-10-01]').precision).to eq(:year)
+        expect(List.new.precision).to be_nil
+      end
+    end
 
-        it "is a choice" do
-          expect(set).to be_choice
-        end
-
-        it 'includes the date 1984-05-11' do
-          expect(set.include?(::Date.new(1984, 5, 11))).to be true
-        end
-
-        it 'includes the date 11 May 1984 BCE' do
-          expect(set.include?(::Date.new(-1984, 5, 11))).to be true
-        end
-
-        it 'does not include the date 1995-01-01' do
-          expect(set.include?(::Date.new(1995))).to be false
-        end
+    describe 'comparison' do
+      it 'eql? compares the class, members and open ends' do
+        expect(EDTF.parse('[1667,1668]')).to eql(EDTF.parse('[1667,1668]'))
+        expect(EDTF.parse('[1667,1668]')).not_to eql(EDTF.parse('{1667,1668}'))
+        expect(EDTF.parse('[1667,1668]')).not_to eql(EDTF.parse('[1667,1668?]'))
+        expect(EDTF.parse('[1667,1668]')).not_to eql(EDTF.parse('[1667,1668..]'))
+        expect(EDTF.parse('[1667,1668]').hash).to eq(EDTF.parse('[1667,1668]').hash)
       end
 
-      describe 'the set [1984..]' do
-        let(:set) { EDTF.parse('[1984..]') }
-
-        it "is a choice" do
-          expect(set).to be_choice
-        end
-
-        it 'includes the date 1984' do
-          expect(set.include?(::Date.new(1984).year_precision!)).to be true
-        end
-
-        it 'does not include the date 1984 BCE' do
-          expect(set.include?(::Date.new(-1984).year_precision!)).to be false
-        end
-
-        it 'includes the date 1995' do
-          expect(set.include?(::Date.new(1995).year_precision!)).to be true
-        end
+      it 'orders by bounds' do
+        expect(EDTF.parse('{1667,1668}')).to be < EDTF.parse('{1669}')
+        expect(EDTF.parse('{..1667}')).to be < EDTF.parse('{1667}')
       end
+    end
 
-      describe 'the set [1984-05-11..]' do
-        let(:set) { EDTF.parse('[1984-05-11..]') }
-
-        it "is a choice" do
-          expect(set).to be_choice
-        end
-
-        it 'includes the date 1984-05-11' do
-          expect(set.include?(::Date.new(1984, 5, 11))).to be true
-        end
-
-        it 'does not include the date 11 May 1984 BCE' do
-          expect(set.include?(::Date.new(-1984, 5, 11))).to be false
-        end
-
-        it 'includes the date 1995-01-01' do
-          expect(set.include?(::Date.new(1995))).to be true
-        end
+    describe '#with' do
+      it 'replaces members and open ends' do
+        expect(list.with(later: true).edtf).to eq('{1667,1668,1670..1672..}')
+        expect(list.with(values: [Date.new(2001)]).edtf).to eq('{2001}')
+        expect { list.with(choice: true) }.to raise_error(ArgumentError)
       end
     end
   end

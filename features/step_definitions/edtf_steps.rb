@@ -153,7 +153,7 @@ end
 
 # "one of" is a choice; "all of" includes every member.
 Then('it should be {string} the members {string}') do |kind, members|
-  expect(@result.choice?).to eq(kind == 'one of')
+  expect(@result).to be_an(kind == 'one of' ? EDTF::Set : EDTF::List)
   expected = members.split(/,\s*/)
   expect(@result.to_a.length).to eq(expected.length)
   @result.to_a.zip(expected).each { |actual, member| expect(describe(actual)).to eq(describe(parse(member))) }
