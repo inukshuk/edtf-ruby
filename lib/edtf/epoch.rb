@@ -1,9 +1,13 @@
 module EDTF
 
-  # The shared base of Decade and Century: the years that begin
-  # with the given digits (196 is 1960 to 1969, -19 is -1999 to
-  # -1900). Qualifiers apply to the whole epoch: 196~ is an
-  # approximate decade, not an approximate year.
+  # Decades and centuries are dedicated periods,
+  # which always cover 10 or 100 years, respectively:
+  # the years that begin with the given digits
+  # (196 is 1960 to 1969, -19 is -1999 to -1900).
+  # Epoch is their shared base.
+  #
+  # Qualifiers apply to the whole epoch:
+  # 196~ is an approximate decade, not an approximate year.
   class Epoch
     include Period
 

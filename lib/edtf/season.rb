@@ -1,6 +1,7 @@
 module EDTF
 
-  # A season or other division of a year (ISO 8601-2 codes 21–41):
+  # EDTF covers seasons and other divisions of a year (ISO 8601-2 codes 21–41),
+  # and EDTF-Ruby provides a dedicated class for them:
   #
   #   21–24  spring, summer, autumn, winter (meteorological, northern)
   #   25–28  the same, northern hemisphere
@@ -9,9 +10,13 @@ module EDTF
   #   37–39  quadrimesters (four months each)
   #   40–41  semesters
   #
-  # Winter (24, 28) and southern summer (30) reach into the next year.
-  # Qualifier and unspecified bitmasks cover the year and the code like
-  # a year and a month (2001-21?, 2001?-21, 200X-21).
+  # Note that EDTF does not make any assumption about the specifics
+  # (which months etc.) of the seasons;
+  # EDTF-Ruby uses meteorological seasons (three month periods),
+  # so winter (24, 28) and southern summer (30) reach into the next year.
+  #
+  # Qualifier and unspecified bitmasks cover the year and the code
+  # like a year and a month (2001-21?, 2001?-21, 200X-21).
   class Season
     include Period
 
@@ -36,7 +41,8 @@ module EDTF
     attr_reader :year, :season, :qualifier
 
     # The qualifier is the legacy season qualifier (2001-21^southern);
-    # ISO 8601-2 has no equivalent, so it is not part of the EDTF string.
+    # ISO 8601-2 has no equivalent,
+    # so it is not part of the EDTF string.
     def initialize(year, season, uncertain: nil, approximate: nil, unspecified: nil, qualifier: nil)
       @year = Integer(year)
       @season = Integer(season)
@@ -94,8 +100,8 @@ module EDTF
 
     alias include? cover?
 
-    # The next division of the same kind in calendar order;
-    # unspecified digits step by the unit they leave open.
+    # Returns the next season, or division of the same kind, in calendar order.
+    # Unspecified digits step by the unit they leave open.
     def succ(by = 1)
       cycle = CYCLES.find { |codes| codes.include?(season) }
       shift, index = (cycle.index(season) + by).divmod(cycle.length)

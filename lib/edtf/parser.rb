@@ -65,9 +65,9 @@ module_eval(<<'...end parser.y/module_eval...', 'parser.y', 449)
   end
 
   # Returns the parse result: a frozen Hash with the edtf.js structure
-  # (`type`, `level`, `values` with 1-based months, and bitmask integers
-  # for qualified or unspecified digits). Results for legacy syntax
-  # carry `legacy: true`.
+  # (`type`, `level`, `values` with 1-based months,
+  # and bitmask integers for qualified or unspecified digits).
+  # Results for legacy syntax carry `legacy: true`.
   def parse!(input)
     @yydebug = debug?
     @src = StringScanner.new(input)
@@ -112,9 +112,9 @@ module_eval(<<'...end parser.y/module_eval...', 'parser.y', 449)
     [Bitmask::DAY, Bitmask::MD, Bitmask::YMD]
   ].freeze
 
-  # Rejects days the month cannot have. With leap: true,
-  # February 29 is allowed in any year (unspecified years
-  # always include a leap year).
+  # Rejects days the month cannot have.
+  # With leap: true, February 29 is allowed in any year
+  # (unspecified years always include a leap year).
   def check_day(year, month, day, leap: false)
     max = Bitmask::MAXDAYS[month - 1]
     max = 28 if month == 2 && !leap && !::Date.gregorian_leap?(year)

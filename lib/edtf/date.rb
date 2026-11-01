@@ -1,15 +1,22 @@
 module EDTF
 
-  # An EDTF date: a regular (proleptic Gregorian) Ruby date with
-  # year, month or day precision, and bitmasks for its uncertain,
-  # approximate and unspecified digits. Years of any size are
-  # written with a Y prefix beyond four digits (Y170000002), and
-  # may have significant digits (1950S2 spans 1900 to 1999).
-  # Dates are frozen; use `with` for a modified copy.
+  # EDTF dates extend the regular (proleptic Gregorian) Ruby Date class.
+  # Every EDTF date acts as you would normally expect,
+  # but provides additional functionality.
   #
-  # Date math (+, -, >>, <<) returns plain dates, because the result
-  # no longer stands for the same EDTF string. Stepping with `succ`,
-  # `prev`, `upto` and `downto` follows the precision.
+  # Most notably, EDTF dates come in day, month, or year precision.
+  # This is a subtle difference that determines how many other methods work:
+  # the bounds, stepping with `succ`, `prev`, `upto` and `downto`,
+  # and the EDTF string all follow the precision.
+  # Dates can also be uncertain, approximate, or have unspecified digits,
+  # marked by bitmasks.
+  #
+  # Years of any size are written with a Y prefix beyond four digits (Y170000002),
+  # and may have significant digits (1950S2 spans 1900 to 1999).
+  #
+  # Dates are frozen; use `with` for a modified copy.
+  # Date math (+, -, >>, <<) returns plain dates,
+  # because the result no longer stands for the same EDTF string.
   class Date < ::Date
     include Period
 
@@ -38,6 +45,7 @@ module EDTF
 
     attr_reader :significant
 
+    # Returns this date's precision.
     # Instances created by Ruby's own date methods skip initialize;
     # they behave like unqualified dates with day precision.
     def precision
@@ -68,12 +76,14 @@ module EDTF
       qualified?(unspecified, part)
     end
 
-    # The lowest values, as many as the precision has.
+    # Returns an array of the year, month, and day values
+    # filtered by the date's precision.
+    # Unspecified digits hold their lowest values.
     def values
       [year, month, day].take(values_count)
     end
 
-    # Returns a copy with the given attributes replaced, like Data#with.
+    # Returns a copy with the given EDTF attributes replaced, like Data#with.
     def with(**changes)
       return self if changes.empty?
 
@@ -117,8 +127,8 @@ module EDTF
       cover?(other) && Period.precision(other) == precision
     end
 
-    # The next date at this precision; unspecified digits
-    # step by the unit they leave open (201X -> 202X).
+    # Returns the next day, month, or year depending on the date's precision.
+    # Unspecified digits step by the unit they leave open (201X -> 202X).
     def succ(by = 1)
       year, month, day = unspecified.zero? ? values : bound_values(forward: by.positive? ^ self.year.negative?)
 
@@ -139,6 +149,7 @@ module EDTF
 
     alias next succ
 
+    # Returns the previous day, month, or year depending on the date's precision.
     def prev(by = 1)
       succ(-by)
     end
@@ -198,6 +209,7 @@ module EDTF
       (self <=> other) == 0
     end
 
+    # Returns true if other is the same date and has the same EDTF attributes.
     def eql?(other)
       case other
       when Date
@@ -209,10 +221,12 @@ module EDTF
       end
     end
 
+    # Returns the plain Date hash unless EDTF attributes are set.
     def hash
       plain? ? plain.hash : [jd, *state].hash
     end
 
+    # Returns the date's EDTF string.
     def edtf
       return "Y#{year}#{"S#{significant}" if significant}" if long_year?
       return "#{'-' if year.negative?}#{format('%04d', year.abs)}S#{significant}" if significant
@@ -234,8 +248,8 @@ module EDTF
       "#<#{self.class} #{edtf}>"
     end
 
-    # Used by the 4.x Date patch when a plain date is compared
-    # with this one (removed in 2.10).
+    # Used by the 4.x Date patch when a plain date is compared with this one
+    # (removed in 2.10).
     def extended_hash
       plain? ? 0 : hash
     end
@@ -257,13 +271,14 @@ module EDTF
       PRECISION.index(precision) + 1
     end
 
-    # A year beyond four digits, written with a Y prefix.
+    # Returns true if this date has year precision and the year exceeds four digits;
+    # such years are written with a Y prefix.
     def long_year?
       precision == :year && year.abs > 9999
     end
 
-    # Masks cover four-digit years only, and EDTF does not qualify
-    # long years or years with significant digits.
+    # Masks cover four-digit years only,
+    # and EDTF does not qualify long years or years with significant digits.
     def check_digits
       raise ArgumentError, 'significant digits need year precision' if significant && precision != :year
       return unless long_year? || significant
