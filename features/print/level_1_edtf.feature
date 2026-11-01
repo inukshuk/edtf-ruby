@@ -48,11 +48,11 @@ Feature: Print level 1 EDTF strings
     @level1 @legacy
     Examples: Draft syntax: unknown and open interval ends
       | string              | edtf                |
-      | unknown/2006        | unknown/2006        |
-      | 2004-06-01/unknown  | 2004-06-01/unknown  |
-      | 2004-01-01/open     | 2004-01-01/open     |
-      | 1984-06-02?/unknown | 1984-06-02?/unknown |
-      | 1984?/2004?~        | 1984?/2004?~        |
+      | unknown/2006        | /2006               |
+      | 2004-06-01/unknown  | 2004-06-01/         |
+      | 2004-01-01/open     | 2004-01-01/..       |
+      | 1984-06-02?/unknown | 1984-06-02?/        |
+      | 1984?/2004?~        | 1984?/2004%         |
 
     @level1
     Examples: Years with more than four digits

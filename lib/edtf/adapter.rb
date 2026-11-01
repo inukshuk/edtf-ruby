@@ -58,7 +58,7 @@ module EDTF
     end
 
     def interval(result)
-      Interval.new(*result[:values].map { |value| member(value) })
+      Interval.new(*result[:values].map { |value| build(value) })
     end
 
     def set(result)
