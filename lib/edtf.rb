@@ -69,10 +69,12 @@ module Kernel
     case value
     when String
       EDTF.parse!(value)
-    when Time
-      value.to_datetime
-    when EDTF::Date, ::DateTime, EDTF::Epoch, EDTF::Season, EDTF::Interval, EDTF::Set, EDTF::List
+    when EDTF::Date, EDTF::DateTime, EDTF::Epoch, EDTF::Season, EDTF::Interval, EDTF::Set, EDTF::List
       value
+    when Time, ::DateTime
+      time = value.to_time
+      EDTF::DateTime.new(time.year, time.month, time.day, time.hour, time.min, time.sec + time.subsec,
+        offset: time.utc_offset / 60)
     when ::Date
       EDTF::Date.new(value.year, value.month, value.day)
     else

@@ -7,10 +7,16 @@ describe 'EDTF()' do
     expect { EDTF('xyz') }.to raise_error(ArgumentError)
   end
 
-  it 'converts times to date-times' do
-    time = Time.utc(2004, 6, 11, 10, 30)
-    expect(EDTF(time)).to be_a(DateTime)
-    expect(EDTF(time).to_time).to eq(time)
+  it 'converts times to date-times with their offset' do
+    time = Time.new(2004, 6, 11, 10, 30, Rational(15, 10), '+05:30')
+    expect(EDTF(time)).to be_an(EDTF::DateTime)
+    expect(EDTF(time)).to eq(time)
+    expect(EDTF(time).edtf).to eq('2004-06-11T10:30:01.5+05:30')
+  end
+
+  it 'returns EDTF date-times unchanged' do
+    time = EDTF.parse('2004-06-11T10:30:00')
+    expect(EDTF(time)).to equal(time)
   end
 
   it 'returns EDTF dates unchanged' do

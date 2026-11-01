@@ -89,7 +89,7 @@ Then('it should be the date-time {string}') do |date_time|
 end
 
 Then('in UTC it should be {string}') do |date_time|
-  expect(@result.to_time.utc.strftime('%FT%T')).to eq(date_time)
+  expect(@result.getutc.strftime('%FT%T')).to eq(date_time)
 end
 
 Then('the uncertain parts should be {string}') do |list|

@@ -9,7 +9,7 @@ module EDTF
     include Comparable
 
     # From the coarsest to the finest.
-    PRECISIONS = %i[century decade year season month day].freeze
+    PRECISIONS = %i[century decade year season month day second].freeze
 
     # Bounds widened by approximation; for now the nominal bounds.
     def earliest
