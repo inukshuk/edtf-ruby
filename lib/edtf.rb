@@ -62,13 +62,15 @@ end
 module Kernel
   private
 
-  # Converts value to an EDTF object:
-  # strings are parsed, times become date-times,
-  # dates and other EDTF objects are returned unchanged.
+  # Converts any value to an EDTF object if possible.
+  # Raises an ArgumentError for invalid strings or parse results,
+  # and a TypeError for values that cannot be converted at all.
   def EDTF(value)
     case value
     when String
       EDTF.parse!(value)
+    when Hash
+      EDTF::Adapter.build(value)
     when EDTF::Date, EDTF::DateTime, EDTF::Epoch, EDTF::Season, EDTF::Interval, EDTF::Set, EDTF::List
       value
     when Time, ::DateTime
