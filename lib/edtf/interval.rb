@@ -1,11 +1,25 @@
 module EDTF
 
-  # An interval between two periods. Each end is a date or season,
-  # or :open (no bound, written ..) or :unknown (written empty).
-  # The bounds of open or unknown ends are nil.
+  # An interval behaves like a regular Range but is dedicated to EDTF periods.
+  # Most importantly, intervals use the precision of their start
+  # when generating the set of contained values and for membership tests.
+  # All tests are implemented without iteration.
   #
-  # Intervals enumerate their start's units (1980-08/1994 yields the
-  # months from 1980-08 to 1994-12); only closed intervals can.
+  # For example, the interval "2003/2006" covers the years 2003, 2004, 2005 and 2006.
+  # Converting the interval to an array results in an array
+  # containing exactly four dates with year precision.
+  # This is also reflected in membership tests.
+  #
+  #     EDTF('2003/2006').count                      -> 4
+  #
+  #     EDTF('2003/2006').include? EDTF('2004')      -> true
+  #     EDTF('2003/2006').include? EDTF('2004-03')   -> false
+  #
+  #     EDTF('2003/2006').cover? EDTF('2004-03')     -> true
+  #
+  # Each end is a date or season, :open (no bound, written ..),
+  # or :unknown (written empty).
+  # The bounds of open or unknown ends are nil.
   class Interval
     include Period
     include Enumerable
@@ -20,6 +34,9 @@ module EDTF
       freeze
     end
 
+    # Returns the interval's precision.
+    # Mixed precisions are not supported;
+    # the start's precision takes precedence (the end's if the start has no date).
     def precision
       [from, to].find { |value| value.is_a?(Period) }&.precision
     end
@@ -53,6 +70,14 @@ module EDTF
       self.class.new(changes.fetch(:from, from), changes.fetch(:to, to))
     end
 
+    # call-seq:
+    #     interval.each { |period| block }  -> self
+    #     interval.each                     -> Enumerator
+    #
+    # Iterates over the interval by the start's precision,
+    # yielding each unit that begins within the interval:
+    # 1980-08/1994 yields the months from 1980-08 to 1994-12.
+    # Raises a RangeError for open or unknown intervals.
     def each
       return to_enum(:each) unless block_given?
       raise RangeError, "cannot iterate the open or unknown interval #{edtf}" if open? || unknown?
@@ -65,7 +90,8 @@ module EDTF
       self
     end
 
-    # True for covered periods of the same precision as the members.
+    # Returns true if other is an element of the interval, false otherwise.
+    # Comparison is done according to the interval's bounds and precision.
     def include?(other)
       cover?(other) && Period.precision(other) == precision
     end

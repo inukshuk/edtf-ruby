@@ -1,9 +1,9 @@
 module EDTF
 
-  # Builds objects from parse results while the types move to
-  # their 5.0 classes one at a time (step 2); goes in step 2.10.
-  # Members of intervals and sets stay 4.x objects until
-  # their parent type has moved.
+  # Builds objects from parse results
+  # while the types move to their 5.0 classes one at a time (step 2);
+  # goes in step 2.10.
+  # Members of sets stay 4.x objects until sets have moved.
   module Adapter
 
     module_function

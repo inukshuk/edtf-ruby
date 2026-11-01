@@ -3,8 +3,8 @@ module EDTF
   # The interface shared by all EDTF types:
   # each one stands for a period of time.
   #
-  # Including classes implement `begin` and `end` (plain dates,
-  # nil when open), `precision`, and `edtf`.
+  # Including classes implement `begin` and `end` (plain dates, nil when open),
+  # `precision`, and `edtf`.
   module Period
     include Comparable
 
@@ -24,7 +24,8 @@ module EDTF
       self.begin..self.end
     end
 
-    # True if the other period, date or time lies within this period.
+    # Returns true if the other period, date or time lies within this period.
+    # In contrast to #include?, this does not take the precision into account.
     # A time counts as its own calendar date in its own offset.
     # Open or unknown ends (nil bounds) reach without limit.
     def cover?(other)
@@ -39,8 +40,8 @@ module EDTF
       cover?(other)
     end
 
-    # Orders periods by begin, then end, then precision; qualifiers
-    # are ignored, so == means the same period.
+    # Orders periods by begin, then end, then precision;
+    # qualifiers are ignored, so == means the same period.
     def <=>(other)
       other_keys = other.is_a?(Period) ? other.send(:keys) : Period.keys(other)
       keys <=> other_keys if other_keys
@@ -66,8 +67,8 @@ module EDTF
 
     private
 
-    # The sort keys: begin, end and precision. Private, but read
-    # from other periods too (see <=>).
+    # The sort keys: begin, end and precision.
+    # Private, but read from other periods too (see <=>).
     def keys
       [[0, self.begin], [0, self.end], rank]
     end
