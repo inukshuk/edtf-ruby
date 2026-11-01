@@ -1,37 +1,30 @@
 module EDTF
 
   # Builds objects from parse results
-  # while the types move to their 5.0 classes one at a time (step 2);
+  # while the last 4.x types are phased out (step 2);
   # goes in step 2.10.
-  # Members of sets stay 4.x objects until sets have moved.
   module Adapter
 
     module_function
 
     def build(result)
-      if result.is_a?(Hash) && result[:type] == :date && !result[:calendar]
-        Date.new(*result[:values], **result.slice(:uncertain, :approximate, :unspecified))
-      else
-        member(result)
-      end
-    end
-
-    # Builds 4.x objects. Legacy calendar dates stay 4.x dates,
-    # because EDTF::Date has no calendar.
-    def member(result)
       case result
       when :open, :unknown then result
-      when Array then member(result[0])..member(result[1])
+      when Array then build(result[0])..build(result[1])
       else send(result[:type], result)
       end
     end
 
+    # Legacy calendar dates stay 4.x dates,
+    # because EDTF::Date has no calendar.
     def date(result)
       values = result[:values]
+      return Date.new(*values, **result.slice(:uncertain, :approximate, :unspecified)) unless result[:calendar]
+
       date = ::Date.gregorian(*values)
       date.precision = ::Date::PRECISION[values.length - 1]
       date.calendar = result[:calendar]
-      qualify(date, result)
+      date
     end
 
     def date_time(result)
@@ -62,32 +55,11 @@ module EDTF
     end
 
     def set(result)
-      list(result).choice!
+      Set.new(*result[:values].map { |value| build(value) }, **result.slice(:earlier, :later))
     end
 
     def list(result)
-      set = Set.new(*result[:values].map { |value| member(value) })
-      set.earlier! if result[:earlier]
-      set.later! if result[:later]
-      set
-    end
-
-    def qualify(date, result)
-      uncertain, approximate = result.values_at(:uncertain, :approximate).map { |mask| Bitmask.new(mask) }
-
-      ::Date::PRECISION.each do |part|
-        date.uncertain!(part) if uncertain.intersect?(part)
-        date.approximate!(part) if approximate.intersect?(part)
-      end
-
-      if (unspecified = result[:unspecified])
-        { year: 0, month: 4, day: 6 }.each do |part, offset|
-          digits = date.unspecified.send(part)
-          digits.each_index { |idx| digits[idx] = true if unspecified[offset + idx] == 1 }
-        end
-      end
-
-      date
+      List.new(*result[:values].map { |value| build(value) }, **result.slice(:earlier, :later))
     end
   end
 
