@@ -64,8 +64,7 @@ module EDTF
     def with(**changes)
       return self if changes.empty?
 
-      unknown = changes.keys - %i[from to]
-      raise ArgumentError, "unknown keyword#{'s' if unknown.length > 1}: #{unknown.join(', ')}" unless unknown.empty?
+      check_keys!(changes, %i[from to])
 
       self.class.new(changes.fetch(:from, from), changes.fetch(:to, to))
     end
@@ -75,46 +74,74 @@ module EDTF
     #     interval.each                     -> Enumerator
     #
     # Iterates over the interval by the start's precision,
-    # yielding each unit that begins within the interval:
-    # 1980-08/1994 yields the months from 1980-08 to 1994-12.
-    # Raises a RangeError for open or unknown intervals.
+    # yielding each unit that begins within the interval,
+    # without the qualifiers of the start:
+    # 1980-08?/1994 yields the months from 1980-08 to 1994-12.
+    # Like endless ranges, intervals with an open or unknown end iterate endlessly;
+    # those without a dated start raise a RangeError.
     def each
       return to_enum(:each) unless block_given?
-      raise RangeError, "cannot iterate the open or unknown interval #{edtf}" if open? || unknown?
+      raise RangeError, "cannot iterate the interval #{edtf} without a start" if ENDS.include?(from)
 
-      unit = from
-      while unit.begin <= self.end
+      unit = unqualified(from)
+      while within?(unit)
         yield unit
         unit = unit.succ
       end
       self
     end
 
-    # Returns true if other is an element of the interval, false otherwise.
-    # Comparison is done according to the interval's bounds and precision.
+    def to_a
+      raise RangeError, "cannot convert the endless interval #{edtf} to an array" if endless?
+
+      super
+    end
+
+    alias entries to_a
+
+    # Like Range#count, endless intervals count infinitely many units.
+    def count(*args, &block)
+      args.empty? && block.nil? && endless? ? Float::INFINITY : super
+    end
+
+    # Returns true if other is one of the units the interval yields,
+    # like Range#include?, but without iterating:
+    # covered and of the interval's precision.
     def include?(other)
       cover?(other) && Period.precision(other) == precision
-    end
-
-    def eql?(other)
-      other.instance_of?(self.class) && from.eql?(other.from) && to.eql?(other.to)
-    end
-
-    def hash
-      [self.class, from, to].hash
     end
 
     def edtf
       [from, to].map { |value| value == :open ? '..' : value == :unknown ? '' : value.edtf }.join('/')
     end
 
-    alias to_s edtf
+    protected
 
-    def inspect
-      "#<#{self.class} #{edtf}>"
+    def state
+      [from, to]
     end
 
     private
+
+    def endless?
+      ENDS.include?(to)
+    end
+
+    def within?(unit)
+      case to
+      when *ENDS then true
+      when ::Time then unit <= to
+      else unit.begin <= self.end
+      end
+    end
+
+    def unqualified(period)
+      case period
+      when Date, Season then period.with(uncertain: nil, approximate: nil)
+      when Epoch then period.with(uncertain: false, approximate: false)
+      else period
+      end
+    end
 
     # Open starts sort before unknown ones, unknown ends before open ones.
     def keys

@@ -22,10 +22,11 @@ module EDTF
 
     attr_reader :values
 
+    # An empty set has no open start or end.
     def initialize(*values, earlier: false, later: false)
       @values = values.map { |value| coerce_member(value) }.freeze
-      @earlier = !!earlier
-      @later = !!later
+      @earlier = !empty? && !!earlier
+      @later = !empty? && !!later
       freeze
     end
 
@@ -57,8 +58,7 @@ module EDTF
     def with(**changes)
       return self if changes.empty?
 
-      unknown = changes.keys - %i[values earlier later]
-      raise ArgumentError, "unknown keyword#{'s' if unknown.length > 1}: #{unknown.join(', ')}" unless unknown.empty?
+      check_keys!(changes, %i[values earlier later])
 
       self.class.new(
         *changes.fetch(:values, values),
@@ -75,15 +75,28 @@ module EDTF
       self
     end
 
+    # An empty set covers nothing.
+    def cover?(other)
+      !empty? && super
+    end
+
     # Returns true if other is one of the (enumerated) members,
-    # or lies beyond an open start or end at the same precision.
+    # like Enumerable#include?; ranges are tested by their bounds.
+    # Beyond an open start or end ([..1760], {1760..}),
+    # every period of the same precision is included,
+    # although #each yields only the members as written;
+    # like (..5).include?(3) for a beginless Ruby range.
     def include?(other)
       return false if empty?
-      return true if any? { |member| member == other }
+
+      precision = Period.precision(other)
+      return true if values.any? do |value|
+        value.is_a?(Range) ? value.begin.precision == precision && value.cover?(other) : value == other
+      end
 
       first, last = members.first, members.last
-      (earlier? && Period.precision(other) == first.precision && other <= first) ||
-        (later? && Period.precision(other) == last.precision && other >= last)
+      (earlier? && first.precision == precision && other <= first) ||
+        (later? && last.precision == precision && other >= last)
     end
 
     # Returns a Ruby Set of the enumerated members.
@@ -93,25 +106,11 @@ module EDTF
       ::Set.new(to_a)
     end
 
-    def eql?(other)
-      other.instance_of?(self.class) && state.eql?(other.state)
-    end
-
-    def hash
-      [self.class, *state].hash
-    end
-
     def edtf
       content = values.map { |value| value.is_a?(Range) ? "#{value.begin.edtf}..#{value.end.edtf}" : value.edtf }
       return wrap('') if content.empty?
 
       wrap("#{'..' if earlier?}#{content.join(',')}#{'..' if later?}")
-    end
-
-    alias to_s edtf
-
-    def inspect
-      "#<#{self.class} #{edtf}>"
     end
 
     protected
@@ -121,6 +120,11 @@ module EDTF
     end
 
     private
+
+    # Open starts and ends sort like open interval ends.
+    def keys
+      [earlier? ? [-2] : super[0], later? ? [2] : super[1], rank]
+    end
 
     # The members as written, with ranges as their two ends.
     def members

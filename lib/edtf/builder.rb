@@ -48,8 +48,21 @@ module EDTF
       Century.new(result[:values][0], **result.slice(:uncertain, :approximate))
     end
 
+    # Legacy hemisphere qualifiers (2001-21^southern) become ISO 8601-2
+    # hemisphere seasons (2001-29); other qualifiers have no equivalent,
+    # the parse result keeps them, the season does not.
     def season(result)
-      Season.new(*result[:values], **result.slice(:uncertain, :approximate, :unspecified, :qualifier))
+      year, season = result[:values]
+      season = hemisphere(result[:qualifier], season)
+      Season.new(year, season, **result.slice(:uncertain, :approximate, :unspecified))
+    end
+
+    def hemisphere(qualifier, season)
+      case qualifier
+      when /\Anorth/i then season + 4
+      when /\Asouth/i then season + 8
+      else season
+      end
     end
 
     def interval(result)

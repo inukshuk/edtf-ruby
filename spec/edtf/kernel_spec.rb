@@ -95,6 +95,16 @@ describe 'EDTF()' do
     expect([EDTF('2001-21'), ::Date.new(2001, 1, 1)].sort.first).to eq(::Date.new(2001, 1, 1))
   end
 
+  it 'converts plain dates by day, also from the Julian calendar' do
+    julian = Date.new(1500, 1, 1)
+    expect(EDTF(julian).edtf).to eq('1500-01-10')
+    expect(EDTF(julian).jd).to eq(julian.jd)
+  end
+
+  it 'rejects times with offsets in seconds' do
+    expect { EDTF(Time.new(1900, 1, 1, 0, 0, 0, '+00:53:28')) }.to raise_error(ArgumentError, /whole minutes/)
+  end
+
   it 'is private' do
     expect { 'x'.EDTF('2004') }.to raise_error(NoMethodError)
   end

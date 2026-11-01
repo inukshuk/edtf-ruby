@@ -38,12 +38,9 @@ module EDTF
 
     WHOLE = Bitmask::YM
 
-    attr_reader :year, :season, :qualifier
+    attr_reader :year, :season
 
-    # The qualifier is the legacy season qualifier (2001-21^southern);
-    # ISO 8601-2 has no equivalent,
-    # so it is not part of the EDTF string.
-    def initialize(year, season, uncertain: nil, approximate: nil, unspecified: nil, qualifier: nil)
+    def initialize(year, season, uncertain: nil, approximate: nil, unspecified: nil)
       @year = Integer(year)
       @season = Integer(season)
       raise ArgumentError, "invalid season: #{season}" unless DIVISIONS.key?(@season)
@@ -51,7 +48,6 @@ module EDTF
       @uncertain = bits(uncertain)
       @approximate = bits(approximate)
       @unspecified = Bitmask.new(Bitmask.convert(unspecified) & Bitmask::YEAR)
-      @qualifier = qualifier
       freeze
     end
 
@@ -73,16 +69,15 @@ module EDTF
       qualified?(approximate, part)
     end
 
-    def unspecified?
-      !unspecified.zero?
+    def unspecified?(part = nil)
+      qualified?(unspecified, part)
     end
 
     def with(**changes)
       return self if changes.empty?
 
-      attributes = %i[year season uncertain approximate unspecified qualifier]
-      unknown = changes.keys - attributes
-      raise ArgumentError, "unknown keyword#{'s' if unknown.length > 1}: #{unknown.join(', ')}" unless unknown.empty?
+      attributes = %i[year season uncertain approximate unspecified]
+      check_keys!(changes, attributes)
 
       values = attributes.to_h { |name| [name, changes.fetch(name) { send(name) }] }
       self.class.new(values.delete(:year), values.delete(:season), **values)
@@ -97,8 +92,6 @@ module EDTF
       first, months = DIVISIONS[season]
       ::Date.new(years.last, first, 1, ::Date::GREGORIAN).next_month(months).prev_day
     end
-
-    alias include? cover?
 
     # Returns the next season, or division of the same kind, in calendar order.
     # Unspecified digits step by the unit they leave open.
@@ -121,14 +114,6 @@ module EDTF
       succ(-by)
     end
 
-    def eql?(other)
-      other.instance_of?(self.class) && state == other.state
-    end
-
-    def hash
-      [self.class, *state].hash
-    end
-
     def edtf
       sign = year.negative? ? '-' : ''
       values = [format('%04d', year.abs), season.to_s]
@@ -141,16 +126,10 @@ module EDTF
       sign + values.join('-')
     end
 
-    alias to_s edtf
-
-    def inspect
-      "#<#{self.class} #{edtf}>"
-    end
-
     protected
 
     def state
-      [year, season, uncertain.value, approximate.value, unspecified.value, qualifier]
+      [year, season, uncertain.value, approximate.value, unspecified.value]
     end
 
     private
@@ -161,7 +140,7 @@ module EDTF
     end
 
     def qualified?(mask, part)
-      part.nil? ? !mask.zero? : mask.intersect?(part == :season ? :month : part)
+      part.nil? ? !mask.zero? : mask.intersect?(part)
     end
 
     # The first and last year the unspecified digits allow.

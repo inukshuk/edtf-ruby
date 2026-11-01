@@ -4,7 +4,10 @@ module EDTF
   # each one stands for a period of time.
   #
   # Including classes implement `begin` and `end` (plain dates, nil when open),
-  # `precision`, and `edtf`.
+  # `precision`, `edtf`, and a protected `state` for `eql?` and `hash`.
+  #
+  # Like Ruby's Data, EDTF objects are frozen,
+  # and so are their copies (dup, Marshal).
   module Period
     include Comparable
 
@@ -24,14 +27,23 @@ module EDTF
       self.begin..self.end
     end
 
+    def to_s
+      edtf
+    end
+
+    def inspect
+      "#<#{self.class} #{edtf}>"
+    end
+
     # The EDTF string, for JSON with or without ActiveSupport
     # (whose Date#as_json would drop precision and qualifiers).
     def as_json(*)
       edtf
     end
 
-    # Returns true if the other period, date or time lies within this period.
-    # In contrast to #include?, this does not take the precision into account.
+    # Returns true if the other period, date or time lies within this period,
+    # like Range#cover?: by the bounds only, not by precision.
+    # (Intervals, sets, and lists also have #include?.)
     # A time counts as its own calendar date in its own offset.
     # Open or unknown ends (nil bounds) reach without limit.
     def cover?(other)
@@ -44,6 +56,15 @@ module EDTF
 
     def ===(other)
       cover?(other)
+    end
+
+    # Returns true if other is the same EDTF expression.
+    def eql?(other)
+      other.instance_of?(self.class) && state.eql?(other.state)
+    end
+
+    def hash
+      [self.class, *state].hash
     end
 
     # Ruby's Date#<=> coerces objects it doesn't know,
@@ -61,7 +82,24 @@ module EDTF
       keys <=> other_keys if other_keys
     end
 
-    def self.bounds(other)
+    def initialize_copy(other)
+      super
+      freeze
+    end
+
+    # Marshal restores objects without initialize; plain EDTF objects
+    # dump their instance variables and freeze on load.
+    # (EDTF::Date and EDTF::DateTime use Ruby's own hooks.)
+    def marshal_dump
+      instance_variables.to_h { |name| [name, instance_variable_get(name)] }
+    end
+
+    def marshal_load(variables)
+      variables.each { |name, value| instance_variable_set(name, value) }
+      freeze
+    end
+
+    def self.bounds(other) # :nodoc:
       case other
       when Period then [other.begin, other.end]
       when ::DateTime, ::Time then [other.to_date] * 2
@@ -70,7 +108,7 @@ module EDTF
     end
 
     # Plain dates are days; plain times are instants within a day.
-    def self.precision(other)
+    def self.precision(other) # :nodoc:
       case other
       when Period then other.precision
       when ::DateTime, ::Time then :second
@@ -79,12 +117,18 @@ module EDTF
     end
 
     # The sort keys of a plain date or time.
-    def self.keys(other)
+    def self.keys(other) # :nodoc:
       first, last = bounds(other)
       [[0, first], [0, last], PRECISIONS.index(precision(other))] if first
     end
 
     private
+
+    # Raises like Data#with for keywords outside allowed.
+    def check_keys!(changes, allowed)
+      unknown = changes.keys - allowed
+      raise ArgumentError, "unknown keyword#{'s' if unknown.length > 1}: #{unknown.join(', ')}" unless unknown.empty?
+    end
 
     # The sort keys: begin, end and precision.
     # Open bounds (nil) sort first at the start and last at the end.

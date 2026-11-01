@@ -13,14 +13,28 @@ module EDTF
   #
   # Date-times are frozen; use `with`, `getutc` or `getlocal` for a copy.
   # Time math (+, -) returns plain times.
+  # Create date-times with `new`, `EDTF()` or `EDTF.parse`;
+  # Ruby's other constructors (now, at, …) are private.
   class DateTime < ::Time
     include Period
 
-    ATTRIBUTES = %i[year month day hour minute second offset].freeze
+    ATTRIBUTES = %i[year month day hour min sec offset].freeze
+
+    # Ruby's constructors skip initialize, so their times would not be frozen.
+    private_class_method(*%i[
+      now at mktime local utc gm parse strptime iso8601 xmlschema rfc2822 rfc822 httpdate
+    ].select { |name| ::Time.respond_to?(name) })
+
+    # Marshal uses Time's own _dump and _load, then freezes.
+    undef_method :marshal_dump, :marshal_load
+
+    def self._load(...)
+      super.freeze
+    end
 
     # The offset is given in minutes; nil means a floating time.
-    def initialize(year, month, day, hour = 0, minute = 0, second = 0, offset: nil)
-      super(year, month, day, hour, minute, second, offset.nil? || offset.zero? ? 'UTC' : Integer(offset) * 60)
+    def initialize(year, month, day, hour = 0, min = 0, sec = 0, offset: nil)
+      super(year, month, day, hour, min, sec, offset.nil? || offset.zero? ? 'UTC' : Integer(offset) * 60)
       @floating = offset.nil?
       freeze
     end
@@ -45,8 +59,7 @@ module EDTF
     def with(**changes)
       return self if changes.empty?
 
-      unknown = changes.keys - ATTRIBUTES
-      raise ArgumentError, "unknown keyword#{'s' if unknown.length > 1}: #{unknown.join(', ')}" unless unknown.empty?
+      check_keys!(changes, ATTRIBUTES)
 
       current = [year, month, day, hour, min, sec + subsec]
       values = ATTRIBUTES.take(6).zip(current).map { |name, value| changes.fetch(name, value) }
@@ -60,22 +73,40 @@ module EDTF
 
     alias_method :end, :begin
 
+    # Returns the next second (or the one by seconds later).
+    def succ(by = 1)
+      time = self + by
+      self.class.new(time.year, time.month, time.day, time.hour, time.min, time.sec + time.subsec, offset: offset)
+    end
+
+    alias next succ
+
+    def prev(by = 1)
+      succ(-by)
+    end
+
+    # A time covers only the same instant;
+    # dates and other periods compare by the time's calendar date.
+    def cover?(other)
+      other.is_a?(::Time) ? self == other : super
+    end
+
     def <=>(other)
-      other.is_a?(::Time) ? TIME_COMPARISON.bind_call(self, other) : super
+      other.is_a?(::Time) ? TIME[:<=>].bind_call(self, other) : super
     end
 
     # Returns true if other is the same instant with the same offset,
     # or is floating, too.
     def eql?(other)
-      other.is_a?(::Time) && super &&
+      other.is_a?(::Time) && TIME[:eql?].bind_call(self, other) &&
         utc_offset == other.utc_offset && floating? == (other.is_a?(DateTime) && other.floating?)
     end
 
     def hash
-      floating? ? [super, :floating].hash : super
+      floating? ? [TIME[:hash].bind_call(self), :floating].hash : TIME[:hash].bind_call(self)
     end
 
-    %i[getutc getlocal].each do |name|
+    %i[getutc getgm getlocal].each do |name|
       define_method(name) { |*args| ::Time.at(self, in: utc_offset).send(name, *args) }
     end
 
@@ -89,14 +120,9 @@ module EDTF
       string + (utc_offset.zero? ? 'Z' : strftime('%:z'))
     end
 
-    alias to_s edtf
-
-    def inspect
-      "#<#{self.class} #{edtf}>"
-    end
-
-    TIME_COMPARISON = ::Time.instance_method(:<=>)
-    private_constant :TIME_COMPARISON
+    # Time's own methods, which Period overrides.
+    TIME = %i[<=> eql? hash].to_h { |name| [name, ::Time.instance_method(name)] }.freeze
+    private_constant :TIME
   end
 
 end

@@ -97,10 +97,31 @@ module EDTF
           .to eq(%w[1980-21 1980-22 1980-23 1980-24])
       end
 
-      it 'fails for open or unknown intervals' do
-        expect { interval('2004/..').to_a }.to raise_error(RangeError)
-        expect { interval('/2004').first }.to raise_error(RangeError)
+      it 'yields units without the qualifiers of the start' do
+        expect(interval('1984-06?/1984-08?').map(&:edtf)).to eq(%w[1984-06 1984-07 1984-08])
       end
+
+      it 'iterates endlessly with an open or unknown end, like an endless range' do
+        expect(interval('2004/..').first(3).map(&:edtf)).to eq(%w[2004 2005 2006])
+        expect(interval('2004/').lazy.map(&:year).first(2)).to eq([2004, 2005])
+        expect(interval('2004/..').count).to eq(Float::INFINITY)
+        expect { interval('2004/..').to_a }.to raise_error(RangeError)
+      end
+
+      it 'fails without a dated start' do
+        expect { interval('/2004').first }.to raise_error(RangeError)
+        expect { interval('../2004').first }.to raise_error(RangeError)
+      end
+
+      it 'steps date-times by second' do
+        times = Interval.new(EDTF.parse('2004-01-01T10:00:00Z'), EDTF.parse('2004-01-01T10:00:02Z'))
+        expect(times.map(&:edtf)).to eq(%w[2004-01-01T10:00:00Z 2004-01-01T10:00:01Z 2004-01-01T10:00:02Z])
+      end
+    end
+
+    it 'stays frozen through dup and Marshal' do
+      i = interval('2004?/..')
+      [i.dup, Marshal.load(Marshal.dump(i))].each { |copy| expect(copy).to be_frozen.and eql(i) }
     end
 
     describe 'coverage' do
@@ -111,6 +132,13 @@ module EDTF
         expect(q1).to be_cover(EDTF.parse('1994-02-01'))
         expect(q1).not_to be_cover(EDTF.parse('1994'))
         expect(interval('2008-08-23/2011-07-01')).not_to be_cover(::Date.new(2011, 7, 2))
+      end
+
+      it 'matches membership in each, without iterating' do
+        i = interval('1980-08/1994')
+        %w[1980-07 1980-08 1985-03 1994-12 1995-01 1994 1985-03-01].map { |s| EDTF.parse(s) }.each do |other|
+          expect(i.include?(other)).to eq(i.any? { |unit| unit == other })
+        end
       end
 
       it 'includes covered periods of the same precision' do

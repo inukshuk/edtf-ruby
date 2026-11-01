@@ -113,9 +113,6 @@ module EDTF
         expect(season(2014, 22, unspecified: 'yyyxmmdd').edtf).to eq('201X-22')
       end
 
-      it 'leaves out the legacy qualifier' do
-        expect(season(2001, 21, qualifier: 'southern').edtf).to eq('2001-21')
-      end
     end
 
     describe 'qualifiers' do
@@ -151,13 +148,35 @@ module EDTF
 
       it 'covers the dates within' do
         expect(season(2001, 24)).to be_cover(::Date.new(2002, 1, 15))
-        expect(season(2001, 24)).to be_include(EDTF.parse('2002-01'))
+        expect(season(2001, 24)).to be_cover(EDTF.parse('2002-01'))
         expect(season(2001, 24)).not_to be_cover(::Date.new(2001, 11, 30))
+      end
+
+      it 'has no include?, as it is not a collection' do
+        expect(season(2001, 24)).not_to respond_to(:include?)
       end
     end
 
-    it 'keeps the legacy qualifier' do
-      expect(EDTF.parse('2001-21^southern').qualifier).to eq('southern')
+    describe 'legacy season qualifiers' do
+      it 'become hemisphere seasons' do
+        expect(EDTF.parse('2001-21^southern')).to eql(season(2001, 29))
+        expect(EDTF.parse('2001-24^northernHemisphere')).to eql(season(2001, 28))
+      end
+
+      it 'are dropped otherwise' do
+        expect(EDTF.parse('2003-23^european')).to eql(season(2003, 23))
+      end
+    end
+
+    it 'takes :season as a part' do
+      expect(season(2001, 21, uncertain: :season).edtf).to eq('2001-?21')
+      expect(season(2010, 21, unspecified: 'yyyxmmdd').unspecified?(:year)).to be true
+      expect(season(2010, 21, unspecified: 'yyyxmmdd').unspecified?(:season)).to be false
+    end
+
+    it 'stays frozen through Marshal' do
+      s = season(2001, 21, approximate: true)
+      expect(Marshal.load(Marshal.dump(s))).to be_frozen.and eql(s)
     end
   end
 end
