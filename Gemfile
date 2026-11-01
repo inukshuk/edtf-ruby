@@ -2,6 +2,7 @@ source 'https://rubygems.org'
 gemspec
 
 group :development, :test do
+  gem 'activesupport', require: false
   gem 'rake'
   gem 'rspec'
   gem 'cucumber'

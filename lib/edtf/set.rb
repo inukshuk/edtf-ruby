@@ -17,13 +17,13 @@ module EDTF
   # Sets also feature #earlier? and #later?:
   # an open start (..1667) or end (1672..) without bound.
   module Members
-    include Period
     include Enumerable
+    include Period # after Enumerable, so ActiveSupport's Enumerable#as_json doesn't win
 
     attr_reader :values
 
     def initialize(*values, earlier: false, later: false)
-      @values = values.map { |value| coerce(value) }.freeze
+      @values = values.map { |value| coerce_member(value) }.freeze
       @earlier = !!earlier
       @later = !!later
       freeze
@@ -127,11 +127,11 @@ module EDTF
       values.flat_map { |value| value.is_a?(Range) ? [value.begin, value.end] : [value] }
     end
 
-    def coerce(value)
+    def coerce_member(value)
       case value
       when Period then value
       when ::Date then EDTF(value)
-      when Range then coerce(value.begin)..coerce(value.end)
+      when Range then coerce_member(value.begin)..coerce_member(value.end)
       else raise ArgumentError, "invalid #{self.class} member: #{value.inspect}"
       end
     end

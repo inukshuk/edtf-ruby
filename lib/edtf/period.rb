@@ -24,6 +24,12 @@ module EDTF
       self.begin..self.end
     end
 
+    # The EDTF string, for JSON with or without ActiveSupport
+    # (whose Date#as_json would drop precision and qualifiers).
+    def as_json(*)
+      edtf
+    end
+
     # Returns true if the other period, date or time lies within this period.
     # In contrast to #include?, this does not take the precision into account.
     # A time counts as its own calendar date in its own offset.
@@ -38,6 +44,14 @@ module EDTF
 
     def ===(other)
       cover?(other)
+    end
+
+    # Ruby's Date#<=> coerces objects it doesn't know,
+    # so plain dates compare with periods without a core patch.
+    def coerce(other)
+      raise TypeError, "#{other.class} can't be coerced into #{self.class}" unless other.is_a?(::Date)
+
+      [EDTF(other), self]
     end
 
     # Orders periods by begin, then end, then precision;
@@ -55,14 +69,19 @@ module EDTF
       end
     end
 
+    # Plain dates are days; plain times are instants within a day.
     def self.precision(other)
-      other.is_a?(Period) ? other.precision : :day
+      case other
+      when Period then other.precision
+      when ::DateTime, ::Time then :second
+      else :day
+      end
     end
 
     # The sort keys of a plain date or time.
     def self.keys(other)
       first, last = bounds(other)
-      [[0, first], [0, last], PRECISIONS.index(:day)] if first
+      [[0, first], [0, last], PRECISIONS.index(precision(other))] if first
     end
 
     private

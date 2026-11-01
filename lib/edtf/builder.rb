@@ -4,7 +4,7 @@ module EDTF
   # Results may come from outside (EDTF() accepts them),
   # also with String keys and values as read from JSON;
   # only the known types are built.
-  module Adapter
+  module Builder
 
     TYPES = %i[date date_time year decade century season interval set list].freeze
 
@@ -26,16 +26,10 @@ module EDTF
       end
     end
 
-    # Legacy calendar dates stay 4.x dates,
-    # because EDTF::Date has no calendar.
+    # Legacy calendars (2001-02-03^julian) have no ISO 8601-2 equivalent;
+    # the parse result keeps them, the date does not.
     def date(result)
-      values = result[:values]
-      return Date.new(*values, **result.slice(:uncertain, :approximate, :unspecified)) unless result[:calendar]
-
-      date = ::Date.gregorian(*values)
-      date.precision = ::Date::PRECISION[values.length - 1]
-      date.calendar = result[:calendar]
-      date
+      Date.new(*result[:values], **result.slice(:uncertain, :approximate, :unspecified))
     end
 
     def date_time(result)

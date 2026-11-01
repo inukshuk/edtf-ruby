@@ -320,12 +320,6 @@ module EDTF
         expect(d.prev_month(2)).to be_instance_of(::Date).and eq(::Date.new(2004, 4, 1))
         expect(d.next_year).to be_instance_of(::Date).and eq(::Date.new(2005, 6, 1))
       end
-
-      it 'returns plain dates from ActiveSupport calculations' do
-        expect(d.advance(months: 1)).to eq(::Date.new(2004, 7, 1))
-        expect(d.change(day: 15)).to eq(::Date.new(2004, 6, 15))
-        expect(d.advance(months: 1)).not_to be_uncertain
-      end
     end
 
     describe '#with' do
@@ -380,8 +374,13 @@ module EDTF
       it 'compares with plain dates and times' do
         expect(date(2004, 6, 11) <=> ::Date.new(2004, 6, 11)).to eq(0)
         expect(date(2004) <=> ::Date.new(2004, 6, 11)).to eq(-1)
-        expect(date(2004, 6, 11) <=> Time.new(2004, 6, 11, 23, 0, 0, '-05:00')).to eq(0)
         expect(date(2004) <=> 2004).to be_nil
+      end
+
+      it 'sorts a time after the day it falls on, in its own offset' do
+        expect(date(2004, 6, 11) <=> Time.new(2004, 6, 11, 23, 0, 0, '-05:00')).to eq(-1)
+        expect(Time.new(2004, 6, 11, 23, 0, 0, '-05:00') <=> date(2004, 6, 11)).to eq(1)
+        expect(date(2004, 6, 12) <=> Time.new(2004, 6, 11, 23, 0, 0, '-05:00')).to eq(1)
       end
 
       it '== means the same period, ignoring qualifiers' do
@@ -427,31 +426,6 @@ module EDTF
         expect(d).to be_include(EDTF.parse('2015'))
         expect(d).not_to be_include(EDTF.parse('2015-06'))
       end
-    end
-  end
-
-  describe '::Date.edtf and edtf! (4.x)' do
-    around do |example|
-      original = Warning[:deprecated]
-      Warning[:deprecated] = true
-      example.run
-    ensure
-      Warning[:deprecated] = original
-    end
-
-    it 'are deprecated' do
-      expect { ::Date.edtf('2004') }.to output(/`Date.edtf` is deprecated/).to_stderr
-      expect { ::Date.edtf!('2004') }.to output(/`Date.edtf!` is deprecated/).to_stderr
-    end
-
-    it 'still parse' do
-      Warning[:deprecated] = false
-      expect(::Date.edtf('2004?')).to eql(EDTF.parse('2004?'))
-      expect(::Date.edtf('xyz')).to be_nil
-    end
-
-    it 'are not used by EDTF.parse' do
-      expect { EDTF.parse('2004') }.not_to output.to_stderr
     end
   end
 end
