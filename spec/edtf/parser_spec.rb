@@ -15,6 +15,12 @@ module EDTF
         expect { parser.parse!('xyz') }.to raise_error(ArgumentError)
       end
 
+      it 'rejects years beyond 100 digits without computing them' do
+        expect(parser.parse!('Y3E99')[:values]).to eq([3 * 10**99])
+        expect { parser.parse!('Y3E100') }.to raise_error(ArgumentError, /too large/)
+        expect { parser.parse!('Y-1E99999999999999999999') }.to raise_error(ArgumentError, /too large/)
+      end
+
       it 'rejects days the month cannot have' do
         expect { parser.parse!('2019-02-29') }.to raise_error(ArgumentError)
         expect { parser.parse!('156X-09-31') }.to raise_error(ArgumentError)

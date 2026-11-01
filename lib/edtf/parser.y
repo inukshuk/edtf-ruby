@@ -213,9 +213,9 @@ rule
 
 
   long_year_scientific :
-    long_year_simple E integer      { result = year(val[0][:values][0] * 10 ** val[2], 2) }
-    | LONGYEAR int1_4 E integer       { result = year(val[1] * 10 ** val[3], 2) }
-    | LONGYEAR '-' int1_4 E integer   { result = year(-val[2] * 10 ** val[4], 2) }
+    long_year_simple E integer      { result = year(exponent(val[0][:values][0], val[2]), 2) }
+    | LONGYEAR int1_4 E integer       { result = year(exponent(val[1], val[3]), 2) }
+    | LONGYEAR '-' int1_4 E integer   { result = year(exponent(-val[2], val[4]), 2) }
     ;
 
 
@@ -562,6 +562,18 @@ require 'strscan'
 
   def extend_date(result, *values)
     result.merge(values: result[:values] + values)
+  end
+
+  # Exponents let short strings stand for huge years (Y3E9999999 has ten
+  # million digits); years beyond this many digits are rejected unread.
+  MAX_YEAR_DIGITS = 100
+
+  def exponent(significand, exponent)
+    if significand.abs.to_s.length + exponent > MAX_YEAR_DIGITS
+      raise ArgumentError, "year too large: more than #{MAX_YEAR_DIGITS} digits"
+    end
+
+    significand * 10**exponent
   end
 
   def year(value, level)
