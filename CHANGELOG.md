@@ -29,6 +29,8 @@ See [UPGRADING.md](UPGRADING.md) for how to upgrade from 4.x.
 * `==` means the same period; `eql?` and `hash` the same EDTF expression.
 * `to_s` and `as_json` return the EDTF string.
 * ActiveSupport is no longer a dependency; EDTF-Ruby works with it.
+* Years beyond 100 digits are rejected (`Y3E9999999` would otherwise
+  compute a ten-million-digit year).
 
 4.1.1
 -----
