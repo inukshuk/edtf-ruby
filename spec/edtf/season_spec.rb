@@ -1,125 +1,163 @@
+# Partly ported from edtf.js test/season.js. Bounds follow decision 5:
+# meteorological seasons (edtf.js maps 21-24 to quarters).
 module EDTF
   describe Season do
-    subject { Season.new }
-    let(:summer) { Season.new(:summer) }
-    let(:winter) { Season.new(:winter) }
+    def season(*values, **attributes)
+      Season.new(*values, **attributes)
+    end
 
-    describe 'uncertain/approximate' do
+    it_behaves_like 'a period' do
+      let(:period) { season(2001, 21) }
+    end
 
-      it 'is certain by default' do
-        expect(subject).to be_certain
-        expect(subject).not_to be_uncertain
-      end
+    it_behaves_like 'a period' do
+      let(:period) { season(2001, 24, approximate: true) }
+    end
 
-      it 'is precise by default' do
-        expect(subject).to be_precise
-        expect(subject).not_to be_approximate
-      end
+    it_behaves_like 'a period', parses: false do
+      let(:period) { season(2001, 30) }
+    end
 
-      describe '#approximate!' do
-        it 'makes the season approximate' do
-          expect(subject.approximate!).to be_approximate
-          expect(subject.approximate!).not_to be_precise
+    it 'has season precision and two values' do
+      expect([season(2001, 21).precision, season(2001, 21).values]).to eq([:season, [2001, 21]])
+    end
+
+    it 'rejects invalid codes' do
+      expect { season(2001, 20) }.to raise_error(ArgumentError)
+      expect { season(2001, 42) }.to raise_error(ArgumentError)
+    end
+
+    describe 'bounds' do
+      {
+        21 => %w[2001-03-01 2001-05-31], 22 => %w[2001-06-01 2001-08-31],
+        23 => %w[2001-09-01 2001-11-30], 24 => %w[2001-12-01 2002-02-28],
+        25 => %w[2001-03-01 2001-05-31], 28 => %w[2001-12-01 2002-02-28],
+        29 => %w[2001-09-01 2001-11-30], 30 => %w[2001-12-01 2002-02-28],
+        31 => %w[2001-03-01 2001-05-31], 32 => %w[2001-06-01 2001-08-31],
+        33 => %w[2001-01-01 2001-03-31], 34 => %w[2001-04-01 2001-06-30],
+        35 => %w[2001-07-01 2001-09-30], 36 => %w[2001-10-01 2001-12-31],
+        37 => %w[2001-01-01 2001-04-30], 38 => %w[2001-05-01 2001-08-31],
+        39 => %w[2001-09-01 2001-12-31],
+        40 => %w[2001-01-01 2001-06-30], 41 => %w[2001-07-01 2001-12-31]
+      }.each do |code, bounds|
+        it "are #{bounds.join(' and ')} for 2001-#{code}" do
+          s = season(2001, code)
+          expect([s.begin, s.end].map(&:iso8601)).to eq(bounds)
         end
       end
 
-      describe '#uncertain!' do
-        it 'makes the season uncertain' do
-          expect(subject.uncertain!).to be_uncertain
-          expect(subject.uncertain!).not_to be_certain
+      it 'include leap days' do
+        expect(season(2003, 24).end.iso8601).to eq('2004-02-29')
+      end
+
+      it 'cover the years unspecified digits allow' do
+        expect(season(2010, 33, unspecified: 'yyyxmmdd').to_range.minmax.map(&:iso8601))
+          .to eq(%w[2010-01-01 2019-03-31])
+      end
+
+      it 'end the day before the next division begins' do
+        [21, 24, 29, 30, 33, 37, 39, 41].each do |code|
+          s = season(2016, code)
+          expect(s.end + 1).to eq(s.succ.begin)
         end
       end
-
-      describe '#edtf' do
-        subject { Season.new(2004, 21) }
-
-        it 'includes uncertain/approximate markers' do
-          expect(subject.uncertain!.edtf).to eq('2004-21?')
-          expect(subject.approximate!.edtf).to eq('2004-21?~')
-          expect(subject.certain!.edtf).to eq('2004-21~')
-        end
-
-        it 'puts the markers before the qualifier', legacy: true do
-          subject.qualifier = 'southernHemisphere'
-          expect(subject.approximate!.edtf).to eq('2004-21~^southernHemisphere')
-        end
-      end
-
     end
 
-    describe '#succ' do
-
-      it 'returns a season' do
-        expect(summer.succ).to be_instance_of(Season)
+    describe '#succ and #prev' do
+      it 'step through a cycle' do
+        expect([1, 2, 3, 4].map { |k| season(2018, 21).succ(k).edtf }).to eq(%w[2018-22 2018-23 2018-24 2019-21])
+        expect(season(2018, 25).succ(9).edtf).to eq('2020-26')
+        expect([1, 2, 3, 4].map { |k| season(2018, 24).prev(k).edtf }).to eq(%w[2018-23 2018-22 2018-21 2017-24])
+        expect(season(2018, 24).prev(9).edtf).to eq('2016-23')
       end
 
-      it 'it returns a season that is greater than the original one' do
-        expect(summer.succ).to be > summer
+      it 'step through southern seasons in calendar order' do
+        # edtf.js steps by code: 30 -> 31 would go back in time.
+        expect(season(2018, 29).succ.edtf).to eq('2018-30')
+        expect(season(2018, 30).succ.edtf).to eq('2019-31')
+        expect(season(2018, 31).prev.edtf).to eq('2017-30')
       end
 
-      it 'the successor of the winter season is spring of the following year' do
-        spring = winter.succ
-        expect(spring).to be_spring
-        expect(spring.year).to eq(winter.year + 1)
+      it 'step through quarters, quadrimesters and semesters' do
+        expect(season(2018, 36).succ.edtf).to eq('2019-33')
+        expect(season(2018, 39).succ.edtf).to eq('2019-37')
+        expect(season(2018, 40).succ(3).edtf).to eq('2019-41')
       end
 
-    end
+      it 'keep qualifiers and step over unspecified digits' do
+        expect(season(2018, 21, uncertain: true).succ.edtf).to eq('2018-22?')
+        s = season(2010, 24, unspecified: 'yyyxmmdd')
+        expect([s.succ, s.prev].map(&:edtf)).to eq(%w[202X-21 201X-23])
+        expect(s.succ).to eql(season(2020, 21, unspecified: 'yyyxmmdd'))
+      end
 
-    describe '#season?' do
-      it 'returns true by default' do
-        expect(subject).to be_season
+      it 'make ranges' do
+        expect((season(2001, 23)..season(2002, 22)).map(&:edtf)).to eq(%w[2001-23 2001-24 2002-21 2002-22])
       end
     end
 
-    describe '#season' do
-      before(:each) { subject.season = :summer }
+    describe '#edtf' do
+      it 'pads the year' do
+        expect(season(2014, 23).edtf).to eq('2014-23')
+        expect(season(14, 21).edtf).to eq('0014-21')
+        expect(season(-14, 21).edtf).to eq('-0014-21')
+      end
 
-      it 'returns the season code' do
-        expect(subject.season).to eq(:summer)
+      it 'marks qualifiers' do
+        expect(season(2014, 22, uncertain: true).edtf).to eq('2014-22?')
+        expect(season(2014, 22, uncertain: true, approximate: true).edtf).to eq('2014-22%')
+        expect(season(2014, 22, uncertain: :year).edtf).to eq('2014?-22')
+      end
+
+      it 'masks unspecified digits' do
+        expect(season(2014, 22, unspecified: 'yyyxmmdd').edtf).to eq('201X-22')
+      end
+
+      it 'leaves out the legacy qualifier' do
+        expect(season(2001, 21, qualifier: 'southern').edtf).to eq('2001-21')
       end
     end
 
-    describe '#season=' do
-      it 'sets the season code when called with a valid season code' do
-        expect {
-          (21..22).each do |i|
-            subject.season = i
-          end
-        }.not_to raise_error
+    describe 'qualifiers' do
+      let(:s) { EDTF.parse('2001-21?') }
+
+      it 'test the whole season or a part' do
+        expect([s.uncertain?, s.uncertain?(:year), s.uncertain?(:season)]).to eq([true, true, true])
+        expect(season(2001, 21, uncertain: :year).uncertain?(:season)).to be false
+        expect(s).not_to be_approximate
       end
 
-      it 'throws an exception if given invalid season code' do
-        expect { subject.season = 13 }.to raise_error(NoMethodError)
-      end
-    end
-
-    describe '#summer!' do
-      it 'sets the season to :summer' do
-        subject.season = :spring
-        expect { subject.summer! }.to change { subject.season }.to(:summer)
+      it 'are replaced by #with' do
+        expect(s.with(uncertain: nil, approximate: true).edtf).to eq('2001-21~')
+        expect(s.with(season: 22).edtf).to eq('2001-22?')
+        expect { s.with(month: 3) }.to raise_error(ArgumentError)
       end
     end
 
-    describe '#winter?' do
-      it 'returns true if the season is set to :winter' do
-        subject.season = :winter
-        expect(subject).to be_winter
+    describe 'comparison' do
+      it '== means the same period; eql? includes qualifiers' do
+        expect(season(2001, 21)).to eq(season(2001, 21, uncertain: true))
+        expect(season(2001, 21)).not_to eql(season(2001, 21, uncertain: true))
+        expect(season(2001, 21)).to eq(season(2001, 25))
+        expect(season(2001, 21)).not_to eql(season(2001, 25))
       end
-      it 'returns false if the season is not set to :winter' do
-        subject.season = :summer
-        expect(subject).not_to be_winter
+
+      it 'orders by bounds' do
+        expect(season(2001, 22)).to be > season(2001, 21)
+        expect(season(2001, 33)).to be < season(2001, 21)
+        expect(season(2001, 21) <=> ::Date.new(2001, 4, 1)).to eq(-1)
+        expect(::Date.new(2001, 4, 1) <=> season(2001, 21)).to eq(1)
+      end
+
+      it 'covers the dates within' do
+        expect(season(2001, 24)).to be_cover(::Date.new(2002, 1, 15))
+        expect(season(2001, 24)).to be_include(EDTF.parse('2002-01'))
+        expect(season(2001, 24)).not_to be_cover(::Date.new(2001, 11, 30))
       end
     end
 
-    describe '#include?' do
-
-      context 'for summer' do
-        it 'returns true for August 24' do
-          expect(Season.new(1980, :summer)).to include(::Date.new(1980,8,24))
-        end
-      end
-
+    it 'keeps the legacy qualifier' do
+      expect(EDTF.parse('2001-21^southern').qualifier).to eq('southern')
     end
-
   end
 end

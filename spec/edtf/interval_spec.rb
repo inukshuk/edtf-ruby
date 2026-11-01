@@ -222,16 +222,6 @@ module EDTF
         it '2004/.. should be greater than 2004/2005' do
           expect(EDTF.parse('2004/..')).to be > EDTF.parse('2004/2005')
         end
-
-        it 'can be compared to seasons' do
-          interval = EDTF.parse('2004/..')
-          expect(interval).to be < Season.new(2004, :summer)
-          expect(Season.new(2004, :summer)).to be > interval
-        end
-
-        it 'compares seasons with the same start' do
-          expect(Season.new(2004, :spring) <=> EDTF.parse('2004-03-01/..')).to eq(-1)
-        end
       end
 
       describe 'with dates' do
@@ -256,11 +246,6 @@ module EDTF
           interval = EDTF.parse('../2005')
           expect(interval <=> ::Date.new(1990, 1, 1)).to eq(0)
           expect(interval <=> ::Date.new(2010, 1, 1)).to eq(-1)
-        end
-
-        it 'compares seasons' do
-          expect(::Date.new(2004, 4, 1) <=> Season.new(2004, :spring)).to eq(0)
-          expect(::Date.new(2010, 1, 1) <=> Season.new(2004, :spring)).to eq(1)
         end
       end
     end
