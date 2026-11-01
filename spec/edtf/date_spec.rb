@@ -233,6 +233,11 @@ module EDTF
           .to eq(%w[2001-11 2001-12 2002-01])
         expect(EDTF.parse('2003').downto(EDTF.parse('2001')).map(&:edtf)).to eq(%w[2003 2002 2001])
       end
+
+      it 'steps #upto and #downto plain dates by the units that reach them' do
+        expect(EDTF.parse('2016').upto(::Date.new(2018, 1, 1)).map(&:edtf)).to eq(%w[2016 2017 2018])
+        expect(EDTF.parse('2018').downto(::Date.new(2016, 12, 31)).map(&:edtf)).to eq(%w[2018 2017 2016])
+      end
     end
 
     # Partly ported from edtf.js test/year.js; edtf.js needs a Year
@@ -295,6 +300,15 @@ module EDTF
         expect { date(1950, significant: 2).with(approximate: true) }.to raise_error(ArgumentError)
       end
 
+      it 'need year precision beyond four digits' do
+        expect { date(10000, 1) }.to raise_error(ArgumentError, /year precision/)
+        expect { date(-10000, 1, 1) }.to raise_error(ArgumentError, /year precision/)
+      end
+
+      it 'need at least one significant digit' do
+        expect { date(1950, significant: 0) }.to raise_error(ArgumentError)
+      end
+
       it 'need year precision for significant digits' do
         expect { date(1950, 6, significant: 2) }.to raise_error(ArgumentError)
         expect(date(1950, significant: 2).with(significant: nil, precision: :month).edtf).to eq('1950-01')
@@ -347,9 +361,43 @@ module EDTF
         expect(d.edtf).to eq('2004-06?-11')
       end
 
+      it 'replaces year, month and day' do
+        expect(d.with(year: 2005, day: 12).edtf).to eq('2005-06?-12')
+      end
+
+      it 'rejects values beyond the precision' do
+        expect { EDTF.parse('2016').with(month: 3) }.to raise_error(ArgumentError, /month beyond year/)
+        expect(EDTF.parse('2016').with(month: 3, precision: :month).edtf).to eq('2016-03')
+      end
+
       it 'rejects unknown attributes and precisions' do
-        expect { d.with(year: 2005) }.to raise_error(ArgumentError)
+        expect { d.with(week: 5) }.to raise_error(ArgumentError)
         expect { d.with(precision: :week) }.to raise_error(ArgumentError)
+      end
+    end
+
+    describe 'construction and copies' do
+      let(:d) { EDTF.parse('2016-05?') }
+
+      it 'hides Ruby constructors that would skip initialize' do
+        %i[today parse jd civil iso8601 strptime].each do |name|
+          expect { Date.public_send(name) }.to raise_error(NoMethodError)
+        end
+      end
+
+      it 'stays frozen through dup and Marshal' do
+        expect(d.dup).to be_frozen.and eql(d)
+        expect(Marshal.load(Marshal.dump(d))).to be_frozen.and eql(d)
+      end
+
+      it 'returns plain dates from calendar conversions' do
+        expect(d.julian).to be_instance_of(::Date).and eq(::Date.new(2016, 5, 1))
+        expect(d.new_start(::Date::ITALY)).to be_instance_of(::Date)
+      end
+
+      it 'has no ActiveSupport methods of its own' do
+        expect(d).not_to respond_to(:advance)
+        expect(d).not_to respond_to(:change)
       end
     end
 
@@ -422,9 +470,8 @@ module EDTF
         expect(d === ::Date.new(2015, 6, 1)).to be true
       end
 
-      it 'includes periods of the same precision only' do
-        expect(d).to be_include(EDTF.parse('2015'))
-        expect(d).not_to be_include(EDTF.parse('2015-06'))
+      it 'has no include?, like Ruby dates' do
+        expect(d).not_to respond_to(:include?)
       end
     end
   end

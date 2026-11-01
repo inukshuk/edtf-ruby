@@ -79,10 +79,12 @@ Feature: Parse seasons
   Scenario Outline: Season qualifiers
     When I parse "<string>"
     Then it should be the season "<season>"
-    And the season qualifier should be "<qualifier>"
+    And the parse result should record the qualifier "<qualifier>"
 
+    # Hemisphere qualifiers become ISO 8601-2 hemisphere seasons.
     @legacy
     Examples: Draft syntax: season qualifiers
       | string           | season  | qualifier |
       | 2003-23^european | 2003-23 | european  |
-      | 2001-21^southern | 2001-21 | southern  |
+      | 2001-21^southern | 2001-29 | southern  |
+      | 2001-23^northern | 2001-27 | northern  |

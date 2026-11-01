@@ -45,6 +45,15 @@ module EDTF
     end
 
     describe 'qualifiers' do
+      it 'reject parts: an epoch is qualified as a whole' do
+        expect { Decade.new(196, uncertain: :year) }.to raise_error(ArgumentError, /as a whole/)
+      end
+
+      it 'stay frozen through Marshal' do
+        decade = Decade.new(198, uncertain: true)
+        expect(Marshal.load(Marshal.dump(decade))).to be_frozen.and eql(decade)
+      end
+
       it 'are booleans, also given as bitmasks' do
         expect(Decade.new(201, uncertain: true)).to be_uncertain
         expect(Decade.new(201)).not_to be_uncertain
@@ -75,10 +84,14 @@ module EDTF
         expect(::Date.new(1980, 1, 1) <=> Decade.new(199)).to eq(-1)
       end
 
-      it 'covers and includes the dates within' do
+      it 'covers the dates within' do
         expect(Decade.new(198)).to be_cover(::Date.new(1989, 12, 31))
-        expect(Decade.new(198)).to be_include(EDTF.parse('1985-06'))
+        expect(Decade.new(198)).to be_cover(EDTF.parse('1985-06'))
         expect(Decade.new(198)).not_to be_cover(::Date.new(1990, 1, 1))
+      end
+
+      it 'has no include?, as it is not a collection' do
+        expect(Decade.new(198)).not_to respond_to(:include?)
       end
     end
 

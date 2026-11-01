@@ -32,7 +32,7 @@ module EDTF
         when Symbol, String
           case value.to_s
           when /\Adays?\z/i then DAY
-          when /\Amonths?\z/i then MONTH
+          when /\Amonths?\z/i, /\Aseasons?\z/i then MONTH
           when /\Ayears?\z/i then YEAR
           when PATTERN then compute(value.to_s)
           else raise ArgumentError, "invalid bitmask: #{value.inspect}"

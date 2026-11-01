@@ -15,8 +15,7 @@ to upgrade, see [UPGRADING.md](UPGRADING.md).
 Compatibility
 -------------
 EDTF-Ruby implements EDTF levels 0, 1, and 2
-as specified by ISO 8601-2,
-modelled on [EDTF.js](https://github.com/inukshuk/edtf.js).
+as specified by ISO 8601-2.
 Its classes support all features of these levels;
 the parser does not read the following yet:
 qualification from the left (`2004-?06-11`),
@@ -96,6 +95,9 @@ and its values.
 
 All EDTF objects are frozen;
 use `with` for a modified copy.
+Create them with `EDTF()`, `EDTF.parse`, or their `new` method;
+Ruby's other constructors (such as `EDTF::Date.today`) are private,
+use `EDTF(Date.today)` instead.
 
     EDTF('2016-05?').with(approximate: true).edtf  #-> "2016-05%"
 
@@ -315,6 +317,14 @@ Sets and lists also have an open start or end (`earlier?` and `later?`):
     s.earlier?                               #-> false
     s.with(earlier: true).edtf               #-> "{..1667,1668,1670..1672}"
 
+Beyond an open start or end,
+every year (or month, or day, like the member there) is included,
+although enumerating the set yields only the members as written,
+like the beginless Ruby range `(..5)` includes 3 but cannot be enumerated:
+
+    EDTF('[..1760]').include?(EDTF('1700'))  #-> true
+    EDTF('[..1760]').map(&:edtf)             #-> ["1760"]
+
 
 Decades and centuries
 ---------------------
@@ -378,9 +388,9 @@ the values array:
 
     EDTF::Parser.new.parse('2015/..')[:values].last  #-> :open
 
-The parse results follow the structure of EDTF.js,
-so they can be compared and exchanged;
-`EDTF()` also builds them when read back from JSON.
+Parse results are plain data:
+you can store them, e.g. as JSON,
+and `EDTF()` builds objects from them again, also when read back from JSON.
 
 
 Rails and ActiveSupport

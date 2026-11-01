@@ -139,6 +139,51 @@ module EDTF
         expect(t.with).to equal(t)
         expect { t.with(zone: 'UTC') }.to raise_error(ArgumentError)
       end
+
+      it 'names minutes and seconds like Ruby (min, sec)' do
+        expect(t.with(min: 30, sec: 5).edtf).to eq('2004-01-01T10:30:05+05:00')
+        expect { t.with(minute: 30) }.to raise_error(ArgumentError)
+      end
+    end
+
+    describe 'stepping' do
+      it 'steps by second, keeping the offset' do
+        expect(EDTF.parse('2004-01-01T23:59:59+05:00').succ.edtf).to eq('2004-01-02T00:00:00+05:00')
+        expect(EDTF.parse('2004-01-01T10:10:10').prev(60).edtf).to eq('2004-01-01T10:09:10')
+        expect(EDTF.parse('2004-01-01T10:10:10Z').next).to be_an(EDTF::DateTime)
+      end
+    end
+
+    describe 'coverage' do
+      let(:t) { EDTF.parse('2004-01-01T10:10:10Z') }
+
+      it 'covers only the same instant' do
+        expect(t).to be_cover(EDTF.parse('2004-01-01T15:10:10+05:00'))
+        expect(t).to be_cover(::Time.utc(2004, 1, 1, 10, 10, 10))
+        expect(t).not_to be_cover(EDTF.parse('2004-01-01T23:00:00Z'))
+        expect(t === EDTF.parse('2004-01-01T23:00:00Z')).to be false
+        expect(t).not_to respond_to(:include?)
+      end
+    end
+
+    describe 'construction and copies' do
+      let(:t) { EDTF.parse('2004-01-01T10:10:10') }
+
+      it 'hides Ruby constructors that would skip initialize' do
+        %i[now at local utc].each do |name|
+          expect { DateTime.public_send(name) }.to raise_error(NoMethodError)
+        end
+      end
+
+      it 'stays frozen and floating through dup and Marshal' do
+        [t.dup, Marshal.load(Marshal.dump(t))].each do |copy|
+          expect(copy).to be_frozen.and be_floating.and eql(t)
+        end
+      end
+
+      it 'returns plain times from getgm' do
+        expect(t.getgm).to be_instance_of(::Time)
+      end
     end
   end
 end

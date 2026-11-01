@@ -46,8 +46,7 @@ module EDTF
     def with(**changes)
       return self if changes.empty?
 
-      unknown = changes.keys - %i[value uncertain approximate]
-      raise ArgumentError, "unknown keyword#{'s' if unknown.length > 1}: #{unknown.join(', ')}" unless unknown.empty?
+      check_keys!(changes, %i[value uncertain approximate])
 
       self.class.new(
         changes.fetch(:value, value),
@@ -64,8 +63,6 @@ module EDTF
       ::Date.new(span.last, 12, 31, ::Date::GREGORIAN)
     end
 
-    alias include? cover?
-
     def succ(by = 1)
       with(value: value + by)
     end
@@ -76,25 +73,11 @@ module EDTF
       succ(-by)
     end
 
-    def eql?(other)
-      other.instance_of?(self.class) && state == other.state
-    end
-
-    def hash
-      [self.class, *state].hash
-    end
-
     def edtf
       string = "#{'-' if value.negative?}#{format("%0#{self.class.digits}d", value.abs)}"
       string += '?' if uncertain?
       string += '~' if approximate?
       string.sub('?~', '%')
-    end
-
-    alias to_s edtf
-
-    def inspect
-      "#<#{self.class} #{edtf}>"
     end
 
     protected
@@ -112,9 +95,13 @@ module EDTF
       value.negative? ? -high..-low : low..high
     end
 
-    # Qualifiers may also be given as bitmasks, as in parse results.
+    # Qualifiers are booleans, or bitmasks as in parse results.
     def qualified?(qualifier)
-      qualifier.is_a?(Integer) ? !qualifier.zero? : !!qualifier
+      case qualifier
+      when true, false, nil then !!qualifier
+      when Integer then !qualifier.zero?
+      else raise ArgumentError, "invalid qualifier: #{qualifier.inspect} (an epoch is qualified as a whole)"
+      end
     end
   end
 

@@ -15,8 +15,10 @@ module EDTF
   # and may have significant digits (1950S2 spans 1900 to 1999).
   #
   # Dates are frozen; use `with` for a modified copy.
-  # Date math (+, -, >>, <<) returns plain dates,
+  # Date math (+, -, >>, <<) and calendar conversions return plain dates,
   # because the result no longer stands for the same EDTF string.
+  # Create dates with `new`, `EDTF()` or `EDTF.parse`;
+  # Ruby's other constructors (today, parse, …) are private.
   class Date < ::Date
     include Period
 
@@ -25,7 +27,17 @@ module EDTF
     # The masks that cover the whole date, by number of values.
     WHOLE = [nil, Bitmask::YEAR, Bitmask::YM, Bitmask::YMD].freeze
 
-    ATTRIBUTES = %i[precision uncertain approximate unspecified significant].freeze
+    QUALIFIERS = %i[uncertain approximate unspecified significant].freeze
+    ATTRIBUTES = [*PRECISION, :precision, *QUALIFIERS].freeze
+
+    # Ruby's constructors skip initialize, so their dates would not be frozen.
+    private_class_method(*%i[
+      today civil jd ordinal commercial parse strptime
+      iso8601 rfc3339 xmlschema rfc2822 rfc822 httpdate jisx0301
+    ].select { |name| ::Date.respond_to?(name) })
+
+    DATE_MARSHAL = %i[marshal_dump marshal_load].to_h { |name| [name, ::Date.instance_method(name)] }.freeze
+    private_constant :DATE_MARSHAL
 
     def initialize(year, month = nil, day = nil, uncertain: nil, approximate: nil, unspecified: nil, significant: nil)
       values = [year, month, day].compact
@@ -84,18 +96,22 @@ module EDTF
     end
 
     # Returns a copy with the given EDTF attributes replaced, like Data#with.
+    # Values beyond the precision raise (2016 has no month to replace).
     def with(**changes)
       return self if changes.empty?
 
-      unknown = changes.keys - ATTRIBUTES
-      raise ArgumentError, "unknown keyword#{'s' if unknown.length > 1}: #{unknown.join(', ')}" unless unknown.empty?
+      check_keys!(changes, ATTRIBUTES)
 
       precision = changes.fetch(:precision, self.precision).to_sym
       raise ArgumentError, "invalid precision: #{precision.inspect}" unless PRECISION.include?(precision)
 
+      count = PRECISION.index(precision) + 1
+      beyond = PRECISION.drop(count) & changes.keys
+      raise ArgumentError, "#{beyond.join(' and ')} beyond #{precision} precision" unless beyond.empty?
+
       self.class.new(
-        *[year, month, day].take(PRECISION.index(precision) + 1),
-        **ATTRIBUTES.drop(1).to_h { |name| [name, changes.fetch(name) { send(name) }] }
+        *PRECISION.take(count).map { |name| changes.fetch(name) { send(name) } },
+        **QUALIFIERS.to_h { |name| [name, changes.fetch(name) { send(name) }] }
       )
     end
 
@@ -121,10 +137,6 @@ module EDTF
 
       last = ::Date.new(year, month, -1, ::Date::GREGORIAN).day
       ::Date.new(year, month, [day, last].min, ::Date::GREGORIAN)
-    end
-
-    def include?(other)
-      cover?(other) && Period.precision(other) == precision
     end
 
     # Returns the next day, month, or year depending on the date's precision.
@@ -154,22 +166,26 @@ module EDTF
       succ(-by)
     end
 
+    # Yields each date at this precision that begins on or before max ends.
     def upto(max)
       return to_enum(:upto, max) unless block_given?
 
+      last = Period.bounds(max)&.last
       date = self
-      while (date <=> max) <= 0
+      while last && date.begin <= last
         yield date
         date = date.succ
       end
       self
     end
 
+    # Yields each date at this precision that ends on or after min begins.
     def downto(min)
       return to_enum(:downto, min) unless block_given?
 
+      first = Period.bounds(min)&.first
       date = self
-      while (date <=> min) >= 0
+      while first && date.end >= first
         yield date
         date = date.prev
       end
@@ -196,13 +212,22 @@ module EDTF
       define_method(name) { |n = 1| plain.send(name, n) }
     end
 
-    # ActiveSupport's calculations (only when it is loaded).
-    def advance(options)
-      plain.advance(options)
+    # Calendar conversions return plain dates of the same day.
+    def new_start(start = ::Date::ITALY)
+      plain.new_start(start)
     end
 
-    def change(options)
-      plain.change(options)
+    %i[julian gregorian italy england].each do |name|
+      define_method(name) { plain.send(name) }
+    end
+
+    def marshal_dump
+      DATE_MARSHAL[:marshal_dump].bind_call(self)
+    end
+
+    def marshal_load(data)
+      DATE_MARSHAL[:marshal_load].bind_call(self, data)
+      freeze
     end
 
     def ==(other)
@@ -242,18 +267,6 @@ module EDTF
       sign + values.join('-')
     end
 
-    alias to_s edtf
-
-    def inspect
-      "#<#{self.class} #{edtf}>"
-    end
-
-    # Used by the 4.x Date patch when a plain date is compared with this one
-    # (removed in 2.10).
-    def extended_hash
-      plain? ? 0 : hash
-    end
-
     protected
 
     def state
@@ -280,7 +293,9 @@ module EDTF
     # Masks cover four-digit years only,
     # and EDTF does not qualify long years or years with significant digits.
     def check_digits
+      raise ArgumentError, 'years beyond four digits need year precision' if year.abs > 9999 && precision != :year
       raise ArgumentError, 'significant digits need year precision' if significant && precision != :year
+      raise ArgumentError, "invalid significant digits: #{significant}" if significant && significant < 1
       return unless long_year? || significant
 
       unless [uncertain, approximate, unspecified].all?(&:zero?)

@@ -60,6 +60,11 @@ module Kernel
       value
     when Time, ::DateTime
       time = value.to_time
+
+      unless (time.utc_offset % 60).zero?
+        raise ArgumentError, "offset #{time.strftime('%::z')} is not in whole minutes"
+      end
+
       EDTF::DateTime.new(
         time.year,
         time.month,
@@ -69,7 +74,8 @@ module Kernel
         time.sec + time.subsec,
         offset: time.utc_offset / 60)
     when ::Date
-      EDTF::Date.new(value.year, value.month, value.day)
+      date = ::Date.jd(value.jd, ::Date::GREGORIAN)
+      EDTF::Date.new(date.year, date.month, date.day)
     else
       raise TypeError, "can't convert #{value.class} into EDTF"
     end

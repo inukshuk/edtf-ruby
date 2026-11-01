@@ -130,13 +130,10 @@ Then('it should be approximate: {word}') do |answer|
   expect(@result.approximate?).to eq(yes?(answer))
 end
 
-Then('the season qualifier should be {string}') do |qualifier|
-  expect(@result.qualifier).to eq(qualifier)
-end
-
-# Calendars have no ISO 8601-2 equivalent: only the parse result keeps them.
-Then('the parse result should record the calendar {string}') do |calendar|
-  expect(EDTF::Parser.new(warn: false).parse!(@string)[:calendar]).to eq(calendar)
+# Calendars and season qualifiers have no ISO 8601-2 equivalent:
+# only the parse result keeps them.
+Then('the parse result should record the {word} {string}') do |key, value|
+  expect(EDTF::Parser.new(warn: false).parse!(@string)[key.to_sym]).to eq(value)
 end
 
 # "one of" is a choice; "all of" includes every member.

@@ -117,6 +117,13 @@ module EDTF
         expect(later).not_to be_include(EDTF.parse('-1984'))
       end
 
+      it 'matches membership in each, without iterating' do
+        set = EDTF.parse('[1985,1985-03,1994-12,1667..1669]')
+        %w[1985 1985-03 1985-04 1994-12 1668 1670 1668-01].map { |s| EDTF.parse(s) }.each do |other|
+          expect(set.include?(other)).to eq(set.any? { |member| member == other })
+        end
+      end
+
       it 'is false for empty sets' do
         expect(List.new).not_to be_include(EDTF.parse('1984'))
       end
@@ -144,7 +151,38 @@ module EDTF
       end
     end
 
+    describe 'empty sets' do
+      it 'cover nothing' do
+        expect(Set.new).not_to be_cover(::Date.today)
+        expect(List.new).not_to be_include(EDTF.parse('2004'))
+      end
+
+      it 'have no open start or end' do
+        expect(Set.new(earlier: true)).not_to be_earlier
+        expect(Set.new(earlier: true)).to eql(Set.new)
+      end
+    end
+
+    describe 'ranges' do
+      it 'are tested by their bounds, not enumerated' do
+        list = EDTF.parse('{1000-01-01..2999-12-31}')
+        expect(list).to be_include(EDTF.parse('2000-05-05'))
+        expect(list).not_to be_include(EDTF.parse('3000-01-01'))
+        expect(list).not_to be_include(EDTF.parse('2000-05'))
+      end
+    end
+
+    it 'stays frozen through dup and Marshal' do
+      [list.dup, Marshal.load(Marshal.dump(list))].each { |copy| expect(copy).to be_frozen.and eql(list) }
+    end
+
     describe 'comparison' do
+      it 'treats open starts and ends like those of intervals' do
+        expect(EDTF.parse('[..2004]')).to eq(EDTF.parse('../2004'))
+        expect(EDTF.parse('[..2004]')).not_to eq(EDTF.parse('/2004'))
+        expect(EDTF.parse('{2004..}')).to eq(EDTF.parse('2004/..'))
+      end
+
       it 'eql? compares the class, members and open ends' do
         expect(EDTF.parse('[1667,1668]')).to eql(EDTF.parse('[1667,1668]'))
         expect(EDTF.parse('[1667,1668]')).not_to eql(EDTF.parse('{1667,1668}'))
