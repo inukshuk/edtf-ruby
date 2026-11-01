@@ -25,9 +25,17 @@ module EDTF
     PRECISION = %i[year month day].freeze
 
     # The masks that cover the whole date, by number of values.
-    WHOLE = [nil, Bitmask::YEAR, Bitmask::YM, Bitmask::YMD].freeze
+    WHOLE = [
+      nil,
+      Bitmask::YEAR,
+      Bitmask::YM,
+      Bitmask::YMD
+    ].freeze
 
-    QUALIFIERS = %i[uncertain approximate unspecified significant].freeze
+    QUALIFIERS = %i[
+      uncertain approximate unspecified significant
+    ].freeze
+
     ATTRIBUTES = [*PRECISION, :precision, *QUALIFIERS].freeze
 
     # Ruby's constructors skip initialize, so their dates would not be frozen.

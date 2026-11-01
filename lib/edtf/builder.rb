@@ -1,24 +1,31 @@
 module EDTF
 
   # Builds EDTF objects from parse results.
-  # Results may come from outside (EDTF() accepts them),
-  # also with String keys and values as read from JSON;
-  # only the known types are built.
   module Builder
 
-    TYPES = %i[date date_time year decade century season interval set list].freeze
+    TYPES = %i[
+      date date_time year decade century season interval set list
+    ].freeze
 
     module_function
 
     def build(result)
       case result
-      when :open, :unknown, 'open', 'unknown' then result.to_sym
-      when Array then build(result[0])..build(result[1])
+      when :open, :unknown, 'open', 'unknown'
+        result.to_sym
+      when Array
+        build(result[0])..build(result[1])
       when Hash
         result = result.transform_keys(&:to_sym)
         type = result[:type].to_s.to_sym
-        raise ArgumentError, "invalid parse result type: #{result[:type].inspect}" unless TYPES.include?(type)
-        raise ArgumentError, "invalid parse result values: #{result[:values].inspect}" unless result[:values].is_a?(Array)
+
+        unless TYPES.include?(type)
+          raise ArgumentError, "invalid parse result type: #{result[:type].inspect}"
+        end
+
+        unless result[:values].is_a?(Array)
+          raise ArgumentError, "invalid parse result values: #{result[:values].inspect}"
+        end
 
         send(type, result)
       else
@@ -26,8 +33,6 @@ module EDTF
       end
     end
 
-    # Legacy calendars (2001-02-03^julian) have no ISO 8601-2 equivalent;
-    # the parse result keeps them, the date does not.
     def date(result)
       Date.new(*result[:values], **result.slice(:uncertain, :approximate, :unspecified))
     end
@@ -48,9 +53,6 @@ module EDTF
       Century.new(result[:values][0], **result.slice(:uncertain, :approximate))
     end
 
-    # Legacy hemisphere qualifiers (2001-21^southern) become ISO 8601-2
-    # hemisphere seasons (2001-29); other qualifiers have no equivalent,
-    # the parse result keeps them, the season does not.
     def season(result)
       year, season = result[:values]
       season = hemisphere(result[:qualifier], season)
@@ -77,5 +79,4 @@ module EDTF
       List.new(*result[:values].map { |value| build(value) }, **result.slice(:earlier, :later))
     end
   end
-
 end

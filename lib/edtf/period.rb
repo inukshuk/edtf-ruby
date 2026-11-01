@@ -2,19 +2,13 @@ module EDTF
 
   # The interface shared by all EDTF types:
   # each one stands for a period of time.
-  #
-  # Including classes implement `begin` and `end` (plain dates, nil when open),
-  # `precision`, `edtf`, and a protected `state` for `eql?` and `hash`.
-  #
-  # Like Ruby's Data, EDTF objects are frozen,
-  # and so are their copies (dup, Marshal).
   module Period
     include Comparable
 
-    # From the coarsest to the finest.
-    PRECISIONS = %i[century decade year season month day second].freeze
+    PRECISIONS = %i[
+      century decade year season month day second
+    ].freeze
 
-    # Bounds widened by approximation; for now the nominal bounds.
     def earliest
       self.begin
     end
@@ -101,18 +95,24 @@ module EDTF
 
     def self.bounds(other) # :nodoc:
       case other
-      when Period then [other.begin, other.end]
-      when ::DateTime, ::Time then [other.to_date] * 2
-      when ::Date then [::Date.jd(other.jd, ::Date::GREGORIAN)] * 2
+      when Period
+        [other.begin, other.end]
+      when ::DateTime, ::Time
+        [other.to_date] * 2
+      when ::Date
+        [::Date.jd(other.jd, ::Date::GREGORIAN)] * 2
       end
     end
 
     # Plain dates are days; plain times are instants within a day.
     def self.precision(other) # :nodoc:
       case other
-      when Period then other.precision
-      when ::DateTime, ::Time then :second
-      else :day
+      when Period
+        other.precision
+      when ::DateTime, ::Time
+        :second
+      else
+        :day
       end
     end
 
@@ -142,5 +142,4 @@ module EDTF
       PRECISIONS.index(precision) || -1
     end
   end
-
 end
