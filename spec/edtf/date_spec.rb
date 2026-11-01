@@ -208,12 +208,15 @@ module EDTF
         d = EDTF.parse('201X')
         expect([d.succ, d.succ.succ, d.succ.prev].map(&:edtf)).to eq(%w[202X 203X 201X])
         expect([d.prev, d.prev.prev, d.prev.succ].map(&:edtf)).to eq(%w[200X 199X 201X])
+        expect(d.prev).to eql(EDTF.parse('200X'))
+        expect(d.succ).to eql(EDTF.parse('202X'))
       end
 
       it 'steps over unspecified digits of negative years' do
         d = EDTF.parse('-201X')
         expect([d.succ, d.succ.succ, d.succ.prev].map(&:edtf)).to eq(%w[-200X -199X -201X])
         expect([d.prev, d.prev.prev, d.prev.succ].map(&:edtf)).to eq(%w[-202X -203X -201X])
+        expect(d.succ).to eql(EDTF.parse('-200X'))
       end
 
       it 'keeps the qualifiers' do

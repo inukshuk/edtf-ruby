@@ -1,199 +1,171 @@
 module EDTF
 
+  # A season or other division of a year (ISO 8601-2 codes 21–41):
+  #
+  #   21–24  spring, summer, autumn, winter (meteorological, northern)
+  #   25–28  the same, northern hemisphere
+  #   29–32  spring, summer, autumn, winter, southern hemisphere
+  #   33–36  quarters
+  #   37–39  quadrimesters (four months each)
+  #   40–41  semesters
+  #
+  # Winter (24, 28) and southern summer (30) reach into the next year.
+  # Qualifier and unspecified bitmasks cover the year and the code like
+  # a year and a month (2001-21?, 2001?-21, 200X-21).
   class Season
-    extend Forwardable
+    include Period
 
-    SEASONS = Hash[21, :spring, 22, :summer, 23, :autumn, 24, :winter].freeze
+    # The first month and the number of months of each division.
+    DIVISIONS = {
+      21 => [3, 3], 22 => [6, 3], 23 => [9, 3], 24 => [12, 3],
+      25 => [3, 3], 26 => [6, 3], 27 => [9, 3], 28 => [12, 3],
+      29 => [9, 3], 30 => [12, 3], 31 => [3, 3], 32 => [6, 3],
+      33 => [1, 3], 34 => [4, 3], 35 => [7, 3], 36 => [10, 3],
+      37 => [1, 4], 38 => [5, 4], 39 => [9, 4],
+      40 => [1, 6], 41 => [7, 6]
+    }.freeze
 
-    CODES = Hash.new { |h,k| h.fetch(k.to_sym, nil) }.merge(
-      SEASONS.invert).merge({ :fall => 23 }).freeze
+    # The divisions that follow each other, in calendar order.
+    CYCLES = [
+      [21, 22, 23, 24], [25, 26, 27, 28], [31, 32, 29, 30],
+      [33, 34, 35, 36], [37, 38, 39], [40, 41]
+    ].freeze
 
-    NORTHERN = Hash[:spring, [3,4,5], :summer, [6,7,8], :autumn, [9,10,11], :winter, [12,1,2]].freeze
-    SOUTHERN = Hash[:autumn, [3,4,5], :winter, [6,7,8], :spring, [9,10,11], :summer, [12,1,2]].freeze
+    WHOLE = Bitmask::YM
 
-    NORTHERN_MONTHS = Hash[*NORTHERN.map { |s,ms| ms.map { |m| [m,s] } }.flatten].freeze
-    SOUTHERN_MONTHS = Hash[*SOUTHERN.map { |s,ms| ms.map { |m| [m,s] } }.flatten].freeze
+    attr_reader :year, :season, :qualifier
 
+    # The qualifier is the legacy season qualifier (2001-21^southern);
+    # ISO 8601-2 has no equivalent, so it is not part of the EDTF string.
+    def initialize(year, season, uncertain: nil, approximate: nil, unspecified: nil, qualifier: nil)
+      @year = Integer(year)
+      @season = Integer(season)
+      raise ArgumentError, "invalid season: #{season}" unless DIVISIONS.key?(@season)
 
-    include Comparable
-    include Enumerable
+      @uncertain = bits(uncertain)
+      @approximate = bits(approximate)
+      @unspecified = Bitmask.new(Bitmask.convert(unspecified) & Bitmask::YEAR)
+      @qualifier = qualifier
+      freeze
+    end
 
-    class << self
-      def current
-        ::Date.today.season
+    attr_reader :uncertain, :approximate, :unspecified
+
+    def precision
+      :season
+    end
+
+    def values
+      [year, season]
+    end
+
+    def uncertain?(part = nil)
+      qualified?(uncertain, part)
+    end
+
+    def approximate?(part = nil)
+      qualified?(approximate, part)
+    end
+
+    def unspecified?
+      !unspecified.zero?
+    end
+
+    def with(**changes)
+      return self if changes.empty?
+
+      attributes = %i[year season uncertain approximate unspecified qualifier]
+      unknown = changes.keys - attributes
+      raise ArgumentError, "unknown keyword#{'s' if unknown.length > 1}: #{unknown.join(', ')}" unless unknown.empty?
+
+      values = attributes.to_h { |name| [name, changes.fetch(name) { send(name) }] }
+      self.class.new(values.delete(:year), values.delete(:season), **values)
+    end
+
+    def begin
+      first, = DIVISIONS[season]
+      ::Date.new(years.first, first, 1, ::Date::GREGORIAN)
+    end
+
+    def end
+      first, months = DIVISIONS[season]
+      ::Date.new(years.last, first, 1, ::Date::GREGORIAN).next_month(months).prev_day
+    end
+
+    alias include? cover?
+
+    # The next division of the same kind in calendar order;
+    # unspecified digits step by the unit they leave open.
+    def succ(by = 1)
+      cycle = CYCLES.find { |codes| codes.include?(season) }
+      shift, index = (cycle.index(season) + by).divmod(cycle.length)
+
+      year = self.year + shift
+      unless unspecified.zero? || shift.zero?
+        year = (shift.positive? ^ year.negative? ? years.last : years.first) + shift
+        year = unspecified.min([year.abs])[0] * (year.negative? ? -1 : 1)
       end
+
+      with(year: year, season: cycle[index])
     end
 
-    attr_reader :season, :year
+    alias next succ
 
-    attr_accessor :qualifier, :uncertain, :approximate
-
-    def_delegators :to_range, *Range.instance_methods(false).reject { |m|
-      m.to_s =~ /^(each|min|max|cover\?|inspect|to_s)$|^\W/
-    }
-
-    SEASONS.each_value do |s|
-      define_method("#{s}?") { @season == s }
-      define_method("#{s}!") { @season =  s }
+    def prev(by = 1)
+      succ(-by)
     end
 
-    alias fall? autumn?
-    alias fall! autumn!
-
-    [:first, :second, :third, :fourth].zip([:spring, :summer, :autumn, :winter]).each do |quarter, season|
-      alias_method("#{quarter}?", "#{season}?")
-      alias_method("#{quarter}!", "#{season}!")
+    def eql?(other)
+      other.instance_of?(self.class) && state == other.state
     end
 
-
-    def initialize(*arguments)
-      arguments.flatten!
-      raise ArgumentError, "wrong number of arguments (#{arguments.length} for 0..3)" if arguments.length > 3
-
-      if arguments.length == 1
-        case arguments[0]
-        when ::Date
-          @year, @season = arguments[0].year, NORTHERN_MONTHS[arguments[0]]
-        when Symbol, String
-          @year, @season = ::Date.today.year, SEASONS[CODES[arguments[0].to_sym]]
-        else
-          self.year = arguments[0]
-          @season = NORTHERN_MONTHS[::Date.today.month]
-        end
-      else
-        self.year      = arguments[0] || ::Date.today.year
-        self.season    = arguments[1] || NORTHERN_MONTHS[::Date.today.month]
-        self.qualifier = qualifier
-      end
+    def hash
+      [self.class, *state].hash
     end
-
-
-    [:uncertain, :approximate].each do |m|
-
-      define_method("#{m}?") { !!send(m) }
-
-      define_method("#{m}!") do
-        send("#{m}=", true)
-        self
-      end
-    end
-
-    def certain?; !uncertain; end
-    def precise?; !approximate; end
-
-    def certain!
-      @uncertain = false
-      self
-    end
-
-    def precise!
-      @approximate = false
-    end
-
-    # Returns the next season.
-    def succ
-      s = dup
-      s.season = next_season_code
-      s.year = year + 1 if s.first?
-      s
-    end
-
-    # def next(n = 1)
-    # end
-
-    def cover?(other)
-      return false unless other.respond_to?(:day_precision)
-      other = other.day_precision
-      min.day_precision! <= other && other <= max.day_precision!
-    end
-
-    def each(&block)
-      if block_given?
-        to_range.each(&block)
-        self
-      else
-        to_enum
-      end
-    end
-
-    def year=(new_year)
-      @year = new_year.to_i
-    end
-
-    def season=(new_season)
-      @season = SEASONS[new_season] || SEASONS[CODES[new_season]] ||
-        raise(ArgumentError, "unknown season/format: #{new_season.inspect})")
-    end
-
-    def season?; true; end
-
-    def qualified?; !!@qualifier; end
 
     def edtf
-      '%04d-%2d%s%s%s' % [
-        year,
-        CODES[season],
-        uncertain? ? '?' : '',
-        approximate? ? '~' : '',
-        qualified? ? "^#{qualifier}" : ''
-      ]
+      sign = year.negative? ? '-' : ''
+      values = [format('%04d', year.abs), season.to_s]
+
+      return sign + unspecified.masks(values).join('-') unless unspecified.zero?
+
+      values = uncertain.marks(values, '?') unless uncertain.zero?
+      values = approximate.marks(values, '~').map { |value| value.sub(/~\?|\?~/, '%') } unless approximate.zero?
+
+      sign + values.join('-')
     end
 
     alias to_s edtf
 
-
-    def <=>(other)
-      case other
-      when ::Date
-        cover?(other) ? 0 : to_date <=> other
-      when Interval
-        (c = other <=> self) && -c
-      when Epoch
-        [min, max] <=> [other.min, other.max]
-      when Season
-        [year, month, qualifier] <=> [other.year, other.month, other.qualifier]
-      else
-        nil
-      end
-    rescue
-      nil
-    end
-
-    def ===(other)
-      (self <=> other) == 0
-    rescue
-      false
-    end
-
-    def to_date
-      ::Date.new(year, month, 1)
-    end
-
-    alias min to_date
-
-    def max
-      to_date.months_since(2).end_of_month
-    end
-
-    # Returns a Range that covers the season (a three month period).
-    def to_range
-      min .. max
+    def inspect
+      "#<#{self.class} #{edtf}>"
     end
 
     protected
 
-    def month
-      NORTHERN[@season][0]
+    def state
+      [year, season, uncertain.value, approximate.value, unspecified.value, qualifier]
     end
 
-    def season_code
-      CODES[season]
+    private
+
+    def bits(value)
+      mask = value == true ? WHOLE : Bitmask.convert(value)
+      Bitmask.new(mask & WHOLE)
     end
 
-    def next_season_code(by = 1)
-      ((season_code + by) % 4) + 20
+    def qualified?(mask, part)
+      part.nil? ? !mask.zero? : mask.intersect?(part == :season ? :month : part)
     end
 
+    # The first and last year the unspecified digits allow.
+    def years
+      return year..year if unspecified.zero?
+
+      low, = unspecified.min([year.abs])
+      high, = unspecified.max([year.abs])
+      year.negative? ? -high..-low : low..high
+    end
   end
 
 end

@@ -54,11 +54,7 @@ module EDTF
     end
 
     def season(result)
-      season = Season.new(*result[:values])
-      season.uncertain! if result[:uncertain]
-      season.approximate! if result[:approximate]
-      season.qualifier = result[:qualifier]
-      season
+      Season.new(*result[:values], **result.slice(:uncertain, :approximate, :unspecified, :qualifier))
     end
 
     def interval(result)

@@ -129,6 +129,11 @@ module EDTF
         else (::Date.new(year, month, day, ::Date::GREGORIAN) + by).then { |d| [d.year, d.month, d.day] }
         end
 
+      # Keep the lowest values the unspecified digits allow, as parsing does.
+      unless unspecified.zero?
+        values = unspecified.min([values[0].abs, *values.drop(1)]).tap { |v| v[0] = -v[0] if values[0].negative? }
+      end
+
       self.class.new(*values, uncertain: uncertain, approximate: approximate, unspecified: unspecified, significant: significant)
     end
 

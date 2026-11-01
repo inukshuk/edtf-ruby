@@ -132,8 +132,7 @@ Then('the end should be {string}') do |date|
 end
 
 Then('it should be the season {string}') do |season|
-  year, code = season.match(/\A(-?\d+)-(\d\d)\z/).captures.map(&:to_i)
-  expect([@result.year, EDTF::Season::CODES[@result.season]]).to eq([year, code])
+  expect(@result.values).to eq(season.match(/\A(-?\d+)-(\d\d)\z/).captures.map(&:to_i))
 end
 
 Then('it should be uncertain: {word}') do |answer|
