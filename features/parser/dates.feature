@@ -82,7 +82,7 @@ Feature: Parse dates
   Scenario Outline: Calendars
     When I parse "<string>"
     Then it should be the date "<date>"
-    And the calendar should be "<calendar>"
+    And the parse result should record the calendar "<calendar>"
 
     @legacy
     Examples: Draft syntax: calendar names

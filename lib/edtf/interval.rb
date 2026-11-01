@@ -21,16 +21,16 @@ module EDTF
   # or :unknown (written empty).
   # The bounds of open or unknown ends are nil.
   class Interval
-    include Period
     include Enumerable
+    include Period # after Enumerable, so ActiveSupport's Enumerable#as_json doesn't win
 
     ENDS = %i[open unknown].freeze
 
     attr_reader :from, :to
 
     def initialize(from, to)
-      @from = coerce(from)
-      @to = coerce(to)
+      @from = coerce_end(from)
+      @to = coerce_end(to)
       freeze
     end
 
@@ -125,7 +125,7 @@ module EDTF
       ]
     end
 
-    def coerce(value)
+    def coerce_end(value)
       case value
       when *ENDS, Period then value
       when ::Date then EDTF(value)

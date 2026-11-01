@@ -1,25 +1,9 @@
 require 'date'
 require 'time'
-
-autoload :Rational, 'rational'
-
-require 'forwardable'
-require 'enumerator'
 require 'set'
-
-require 'active_support'
-require 'active_support/core_ext/date/calculations'
-require 'active_support/core_ext/date_time/calculations'
-require 'active_support/core_ext/time/calculations'
-
-require 'active_support/core_ext/date/conversions'
-
-require 'edtf/compatibility'
 
 require 'edtf/version'
 require 'edtf/bitmask'
-require 'edtf/uncertainty'
-require 'edtf/v4/date'
 require 'edtf/period'
 require 'edtf/date'
 require 'edtf/date_time'
@@ -28,14 +12,15 @@ require 'edtf/season'
 require 'edtf/interval'
 require 'edtf/set'
 require 'edtf/parser'
-require 'edtf/adapter'
-require 'edtf/extensions'
+require 'edtf/builder'
 
 # = EDTF-Ruby
 #
-# This module extends the Ruby date/time classes to support the Extended
-# Date/Time Format (EDTF). See the `EDTF::ExtendedDate` module for an
-# overview of the features added to the Ruby `Date` class.
+# Implements the Extended Date/Time Format (EDTF) in ISO 8601-2.
+#
+# Every EDTF string stands for a period of time (see EDTF::Period):
+# dates (EDTF::Date, a Ruby Date), date-times (EDTF::DateTime, a Ruby Time),
+# decades and centuries, seasons, intervals, sets and lists.
 #
 # To parse EDTF strings use `EDTF.parse` or `EDTF()`.
 #
@@ -50,7 +35,7 @@ module EDTF
   end
   
   def parse!(input, options = {})
-    Adapter.build(Parser.new(options).parse!(input))
+    Builder.build(Parser.new(options).parse!(input))
   end
 
   def legacy?(input)
@@ -70,12 +55,18 @@ module Kernel
     when String
       EDTF.parse!(value)
     when Hash
-      EDTF::Adapter.build(value)
-    when EDTF::Date, EDTF::DateTime, EDTF::Epoch, EDTF::Season, EDTF::Interval, EDTF::Set, EDTF::List
+      EDTF::Builder.build(value)
+    when EDTF::Period
       value
     when Time, ::DateTime
       time = value.to_time
-      EDTF::DateTime.new(time.year, time.month, time.day, time.hour, time.min, time.sec + time.subsec,
+      EDTF::DateTime.new(
+        time.year,
+        time.month,
+        time.day,
+        time.hour,
+        time.min,
+        time.sec + time.subsec,
         offset: time.utc_offset / 60)
     when ::Date
       EDTF::Date.new(value.year, value.month, value.day)

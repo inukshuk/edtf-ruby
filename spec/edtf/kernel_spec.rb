@@ -76,6 +76,25 @@ describe 'EDTF()' do
     end
   end
 
+  # spec/active_support runs in its own process (rake spec:active_support).
+  it 'needs no ActiveSupport' do
+    expect(defined?(ActiveSupport)).to be_nil
+  end
+
+  it 'is the only core extension' do
+    expect(::Date).not_to respond_to(:edtf)
+    expect(::Date.new).not_to respond_to(:precision)
+    expect(::Date.new).not_to respond_to(:edtf)
+    expect(1..2).not_to respond_to(:edtf)
+  end
+
+  it 'lets plain dates compare with every kind of period' do
+    expect(::Date.new(1980, 1, 1) <=> EDTF::Decade.new(196)).to eq(1)
+    expect(::Date.new(2004, 6, 1) <=> EDTF('2004/2005')).to eq(1)
+    expect(::Date.new(1667, 6, 1) <=> EDTF('{1667,1668}')).to eq(1)
+    expect([EDTF('2001-21'), ::Date.new(2001, 1, 1)].sort.first).to eq(::Date.new(2001, 1, 1))
+  end
+
   it 'is private' do
     expect { 'x'.EDTF('2004') }.to raise_error(NoMethodError)
   end

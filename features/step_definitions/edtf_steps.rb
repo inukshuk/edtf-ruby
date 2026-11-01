@@ -17,22 +17,8 @@ module EDTFHelpers
     list == 'none' ? [] : list.split(/,\s*/).map(&:to_sym)
   end
 
-  def qualified_parts(predicate, date = @result)
-    PARTS.select { |part| date.public_send(predicate, part) }
-  end
-
-  # The unspecified digits as a mask like "YYYX-MM-DD". 4.x dates
-  # (still used as interval and set members) mark them as "sssX-ss-ss".
-  def unspecified_mask(date)
-    mask = date.unspecified.to_s
-    return mask if date.is_a?(EDTF::Date)
-
-    mask.chars.zip('YYYY-MM-DD'.chars).map { |c, m| c == 'X' ? c : m }.join
-  end
-
-  # Compares 4.x and 5.0 dates by values, qualifiers and unspecified digits.
-  def describe(date)
-    [date.values, qualified_parts(:uncertain?, date), qualified_parts(:approximate?, date), unspecified_mask(date)]
+  def qualified_parts(predicate)
+    PARTS.select { |part| @result.public_send(predicate, part) }
   end
 
   # "open" and "unknown" are interval ends without a date.
@@ -40,7 +26,7 @@ module EDTFHelpers
     if %w[open unknown].include?(expected)
       expect(actual).to eq(expected.to_sym)
     else
-      expect(describe(actual)).to eq(describe(parse(expected)))
+      expect(actual).to eql(parse(expected))
     end
   end
 
@@ -74,6 +60,7 @@ When('the approximate parts are {string}') do |list|
 end
 
 When('I parse {string}') do |string|
+  @string = string
   @result = parse(string)
   expect(EDTF.legacy?(string)).to eq(@legacy)
 end
@@ -102,7 +89,7 @@ end
 
 # The mask marks unspecified digits with X, e.g. "YYYX-MM-DD".
 Then('the unspecified digits should be {string}') do |mask|
-  expect(unspecified_mask(@result)).to eq(mask)
+  expect(@result.unspecified.to_s).to eq(mask)
 end
 
 Then('it should cover {string}') do |date|
@@ -147,8 +134,9 @@ Then('the season qualifier should be {string}') do |qualifier|
   expect(@result.qualifier).to eq(qualifier)
 end
 
-Then('the calendar should be {string}') do |calendar|
-  expect(@result.calendar).to eq(calendar)
+# Calendars have no ISO 8601-2 equivalent: only the parse result keeps them.
+Then('the parse result should record the calendar {string}') do |calendar|
+  expect(EDTF::Parser.new(warn: false).parse!(@string)[:calendar]).to eq(calendar)
 end
 
 # "one of" is a choice; "all of" includes every member.
@@ -156,7 +144,7 @@ Then('it should be {string} the members {string}') do |kind, members|
   expect(@result).to be_an(kind == 'one of' ? EDTF::Set : EDTF::List)
   expected = members.split(/,\s*/)
   expect(@result.to_a.length).to eq(expected.length)
-  @result.to_a.zip(expected).each { |actual, member| expect(describe(actual)).to eq(describe(parse(member))) }
+  @result.to_a.zip(expected).each { |actual, member| expect(actual).to eql(parse(member)) }
 end
 
 Then('the open end should be {string}') do |open|
