@@ -28,10 +28,7 @@ module EDTF
     end
 
     def date_time(result)
-      offset = result[:offset]
-      date_time = ::DateTime.new(*result[:values], Rational(offset || 0, 1440))
-      date_time.skip_timezone = offset.nil?
-      date_time
+      DateTime.new(*result[:values], offset: result[:offset])
     end
 
     def year(result)
