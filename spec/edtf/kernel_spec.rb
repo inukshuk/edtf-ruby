@@ -37,7 +37,40 @@ describe 'EDTF()' do
     end
   end
 
-  [nil, 2004, :year].each do |value|
+  describe 'parse results' do
+    %w[2004-06? 2016-05-02T16:54:59+05:00 Y-17E7 196x 2001-21? 2004-06?/.. /2004 [..1667,1668?,1670..1672] {1984~,1985}]
+      .each do |string|
+      it "builds #{string} from its parse result" do
+        result = EDTF::Parser.new(warn: false).parse!(string)
+        expect(EDTF(result)).to eql(EDTF.parse(string))
+      end
+    end
+
+    it 'builds results read back from JSON' do
+      require 'json'
+      result = JSON.parse(JSON.generate(EDTF::Parser.new.parse!('2004-06?/..')))
+      expect(result['values'][1]).to eq('open')
+      expect(EDTF(result)).to eql(EDTF.parse('2004-06?/..'))
+    end
+
+    it 'builds hand-written results' do
+      expect(EDTF(type: :date, values: [2004, 6], uncertain: 63).edtf).to eq('2004-06?')
+    end
+
+    it 'builds only the known types' do
+      expect { EDTF(type: :exit, values: []) }.to raise_error(ArgumentError, /type/)
+      expect { EDTF('type' => 'send', 'values' => []) }.to raise_error(ArgumentError, /type/)
+      expect { EDTF(values: [2004]) }.to raise_error(ArgumentError, /type/)
+    end
+
+    it 'raises an ArgumentError for invalid results' do
+      expect { EDTF(type: :date) }.to raise_error(ArgumentError, /values/)
+      expect { EDTF(type: :date, values: [2004, 13]) }.to raise_error(ArgumentError)
+      expect { EDTF(type: :set, values: ['1667']) }.to raise_error(ArgumentError)
+    end
+  end
+
+  [nil, 2004, :year, [2004]].each do |value|
     it "raises a TypeError for #{value.inspect}" do
       expect { EDTF(value) }.to raise_error(TypeError)
     end

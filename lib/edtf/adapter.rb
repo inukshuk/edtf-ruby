@@ -1,17 +1,28 @@
 module EDTF
 
-  # Builds objects from parse results
-  # while the last 4.x types are phased out (step 2);
-  # goes in step 2.10.
+  # Builds EDTF objects from parse results.
+  # Results may come from outside (EDTF() accepts them),
+  # also with String keys and values as read from JSON;
+  # only the known types are built.
   module Adapter
+
+    TYPES = %i[date date_time year decade century season interval set list].freeze
 
     module_function
 
     def build(result)
       case result
-      when :open, :unknown then result
+      when :open, :unknown, 'open', 'unknown' then result.to_sym
       when Array then build(result[0])..build(result[1])
-      else send(result[:type], result)
+      when Hash
+        result = result.transform_keys(&:to_sym)
+        type = result[:type].to_s.to_sym
+        raise ArgumentError, "invalid parse result type: #{result[:type].inspect}" unless TYPES.include?(type)
+        raise ArgumentError, "invalid parse result values: #{result[:values].inspect}" unless result[:values].is_a?(Array)
+
+        send(type, result)
+      else
+        raise ArgumentError, "invalid parse result: #{result.inspect}"
       end
     end
 
