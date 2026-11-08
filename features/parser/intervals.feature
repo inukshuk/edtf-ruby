@@ -83,7 +83,7 @@ Feature: Parse intervals
       | string                | start      | end        |
       | 2004-06-uu/2004-07-03 | 2004-06-XX | 2004-07-03 |
 
-    @level2 @wip
+    @level2
     Examples: Qualification to the left of a part
       | string                  | start       | end         |
       | 2004-06-~01/2004-06-~20 | 2004-06-~01 | 2004-06-~20 |

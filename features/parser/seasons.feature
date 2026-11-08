@@ -17,7 +17,7 @@ Feature: Parse seasons
       | 2001-24 | 2001-24 | no        | no          |
       | 2003-23 | 2003-23 | no        | no          |
 
-    @level2 @wip
+    @level2
     Examples: Sub-year groupings
       | string  | season  | uncertain | approximate |
       | 2001-25 | 2001-25 | no        | no          |
@@ -56,7 +56,7 @@ Feature: Parse seasons
       | 2001-23 | 2001-09-01 | 2001-11-30 |
       | 2001-24 | 2001-12-01 | 2002-02-28 |
 
-    @level2 @wip
+    @level2
     Examples: Hemisphere seasons
       | string  | from       | to         |
       | 2001-25 | 2001-03-01 | 2001-05-31 |
@@ -66,7 +66,7 @@ Feature: Parse seasons
       | 2001-31 | 2001-03-01 | 2001-05-31 |
       | 2001-32 | 2001-06-01 | 2001-08-31 |
 
-    @level2 @wip
+    @level2
     Examples: Quarters, quadrimesters and semesters
       | string  | from       | to         |
       | 2001-33 | 2001-01-01 | 2001-03-31 |

@@ -13,47 +13,67 @@ class EDTF::ISO < EDTF::Grammar
 rule
 
   edtf
-    : date              # level 0
+    : date              # levels 0-2
     | date_time         # level 0
     | interval          # levels 0-2
-    | qualified_date    # levels 1-2
-    | unspecified       # levels 1-2
     | long_year         # level 1
-    | season            # level 1
     | exponential_year  # level 2
     | set               # level 2
     ;
 
 
-  # ---- Level 0: ISO 8601-1 ----
+  # ---- Dates, seasons, decades and centuries ----
 
+  # A date is made of parts: the year, month and day.
+  # Each part may have unspecified digits (X, levels 1-2)
+  # and qualifiers on either side (levels 1-2):
+  # a qualifier left of a part qualifies only that part,
+  # one on its right that part and all parts to its left.
+  # A second part from 21 to 41 is a season (levels 1-2);
+  # a year of three or two digits is a decade (level 2)
+  # or a century (level 0).
   date
-    : year            { result = date(val[0]) }
-    | year_month      { result = date(*val[0]) }
-    | year_month_day  { result = date(*val[0]) }
+    : year_part                    { result = date_of(val[0]) }
+    | year_part '-' part           { result = date_of(val[0], val[2]) }
+    | year_part '-' part '-' part  { result = date_of(val[0], val[2], val[4]) }
     ;
 
-  year
-    : d4
-    | '-' d4  { result = negative(val[1]) }
+  year_part
+    : ua sign xdigits ua  { result = [val[0], val[1] + val[2], val[3]] }
     ;
 
-  year_month
-    : year '-' month  { result = val.values_at(0, 2) }
+  part
+    : ua xdigits ua  { result = val }
     ;
 
-  year_month_day
-    : year_month '-' day  { result = check_day(*val[0], val[2]) }
+  sign
+    : /* none */  { result = '' }
+    | '-'
     ;
 
-  month : d01_12 ;
-  day   : d01_31 ;
+  ua
+    : /* none */  { result = [] }
+    | UA
+    ;
+
+  xdigits
+    : xdigit
+    | xdigits xdigit  { result = val[0] + val[1] }
+    ;
+
+  xdigit
+    : digit  { result = val[0].to_s }
+    | 'X'
+    ;
+
+
+  # ---- Date-times (level 0) ----
 
   date_time
-    : year_month_day 'T' time {
+    : date 'T' time {
         result = date_time(val[0], val[2])
       }
-    | year_month_day 'T' time offset {
+    | date 'T' time offset {
         result = date_time(val[0], val[2], val[3])
       }
     ;
@@ -73,104 +93,7 @@ rule
     ;
 
 
-  # ---- Level 1: qualified dates, unspecified digits, intervals ----
-
-  # A qualifier right of a part qualifies all parts to the left.
-  qualified_date
-    : qualified_year
-    | qualified_year_month
-    | qualified_year_month_day
-    ;
-
-  qualified_year
-    : year UA  { result = qualify(date(val[0]), val[1], :year) }
-    ;
-
-  qualified_year_month
-    : year '-' month UA {
-        result = qualify(date(val[0], val[2]), val[3], [:year, :month])
-      }
-    | qualified_year '-' month ua {
-        result = qualify(extend_date(val[0], val[2]), val[3], [:year, :month])
-      }
-    ;
-
-  qualified_year_month_day
-    : year_month '-' day UA {
-        result = qualify(date(*check_day(*val[0], val[2])), val[3])
-      }
-    | qualified_year_month '-' day ua {
-        check_day(*val[0][:values], val[2])
-        result = qualify(extend_date(val[0], val[2]), val[3])
-      }
-    ;
-
-  ua
-    : /* none */  { result = [] }
-    | UA
-    ;
-
-  # Unspecified digits from the right are level 1,
-  # the other forms level 2.
-  unspecified
-    : 'X' 'X' 'X' 'X' {
-        result = date(0, unspecified: Bitmask::XXXX)
-      }
-    | year '-' xx {
-        result = date(val[0], 1, unspecified: Bitmask::MONTH)
-      }
-    | year '-' xx '-' xx {
-        result = date(val[0], 1, 1, unspecified: Bitmask::MD)
-      }
-    | year '-' xx '-' day {
-        result = date(val[0], 1, val[4], unspecified: Bitmask::MONTH)
-      }
-    | year_month '-' xx {
-        result = date(*val[0], 1, unspecified: Bitmask::DAY)
-      }
-    | x_year {
-        year, mask = val[0]
-        result = date(year, unspecified: mask)
-      }
-    | x_year '-' month {
-        year, mask = val[0]
-        result = date(year, val[2], unspecified: mask)
-      }
-    | x_year '-' month '-' day {
-        year, mask = val[0]
-        check_day(year, val[2], val[4], leap: true)
-        result = date(year, val[2], val[4], unspecified: mask)
-      }
-    | x_year '-' month '-' xx {
-        year, mask = val[0]
-        result = date(year, val[2], 1, unspecified: mask | Bitmask::DAY)
-      }
-    | x_year '-' xx '-' day {
-        year, mask = val[0]
-        result = date(year, 1, val[4], unspecified: mask | Bitmask::MONTH)
-      }
-    | x_year '-' xx '-' xx {
-        year, mask = val[0]
-        result = date(year, 1, 1, unspecified: mask | Bitmask::MD)
-      }
-    ;
-
-  # A year with unspecified digits and its mask.
-  x_year
-    : x_digits
-    | '-' x_digits  { result = [-val[1][0], val[1][1]] }
-    ;
-
-  x_digits
-    : digit digit digit 'X' {
-        result = [number(val[0, 3]) * 10, Bitmask::YYYX]
-      }
-    | digit digit 'X' 'X' {
-        result = [number(val[0, 2]) * 100, Bitmask::YYXX]
-      }
-    ;
-
-  xx : 'X' 'X' ;
+  # ---- Intervals (levels 0-2) ----
 
   interval
     : interval_date '/' interval_date  { result = interval(val[0], val[2]) }
@@ -181,36 +104,16 @@ rule
     ;
 
   interval_date
-    : date
-    | qualified_date
-    | unspecified
+    : date  { result = member(val[0]) }
     ;
+
+
+  # ---- Years with more than four digits (levels 1-2) ----
 
   long_year
     : 'Y' integer      { result = year(long_year(val[1]), 1) }
     | 'Y' '-' integer  { result = year(-long_year(val[2]), 1) }
     ;
-
-  season
-    : year '-' season_number {
-        result = season(val[0], val[2])
-      }
-    # Extension: season-uncertainty
-    | year '-' season_number UA {
-        extension :season_uncertainty
-        result = season(val[0], val[2], val[3])
-      }
-    ;
-
-  season_number
-    : '2' '1'  { result = 21 }
-    | '2' '2'  { result = 22 }
-    | '2' '3'  { result = 23 }
-    | '2' '4'  { result = 24 }
-    ;
-
-
-  # ---- Level 2: exponential years, sets and lists ----
 
   exponential_year
     : 'Y' integer 'E' integer {
@@ -220,6 +123,9 @@ rule
         result = year(exponent(-val[2], val[4]), 2)
       }
     ;
+
+
+  # ---- Sets and lists (level 2) ----
 
   set
     : '[' list ']'  { result = { type: :set, **val[1] } }
@@ -246,40 +152,25 @@ rule
     ;
 
   member
-    : date
-    | qualified_date
-    | unspecified
+    : date  { result = member(val[0]) }
     | consecutives
     ;
 
+  # Open ends and consecutive dates are plain dates.
   earlier
-    : '..' date  { result = val[1] }
+    : '..' date  { result = plain(val[1]) }
     ;
 
   later
-    : year '..'            { result = date(val[0]) }
-    | year_month '..'      { result = date(*val[0]) }
-    | year_month_day '..'  { result = date(*val[0]) }
+    : date '..'  { result = plain(val[0]) }
     ;
 
   consecutives
-    : year '..' year {
-        result = [date(val[0]), date(val[2])]
-      }
-    | year_month '..' year_month {
-        result = [date(*val[0]), date(*val[2])]
-      }
-    | year_month_day '..' year_month_day {
-        result = [date(*val[0]), date(*val[2])]
-      }
+    : date '..' date  { result = consecutives(val[0], val[2]) }
     ;
 
 
   # ---- Digits ----
-
-  d4
-    : digit digit digit digit  { result = number(val) }
-    ;
 
   integer
     : positive_digit
@@ -293,21 +184,6 @@ rule
 
   positive_digit
     : '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
-    ;
-
-  d01_12
-    : '0' positive_digit  { result = val[1] }
-    | '1' '0'             { result = 10 }
-    | '1' '1'             { result = 11 }
-    | '1' '2'             { result = 12 }
-    ;
-
-  d01_31
-    : '0' positive_digit  { result = val[1] }
-    | '1' digit           { result = 10 + val[1] }
-    | '2' digit           { result = 20 + val[1] }
-    | '3' '0'             { result = 30 }
-    | '3' '1'             { result = 31 }
     ;
 
   d00_23
@@ -349,13 +225,124 @@ end
     end
   end
 
-  def negative(year)
-    raise ParseError, 'invalid year -0000, use 0000' if year.zero?
-    -year
+  PART_NAMES = %i[year month day].freeze
+
+  # Builds a date, season, decade or century from its parts,
+  # each [left qualifiers, digits with X, right qualifiers].
+  def date_of(*parts)
+    digits = parts.map { |part| part[1] }
+    negative = digits[0].start_with?('-')
+    digits[0] = digits[0].delete_prefix('-')
+    raw = digits.map { |d| d.tr('X', '0').to_i }
+
+    if negative && raw[0].zero?
+      raise ParseError, "invalid year -#{digits[0]}, use #{digits[0]}"
+    end
+
+    case digits.map(&:length)
+    when [2], [3]
+      epoch(negative ? -raw[0] : raw[0], parts[0])
+    when [4, 2]
+      if raw[1] > 12 && !digits[1].include?('X')
+        season_of(negative ? -raw[0] : raw[0], raw[1], parts)
+      else
+        calendar_date(negative, digits, raw, parts)
+      end
+    when [4], [4, 2, 2]
+      calendar_date(negative, digits, raw, parts)
+    else
+      raise ParseError, "invalid date #{digits.join('-')}"
+    end
   end
 
+  def calendar_date(negative, digits, raw, parts)
+    mask = Bitmask.compute(digits.join.ljust(8, '0'))
+    values = mask.zero? ? raw : Bitmask.new(mask).min(raw)
+    year, month, day = values
+
+    if month && !fits?(digits[1], 1..12)
+      raise ArgumentError, "invalid month #{digits[1]}"
+    end
+
+    if day
+      unless fits?(digits[2], 1..31)
+        raise ArgumentError, "invalid day #{digits[2]}"
+      end
+
+      check_day(*values, leap: digits[0].include?('X'))
+    end
+
+    values[0] = -year if negative
+    result = date(*values)
+    result[:unspecified] = mask unless mask.zero?
+
+    parts.each_with_index do |(left, _, right), i|
+      qualify(result, left, PART_NAMES[i])
+      qualify(result, right, PART_NAMES[0..i])
+    end
+
+    result
+  end
+
+  # Returns true if a number in range can be written with digits,
+  # where X stands for any digit.
+  def fits?(digits, range)
+    pattern = Regexp.new(digits.gsub('X') { '\\d' })
+    range.any? { |n| pattern.match?(format('%02d', n)) }
+  end
+
+  def epoch(value, (left, digits, right))
+    raise ArgumentError, "invalid year #{digits}" if digits.include?('X')
+    type = digits.length == 2 ? :century : :decade
+    qualify({ type: type, values: [value] }, left | right)
+  end
+
+  # Seasons 21-24 are level 1, 25-41 level 2.
+  # Only seasons as a whole can be qualified (season-uncertainty).
+  def season_of(year, number, parts)
+    (year_left, year_digits, year_right), (left, _, right) = parts
+
+    unless (21..41).cover?(number)
+      raise ArgumentError, "invalid month or season #{number}"
+    end
+
+    if year_digits.include?('X') || [year_left, year_right, left].any?(&:any?)
+      raise ArgumentError, "invalid season #{year_digits}-#{number}"
+    end
+
+    extension :season_uncertainty if right.any?
+    qualify({ type: :season, values: [year, number] }, right, Bitmask::YM)
+  end
+
+  # Interval ends and set members are dates.
+  def member(result)
+    return result if result[:type] == :date
+    raise ArgumentError, "invalid #{result[:type]} in an interval or set"
+  end
+
+  def plain(result)
+    if member(result).keys != %i[type values]
+      raise ArgumentError, 'open ends and consecutive dates must be plain dates'
+    end
+
+    result
+  end
+
+  def consecutives(from, to)
+    unless plain(from)[:values].length == plain(to)[:values].length
+      raise ArgumentError, 'consecutive dates must have the same precision'
+    end
+
+    [from, to]
+  end
+
+  # Date-times have a plain, complete date.
   def date_time(date, time, offset = nil)
-    result = { type: :date_time, values: [*date, *time] }
+    if date.keys != %i[type values] || date[:values].length != 3
+      raise ParseError, 'a date-time needs a complete date'
+    end
+
+    result = { type: :date_time, values: [*date[:values], *time] }
     result[:offset] = offset unless offset.nil?
     result
   end
@@ -378,10 +365,6 @@ end
   def long_year(year)
     raise ParseError, "invalid year Y#{year}, use #{year}" if year < 10000
     year
-  end
-
-  def season(year, season, qualifiers = [])
-    qualify({ type: :season, values: [year, season] }, qualifiers, Bitmask::YM)
   end
 
   def list(*values, **open)

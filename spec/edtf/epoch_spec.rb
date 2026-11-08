@@ -1,11 +1,11 @@
 # Partly ported from edtf.js test/decade.js and test/century.js.
 module EDTF
   describe Decade do
-    it_behaves_like 'a period', parses: false do
+    it_behaves_like 'a period' do
       let(:period) { Decade.new(196) }
     end
 
-    it_behaves_like 'a period', parses: false do
+    it_behaves_like 'a period' do
       let(:period) { Decade.new(-9, approximate: true) }
     end
 
@@ -102,7 +102,7 @@ module EDTF
   end
 
   describe Century do
-    it_behaves_like 'a period', parses: false do
+    it_behaves_like 'a period' do
       let(:period) { Century.new(19) }
     end
 
