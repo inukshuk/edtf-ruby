@@ -7,7 +7,7 @@
 # Regenerate lib/edtf/iso.rb with `bundle exec rake racc`.
 
 class EDTF::ISO < EDTF::Grammar
-  token UA
+  token UA MINUS
   expect 0
 
 rule
@@ -16,8 +16,7 @@ rule
     : date              # levels 0-2
     | date_time         # level 0
     | interval          # levels 0-2
-    | long_year         # level 1
-    | exponential_year  # level 2
+    | year              # levels 1-2
     | set               # level 2
     ;
 
@@ -48,7 +47,13 @@ rule
 
   sign
     : /* none */  { result = '' }
-    | '-'
+    | minus
+    ;
+
+  # The minus sign U+2212 or its ASCII stand-in, the hyphen-minus.
+  minus
+    : '-'
+    | MINUS
     ;
 
   ua
@@ -87,9 +92,9 @@ rule
   second : d00_59 ;
 
   offset
-    : 'Z'                  { result = 0 }
-    | '+' hour ':' minute  { result = offset(1, val[1], val[3]) }
-    | '-' hour ':' minute  { result = offset(-1, val[1], val[3]) }
+    : 'Z'                    { result = 0 }
+    | '+' hour ':' minute    { result = offset(1, val[1], val[3]) }
+    | minus hour ':' minute  { result = offset(-1, val[1], val[3]) }
     ;
 
 
@@ -108,20 +113,28 @@ rule
     ;
 
 
-  # ---- Years with more than four digits (levels 1-2) ----
+  # ---- Years with Y or significant digits (levels 1-2) ----
 
-  long_year
-    : 'Y' integer      { result = year(long_year(val[1]), 1) }
-    | 'Y' '-' integer  { result = year(-long_year(val[2]), 1) }
+  # Y marks years with more than four digits (level 1),
+  # E an exponent and S significant digits (level 2).
+  year
+    : 'Y' sign integer {
+        result = year(long_year(signed(val[1], val[2])), 1)
+      }
+    | 'Y' sign integer 'S' integer {
+        result = year(long_year(signed(val[1], val[2])), 2, val[4])
+      }
+    | 'Y' sign integer 'E' integer significant {
+        result = year(exponent(signed(val[1], val[2]), val[4]), 2, val[5])
+      }
+    | date 'S' integer {
+        result = significant_year(val[0], val[2])
+      }
     ;
 
-  exponential_year
-    : 'Y' integer 'E' integer {
-        result = year(exponent(val[1], val[3]), 2)
-      }
-    | 'Y' '-' integer 'E' integer {
-        result = year(exponent(-val[2], val[4]), 2)
-      }
+  significant
+    : /* none */   { result = nil }
+    | 'S' integer  { result = val[1] }
     ;
 
 
@@ -220,6 +233,8 @@ end
       [@src.matched, @src.matched.to_i]
     when @src.scan(/[?~%]/)
       [:UA, QUALIFIERS[@src.matched]]
+    when @src.scan(/\u2212/)
+      [:MINUS, '-']
     when @src.scan(/\.\.|./m)
       [@src.matched, @src.matched]
     end
@@ -361,10 +376,27 @@ end
     sign * offset
   end
 
+  def signed(sign, number)
+    sign.empty? ? number : -number
+  end
+
   # Years with fewer than five digits are written without Y.
   def long_year(year)
-    raise ParseError, "invalid year Y#{year}, use #{year}" if year < 10000
+    if year.abs < 10000
+      raise ParseError, "invalid year Y#{year}, use #{year}"
+    end
+
     year
+  end
+
+  # Four-digit years with significant digits, e.g. 1950S2.
+  def significant_year(date, significant)
+    if date[:type] != :date || date.keys != %i[type values] ||
+        date[:values].length != 1
+      raise ArgumentError, 'only years can have significant digits'
+    end
+
+    year(date[:values][0], 2, significant)
   end
 
   def list(*values, **open)

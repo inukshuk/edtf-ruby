@@ -67,6 +67,56 @@ module EDTF
       end
     end
 
+    describe 'years with significant digits' do
+      def self.year(value, level, significant = nil)
+        { type: :year, level: level, values: [value], significant: significant }.compact
+      end
+
+      {
+        '1950S2' => year(1950, 2, 2),
+        '-1950S2' => year(-1950, 2, 2),
+        'Y171010000S3' => year(171010000, 2, 3),
+        'Y3388E2S3' => year(338800, 2, 3),
+        'Y-17E7S2' => year(-170000000, 2, 2)
+      }.each do |input, result|
+        it "reads #{input}" do
+          expect(grammar.parse(input)).to eq(result)
+        end
+      end
+
+      %w[1950S0 1950S 1950S02 2004-06S2 1950?S2 199XS2 196S1 Y17S2].each do |input|
+        it "rejects #{input}" do
+          expect { grammar.parse(input) }.to raise_error(ArgumentError)
+        end
+      end
+    end
+
+    describe 'the minus sign U+2212' do
+      {
+        "−2004" => { type: :date, values: [-2004] },
+        "−199X" => { type: :date, values: [-1990], unspecified: Bitmask::YYYX },
+        "Y−170000002" => { type: :year, level: 1, values: [-170000002] },
+        "Y−17E7" => { type: :year, level: 2, values: [-170000000] },
+        "2004-06-11T10:10:10−04:00" =>
+          { type: :date_time, values: [2004, 6, 11, 10, 10, 10], offset: -240 }
+      }.each do |input, result|
+        it "reads #{input}" do
+          expect(grammar.parse(input)).to eq(result)
+        end
+      end
+
+      it 'is not a separator' do
+        expect { grammar.parse("2004−06") }.to raise_error(ArgumentError)
+      end
+
+      it 'is not read from other encodings' do
+        expect { grammar.parse("−2004".b) }.to raise_error(Grammar::ParseError)
+        expect { grammar.parse('2004'.encode('UTF-16LE')) }
+          .to raise_error(Grammar::ParseError)
+        expect(grammar.parse('2004'.b)).to eq(type: :date, values: [2004])
+      end
+    end
+
     [
       '2004-06-(11)~', '1984?~', '2004/open', 'unknown/2004', '199u',
       '198x', 'y17e7', '-0000', '{1960, 1961}', '2001-21^southern',
