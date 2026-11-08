@@ -6,7 +6,7 @@ module EDTF
     end
 
     it_behaves_like 'a period' do
-      let(:period) { Decade.new(-9, approximate: true) }
+      let(:period) { Decade.new(9, approximate: true) }
     end
 
     it 'has decade precision' do
@@ -17,11 +17,16 @@ module EDTF
       expect { Decade.new(1990) }.to raise_error(ArgumentError)
     end
 
+    it 'rejects negative decades, as ISO 8601-2 does' do
+      expect { Decade.new(-9) }.to raise_error(ArgumentError)
+      expect(EDTF.parse('-196')).to be_nil
+    end
+
     describe 'bounds' do
       {
         199 => %w[1990-01-01 1999-12-31],
         0 => %w[0000-01-01 0009-12-31],
-        -9 => %w[-0099-01-01 -0090-12-31]
+        9 => %w[0090-01-01 0099-12-31]
       }.each do |value, bounds|
         it "are #{bounds.join(' and ')} for #{value}" do
           d = Decade.new(value)
@@ -33,14 +38,14 @@ module EDTF
     describe '#edtf' do
       it 'writes NNNX by default' do
         expect(Decade.new(198).edtf).to eq('198X')
-        expect(Decade.new(-9).edtf).to eq('-009X')
+        expect(Decade.new(9).edtf).to eq('009X')
         expect(Decade.new(198, approximate: true).edtf).to eq('198X~')
       end
 
       it 'pads to three digits if short' do
         expect(Decade.new(198, short: true).edtf).to eq('198')
         expect(Decade.new(99, short: true).edtf).to eq('099')
-        expect(Decade.new(-9, short: true).edtf).to eq('-009')
+        expect(Decade.new(9, short: true).edtf).to eq('009')
       end
 
       it 'qualifies the whole decade' do
@@ -128,11 +133,9 @@ module EDTF
     end
 
     describe 'bounds' do
-      # edtf.js spans -19 from -1900 to -1801.
       {
         19 => %w[1900-01-01 1999-12-31],
-        0 => %w[0000-01-01 0099-12-31],
-        -19 => %w[-1999-01-01 -1900-12-31]
+        0 => %w[0000-01-01 0099-12-31]
       }.each do |value, bounds|
         it "are #{bounds.join(' and ')} for #{value}" do
           c = Century.new(value)
@@ -141,21 +144,25 @@ module EDTF
       end
 
       it 'match the unspecified year with the same digits' do
-        expect(Century.new(-19).to_range).to eq(EDTF.parse('-19XX').to_range)
+        expect(Century.new(19).to_range).to eq(EDTF.parse('19XX', centuries: false).to_range)
       end
     end
 
     describe '#edtf' do
       it 'writes NNXX by default' do
         expect(Century.new(20).edtf).to eq('20XX')
-        expect(Century.new(-1, uncertain: true).edtf).to eq('-01XX?')
+        expect(Century.new(1, uncertain: true).edtf).to eq('01XX?')
       end
 
       it 'pads to two digits if short' do
         expect(Century.new(20, short: true).edtf).to eq('20')
         expect(Century.new(1, short: true).edtf).to eq('01')
         expect(Century.new(0, short: true).edtf).to eq('00')
-        expect(Century.new(-1, short: true).edtf).to eq('-01')
+      end
+
+      it 'rejects negative centuries, as ISO 8601 does' do
+        expect { Century.new(-19) }.to raise_error(ArgumentError)
+        expect(EDTF.parse('-19')).to be_nil
       end
 
       it 'qualifies the whole century' do

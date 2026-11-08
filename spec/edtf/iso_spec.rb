@@ -41,15 +41,17 @@ module EDTF
         '1XX3' => date(1003, unspecified: Bitmask.compute('yxxymmdd')),
         '2016-01-X0' => date(2016, 1, 10, unspecified: Bitmask::XD),
         '1984-1X' => date(1984, 10, unspecified: Bitmask::MX),
+        '2004-X2-3X' => date(2004, 12, 30, unspecified: Bitmask::XM | Bitmask::DX),
+        '-00XX' => date(-1, unspecified: Bitmask::YYXX),
+        '-00X0' => date(-10, unspecified: Bitmask.compute('yyxymmdd')),
         'XXXX-12-XX' => date(0, 12, 1, unspecified: Bitmask::XXXX | Bitmask::DAY),
         '199X?' => date(1990, unspecified: Bitmask::YYYX, uncertain: Bitmask::YEAR),
         '2001-33' => { type: :season, values: [2001, 33] },
         '2001-21~' => { type: :season, values: [2001, 21], approximate: Bitmask::YM },
         '196' => { type: :decade, values: [196] },
-        '-009~' => { type: :decade, values: [-9], approximate: Bitmask::YEAR },
+        '009~' => { type: :decade, values: [9], approximate: Bitmask::YEAR },
         '19' => { type: :century, values: [19] },
         '?19' => { type: :century, values: [19], uncertain: Bitmask::YEAR },
-        '-01' => { type: :century, values: [-1] },
         '19/20' => {
           type: :interval,
           values: [{ type: :century, values: [19] }, { type: :century, values: [20] }]
@@ -61,7 +63,7 @@ module EDTF
       end
 
       %w[
-        12345 1 -00 -000X 2004-2X 2004-00 2004-13 2004-42 2004-X4-31 2004-4X
+        12345 1 -00 -01 -196 -009~ 2004-2X 2004-00 2004-13 2004-42 2004-X4-31 2004-4X
         19-21 2001?-21 2001-?21 20XX-21 1X 2004?-06-11T10:10:10
         2001-21/2001-22 {..~-0662} [..0000%..] {..1600-08-20..}
         [1667,1670..1672-01]

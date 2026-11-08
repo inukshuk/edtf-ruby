@@ -11,7 +11,7 @@ Feature: Parse decades and centuries
     Examples: Centuries
       | string | type    | from        | to          |
       | 19     | century | 1900-01-01  | 1999-12-31  |
-      | -01    | century | -0199-01-01 | -0100-12-31 |
+      | 00     | century | 0000-01-01  | 0099-12-31  |
 
     @level2
     Examples: Decades

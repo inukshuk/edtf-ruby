@@ -154,7 +154,7 @@ module EDTF
       return ::Date.new(leap_years.max, 2, 29, ::Date::GREGORIAN) if leap_day?
 
       year, month, day = unspecified.max(absolute_values)
-      year = -unspecified.min([self.year.abs])[0] if self.year.negative?
+      year = -least(unspecified.min([self.year.abs])[0]) if self.year.negative?
 
       return ::Date.new(year, 12, 31, ::Date::GREGORIAN) if month.nil?
       return ::Date.new(year, month, -1, ::Date::GREGORIAN) if day.nil?
@@ -177,7 +177,7 @@ module EDTF
 
       # Keep the lowest values the unspecified digits allow, as parsing does.
       unless unspecified.zero?
-        values = unspecified.min([values[0].abs, *values.drop(1)]).tap { |v| v[0] = -v[0] if values[0].negative? }
+        values = unspecified.min([values[0].abs, *values.drop(1)]).tap { |v| v[0] = -least(v[0]) if values[0].negative? }
       end
 
       self.class.new(*values, uncertain: uncertain, approximate: approximate, unspecified: unspecified, significant: significant)
@@ -361,6 +361,10 @@ module EDTF
 
     def plain
       ::Date.jd(jd, ::Date::GREGORIAN)
+    end
+
+    def least(year)
+      year.zero? ? unspecified.least_year(year) : year
     end
 
     def absolute_values

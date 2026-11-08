@@ -7,7 +7,7 @@ module EDTF
     describe 'centuries: true (default)' do
       it 'builds years with unspecified trailing digits as centuries and decades' do
         expect(build('19XX')).to eql(Century.new(19))
-        expect(build('-196X~')).to eql(Decade.new(-196, approximate: true))
+        expect(build('196X~')).to eql(Decade.new(196, approximate: true))
         expect(build('19XX?')).to eql(Century.new(19, uncertain: true))
         expect(build('19uu')).to eql(Century.new(19))
       end
@@ -15,6 +15,13 @@ module EDTF
       it 'builds other unspecified digits as dates' do
         expect(build('1X0X')).to be_an(EDTF::Date)
         expect(build('19XX-06')).to be_an(EDTF::Date)
+      end
+
+      it 'builds negative years as dates: decades and centuries are not negative' do
+        expect(build('-19XX')).to be_an(EDTF::Date)
+        expect(build('-00XX')).to be_an(EDTF::Date)
+        expect(build('-196X')).to be_an(EDTF::Date)
+        expect(build('00XX')).to eql(Century.new(0))
       end
 
       it 'applies to interval ends and set members' do

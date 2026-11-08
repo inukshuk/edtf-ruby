@@ -44,14 +44,15 @@ module_eval(<<'...end iso.y/module_eval...', 'iso.y', 263)
     digits[0] = digits[0].delete_prefix('-')
     raw = digits.map { |d| d.tr('X', '0').to_i }
 
-    if negative && raw[0].zero?
+    if negative && raw[0].zero? && !digits[0].include?('X')
       raise ParseError, "invalid year -#{digits[0]}, use #{digits[0]}"
     end
 
     case digits.map(&:length)
     when [2], [3]
+      raise ArgumentError, 'decades and centuries are not negative' if negative
       left, _, right = parts[0]
-      epoch(negative ? -raw[0] : raw[0], digits[0], left | right)
+      epoch(raw[0], digits[0], left | right)
     when [4, 2]
       if raw[1] > 12 && !digits[1].include?('X')
         season_of(negative ? -raw[0] : raw[0], raw[1], parts)
@@ -82,6 +83,7 @@ module_eval(<<'...end iso.y/module_eval...', 'iso.y', 263)
       check_day(*values, leap: digits[0].include?('X'))
     end
 
+    year = Bitmask.new(mask).least_year(year) if negative && year.zero?
     values[0] = -year if negative
     result = date(*values)
     result[:unspecified] = mask unless mask.zero?
