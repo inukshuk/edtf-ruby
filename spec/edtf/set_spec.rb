@@ -70,12 +70,22 @@ module EDTF
 
     describe '.new' do
       it 'takes periods, ranges of periods, and plain dates' do
-        list = List.new(Date.new(1667), Season.new(1668, 21), ::Date.new(1669, 1, 2), Date.new(1670)..Date.new(1672))
-        expect(list.edtf).to eq('{1667,1668-21,1669-01-02,1670..1672}')
+        list = List.new(Date.new(1667), Century.new(17), ::Date.new(1669, 1, 2), Date.new(1670)..Date.new(1672))
+        expect(list.edtf).to eq('{1667,17XX,1669-01-02,1670..1672}')
       end
 
       it 'rejects anything else' do
         expect { List.new('1667') }.to raise_error(ArgumentError)
+        expect { List.new(Season.new(1668, 21)) }.to raise_error(ArgumentError)
+      end
+
+      it 'takes only plain dates at open ends and in ranges, as the grammar does' do
+        expect { Set.new(Date.new(1984, uncertain: true), earlier: true) }.to raise_error(ArgumentError)
+        expect { Set.new(Date.new(1990, unspecified: 'yyyxmmdd'), later: true) }.to raise_error(ArgumentError)
+        expect { Set.new(Date.new(1984, uncertain: true)..Date.new(1986)) }.to raise_error(ArgumentError)
+        expect { Set.new(Date.new(1984)..Date.new(1986, 5)) }.to raise_error(ArgumentError)
+        expect { Set.new(Date.new(1667)..Date.new(1668), later: true) }.to raise_error(ArgumentError)
+        expect(Set.new(Date.new(1984, uncertain: true), Date.new(1990), later: true).edtf).to eq('[1984?,1990..]')
       end
 
       it 'is frozen' do
@@ -203,7 +213,7 @@ module EDTF
 
     describe '#with' do
       it 'replaces members and open ends' do
-        expect(list.with(later: true).edtf).to eq('{1667,1668,1670..1672..}')
+        expect(list.with(values: [Date.new(1667)], later: true).edtf).to eq('{1667..}')
         expect(list.with(values: [Date.new(2001)]).edtf).to eq('{2001}')
         expect { list.with(choice: true) }.to raise_error(ArgumentError)
       end

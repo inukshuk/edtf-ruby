@@ -234,8 +234,28 @@ module EDTF
       end
     end
 
-    it 'accepts reversed intervals, as 4.x does' do
-      expect(interval('2008/2004').edtf).to eq('2008/2004')
+    describe 'reversed intervals' do
+      it 'are rejected' do
+        expect { Interval.new(Date.new(2008), Date.new(2004)) }.to raise_error(ArgumentError, /reversed/)
+        expect(EDTF.parse('2008/2004')).to be_nil
+        expect(EDTF.parse('2008/2004~')).to be_nil
+        expect { EDTF('2004-01-01T10:00/2004-01-01T09:00') }.to raise_error(ArgumentError)
+      end
+
+      it 'are only those that end before they begin' do
+        %w[
+          2004/2004 2004-06/2004 2004/2004-01 196/1960 2004-06-15/2004-06
+          2004-01-01T10/2004-01-01T10:30 2004-01-01T10:00:00/2004-01-01T10:00:00
+          2004-01-01T10/2004-01-01T10:00:00 2004-01-01T10:00:00Z/2004-01-01T09:00:00-02:00
+          2004-01-01T23:00/2004-01-01
+        ].each do |string|
+          expect(EDTF.parse(string)).not_to be_nil, string
+        end
+      end
+
+      it 'parse, as valid syntax' do
+        expect(Parser.new.parse('2008/2004')).to include(type: :interval)
+      end
     end
   end
 end

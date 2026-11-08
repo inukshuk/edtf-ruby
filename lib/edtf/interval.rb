@@ -31,6 +31,7 @@ module EDTF
     def initialize(from, to)
       @from = coerce_end(from)
       @to = coerce_end(to)
+      raise ArgumentError, "reversed interval: #{edtf}" if reversed?
       freeze
     end
 
@@ -121,6 +122,16 @@ module EDTF
     end
 
     private
+
+    # The end lies before the start (ISO 8601-2 Annex C.1.3.3).
+    # Two times compare by instant, so T10:00/T09:00 on one day is reversed.
+    def reversed?
+      return false if ENDS.include?(from) || ENDS.include?(to)
+      return self.end < self.begin unless from.is_a?(::Time) && to.is_a?(::Time)
+
+      span = DateTime.span(to)
+      span.zero? ? to.to_r < from.to_r : to.to_r + span <= from.to_r
+    end
 
     def endless?
       ENDS.include?(to)

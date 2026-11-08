@@ -131,6 +131,27 @@ module EDTF
       end
     end
 
+    describe 'February 29 in a year with unspecified digits' do
+      let(:d) { EDTF.parse('19XX-02-29', centuries: false) }
+
+      it 'falls in the leap years the digits allow' do
+        expect([d.values, d.begin.iso8601, d.end.iso8601])
+          .to eq([[1904, 2, 29], '1904-02-29', '1996-02-29'])
+        expect(EDTF.parse('-19XX-02-29').to_range.minmax.map(&:iso8601))
+          .to eq(%w[-1996-02-29 -1904-02-29])
+        expect(EDTF.parse('XXXX-02-29').end.iso8601).to eq('9996-02-29')
+      end
+
+      it 'is written as given' do
+        expect(d.edtf).to eq('19XX-02-29')
+        expect(date(1900, 2, 29, unspecified: 'yyxxmmdd')).to eql(d)
+      end
+
+      it 'needs a leap year among them' do
+        expect(EDTF.parse('1X01-02-29')).to be_nil
+      end
+    end
+
     describe '#begin and #end' do
       {
         '2016' => %w[2016-01-01 2016-12-31],

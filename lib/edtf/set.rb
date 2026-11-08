@@ -27,6 +27,7 @@ module EDTF
       @values = values.map { |value| coerce_member(value) }.freeze
       @earlier = !empty? && !!earlier
       @later = !empty? && !!later
+      check_members
       freeze
     end
 
@@ -127,6 +128,29 @@ module EDTF
     # The members as written, with ranges as their two ends.
     def members
       values.flat_map { |value| value.is_a?(Range) ? [value.begin, value.end] : [value] }
+    end
+
+    # As in the grammar: members are dates, decades or centuries;
+    # open ends and ranges are plain dates, ranges of one precision.
+    def check_members
+      invalid = members.find { |member| !member.is_a?(Date) && !member.is_a?(Epoch) }
+      raise ArgumentError, "invalid #{self.class} member: #{invalid.edtf}" if invalid
+
+      ranges = values.grep(Range)
+      ends = [(values.first if earlier?), (values.last if later?)].compact
+
+      unless (ends + ranges.flat_map { |r| [r.begin, r.end] }).all? { |v| plain?(v) }
+        raise ArgumentError, 'open ends and ranges must be plain dates'
+      end
+
+      unless ranges.all? { |r| r.begin.precision == r.end.precision }
+        raise ArgumentError, 'ranges must have one precision'
+      end
+    end
+
+    def plain?(value)
+      value.instance_of?(Date) && value.year.abs <= 9999 && value.significant.nil? &&
+        [value.uncertain, value.approximate, value.unspecified].all?(&:zero?)
     end
 
     def coerce_member(value)
