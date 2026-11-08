@@ -38,6 +38,7 @@ module EDTF
     # The offset is given in minutes; nil means a floating time.
     # Minutes and seconds beyond the precision must be zero.
     # A t24 time is midnight, written as 24:00 of the day before.
+    # With year_zero: false, years before 1 are written one lower (see Date).
     def initialize(
       year,
       month,
@@ -47,7 +48,8 @@ module EDTF
       sec = 0,
       offset: nil,
       precision: :second,
-      t24: false
+      t24: false,
+      year_zero: true
     )
       precision = precision.to_sym
       raise ArgumentError,
@@ -69,6 +71,7 @@ module EDTF
       @floating = offset.nil?
       @precision = precision
       @t24 = !!t24
+      @historical = !year_zero
       raise ArgumentError, 't24 needs a time at midnight' if @t24 && !midnight?
       freeze
     end
@@ -79,6 +82,10 @@ module EDTF
 
     def t24?
       !!@t24
+    end
+
+    def year_zero?
+      !@historical
     end
 
     # In minutes, nil for floating times.
@@ -117,7 +124,8 @@ module EDTF
         *values,
         offset: changes.fetch(:offset, offset),
         precision: precision,
-        t24: changes.fetch(:t24) { t24? && values.drop(3).all?(&:zero?) })
+        t24: changes.fetch(:t24) { t24? && values.drop(3).all?(&:zero?) },
+        year_zero: year_zero?)
     end
 
     # The calendar date in the time's own offset.
@@ -143,7 +151,8 @@ module EDTF
       self.class.new(
         *values.take(PRECISION[precision][0]),
         offset: offset,
-        precision: precision)
+        precision: precision,
+        year_zero: year_zero?)
     end
 
     alias next succ
@@ -206,11 +215,12 @@ module EDTF
     def edtf
       date, hours = self.begin, hour
       date, hours = date - 1, 24 if t24?
+      year = Period.written_year(date.year, year_zero?)
 
       string = format(
         '%s%04d-%02d-%02dT%02d',
-        ('-' if date.year.negative?),
-        date.year.abs,
+        ('-' if year.negative?),
+        year.abs,
         date.month,
         date.day,
         hours)

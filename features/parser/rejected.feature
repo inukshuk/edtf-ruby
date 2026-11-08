@@ -33,6 +33,13 @@ Feature: Reject invalid strings
       | 1582-10-05 |
       | 1582-10-14 |
 
+  Scenario: Year 0 without year zero
+    Given the year zero option is off
+    Then the following strings should be rejected:
+      | 0000        |
+      | -0000       |
+      | -0002-02-29 |
+
   Scenario: Unknown calendars
     Then the following strings should be rejected:
       | 2001-02-03^xyz |

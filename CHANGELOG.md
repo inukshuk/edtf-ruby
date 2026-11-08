@@ -17,6 +17,8 @@ see [UPGRADING.md](UPGRADING.md) for the API changes and migration.
   (`centuries: false` to turn off).
 * Dates, seasons, decades and centuries in other calendars Ruby supports
   (`calendar: :julian`, also a parse option); legacy `^julian` is kept.
+* `year_zero: false` reads and writes years before 1 historically
+  (`-0001` is 1 BC, stored as year 0).
 * Reversed intervals and years beyond 100 digits are rejected.
 * ActiveSupport is no longer a dependency; EDTF-Ruby works with it.
 

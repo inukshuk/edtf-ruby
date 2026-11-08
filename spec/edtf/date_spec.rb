@@ -178,6 +178,54 @@ module EDTF
       end
     end
 
+    describe 'without year zero' do
+      def historical(string)
+        EDTF.parse!(string, year_zero: false, centuries: false)
+      end
+
+      it 'stores years astronomically: 1 BC is year 0' do
+        expect(historical('-0001')).to have_attributes(year: 0, values: [0], year_zero?: false)
+        expect(historical('-0044-03-15').year).to eq(-43)
+        expect(historical('0001').year).to eq(1)
+      end
+
+      it 'writes years as read' do
+        %w[-0001 -0044-03-15 -0001-02-29 -19XX -00XX 00XX -0050S1 Y-170000002].each do |string|
+          expect(historical(string).edtf).to eq(string)
+        end
+        expect(date(0, year_zero: false).edtf).to eq('-0001')
+        expect(date(0).edtf).to eq('0000')
+      end
+
+      it 'reads leap days in astronomical years' do
+        expect(historical('-0001-02-29').begin.iso8601).to eq('0000-02-29')
+        expect(EDTF.parse('-0001-02-29')).to be_nil
+      end
+
+      it 'applies unspecified digits to the written year' do
+        expect(historical('-19XX').to_range.minmax.map(&:year)).to eq([-1998, -1899])
+        expect(historical('-00XX').to_range.minmax.map(&:year)).to eq([-98, 0])
+        expect(historical('00XX').to_range.minmax.map(&:year)).to eq([1, 99])
+        expect(historical('-0050S1').to_range.minmax.map(&:year)).to eq([-58, -49])
+      end
+
+      it 'steps across 1 BC to AD 1' do
+        expect(historical('-0001').succ.edtf).to eq('0001')
+        expect(historical('0001').prev.edtf).to eq('-0001')
+        expect(historical('-00XX').succ.edtf).to eq('00XX')
+        expect(historical('00XX').prev).to eql(historical('-00XX'))
+      end
+
+      it 'is kept by #with' do
+        expect(historical('-0001-02').with(precision: :year).edtf).to eq('-0001')
+      end
+
+      it 'is part of eql? only where it changes the period' do
+        expect(historical('-0001')).to eql(EDTF('0000'))
+        expect(historical('00XX')).not_to eql(EDTF.parse('00XX', centuries: false))
+      end
+    end
+
     describe 'calendars' do
       let(:julian) { date(1500, 2, 29, calendar: :julian) }
 

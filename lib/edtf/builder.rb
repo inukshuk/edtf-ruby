@@ -54,20 +54,39 @@ module EDTF
 
         # Negative years stay dates: decades and centuries are not negative.
         if epoch && !year.negative?
-          return epoch.new(year / size, **result.slice(:uncertain, :approximate, :calendar))
+          return epoch.new(year / size, **result.slice(:uncertain, :approximate, :calendar, :year_zero))
         end
       end
 
-      Date.new(*result[:values], **result.slice(
+      Date.new(*astronomical(result), **result.slice(
         :uncertain,
         :approximate,
         :unspecified,
-        :calendar
+        :calendar,
+        :year_zero
       ))
     end
 
+    # Results without year zero have years as written (1 BC is -1);
+    # objects store them astronomically (1 BC is 0).
+    # Year 0 has unspecified digits there: 00XX begins at year 1.
+    def astronomical(result)
+      return result[:values] unless result[:year_zero] == false
+
+      year, *values = result[:values]
+
+      year =
+        if year.zero?
+          Bitmask.new(result[:unspecified].to_i).least_year(year)
+        else
+          Period.astronomical_year(year, false)
+        end
+
+      [year, *values]
+    end
+
     def date_time(result)
-      values = result[:values].take(6)
+      values = astronomical(result).take(6)
       ms = result[:values][6]
       values[5] += Rational(ms, 1000) if ms
 
@@ -79,33 +98,35 @@ module EDTF
       DateTime.new(
         *values,
         offset: result[:offset],
-        precision: precision
+        precision: precision,
+        **result.slice(:year_zero)
       )
     end
 
     def year(result)
-      Date.new(result[:values][0], **result.slice(:significant, :calendar))
+      Date.new(astronomical(result)[0], **result.slice(:significant, :calendar, :year_zero))
     end
 
     # Decades and centuries in results were written 196 and 19.
     def decade(result)
       Decade.new(result[:values][0], short: true,
-        **result.slice(:uncertain, :approximate, :calendar))
+        **result.slice(:uncertain, :approximate, :calendar, :year_zero))
     end
 
     def century(result)
       Century.new(result[:values][0], short: true,
-        **result.slice(:uncertain, :approximate, :calendar))
+        **result.slice(:uncertain, :approximate, :calendar, :year_zero))
     end
 
     def season(result)
-      year, season = result[:values]
+      year, season = astronomical(result)
       season = hemisphere(result[:qualifier], season)
       Season.new(year, season, **result.slice(
         :uncertain,
         :approximate,
         :unspecified,
-        :calendar))
+        :calendar,
+        :year_zero))
     end
 
     def hemisphere(qualifier, season)

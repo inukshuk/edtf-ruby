@@ -134,6 +134,17 @@ module EDTF
       end
     end
 
+    # Years are stored as in ISO 8601 (astronomical numbering: 0 is 1 BC).
+    # Without year zero (historical numbering), years are written
+    # one lower before year 1: 1 BC is -1, 2 BC is -2.
+    def self.written_year(year, year_zero) # :nodoc:
+      year_zero || year.positive? ? year : year - 1
+    end
+
+    def self.astronomical_year(year, year_zero) # :nodoc:
+      year_zero || !year.negative? ? year : year + 1
+    end
+
     # The Ruby Date start of a calendar.
     def self.start(calendar) # :nodoc:
       calendar = self.calendar(calendar)
