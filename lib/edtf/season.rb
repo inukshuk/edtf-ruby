@@ -40,7 +40,7 @@ module EDTF
 
     attr_reader :year, :season
 
-    def initialize(year, season, uncertain: nil, approximate: nil, unspecified: nil, calendar: nil)
+    def initialize(year, season, uncertain: nil, approximate: nil, unspecified: nil, calendar: nil, year_zero: true)
       @year = Integer(year)
       @season = Integer(season)
       raise ArgumentError, "invalid season: #{season}" unless DIVISIONS.key?(@season)
@@ -49,10 +49,16 @@ module EDTF
       @approximate = bits(approximate)
       @unspecified = Bitmask.new(Bitmask.convert(unspecified) & Bitmask::YEAR)
       @calendar = Period.calendar(calendar)
+      @historical = !year_zero
       freeze
     end
 
     attr_reader :uncertain, :approximate, :unspecified, :calendar
+
+    # False if years are written without year 0 (1 BC is -0001).
+    def year_zero?
+      !@historical
+    end
 
     def precision
       :season
@@ -81,7 +87,7 @@ module EDTF
       check_keys!(changes, attributes)
 
       values = attributes.to_h { |name| [name, changes.fetch(name) { send(name) }] }
-      self.class.new(values.delete(:year), values.delete(:season), **values, calendar: calendar)
+      self.class.new(values.delete(:year), values.delete(:season), **values, calendar: calendar, year_zero: year_zero?)
     end
 
     def begin
@@ -102,8 +108,12 @@ module EDTF
 
       year = self.year + shift
       unless unspecified.zero? || shift.zero?
-        year = (shift.positive? ^ year.negative? ? years.last : years.first) + shift
-        year = unspecified.min([year.abs])[0] * (year.negative? ? -1 : 1)
+        year = (shift.positive? ^ written_year.negative? ? years.last : years.first) + shift
+        year = Period.written_year(year, year_zero?)
+        sign = year.negative? ? -1 : 1
+        year = unspecified.min([year.abs])[0]
+        year = unspecified.least_year(year) if year.zero? && !year_zero?
+        year = Period.astronomical_year(sign * year, year_zero?)
       end
 
       with(year: year, season: cycle[index])
@@ -116,8 +126,8 @@ module EDTF
     end
 
     def edtf
-      sign = year.negative? ? '-' : ''
-      values = [format('%04d', year.abs), season.to_s]
+      sign = written_year.negative? ? '-' : ''
+      values = [format('%04d', written_year.abs), season.to_s]
 
       return sign + unspecified.masks(values).join('-') unless unspecified.zero?
 
@@ -130,7 +140,8 @@ module EDTF
     protected
 
     def state
-      [year, season, uncertain.value, approximate.value, unspecified.value, calendar]
+      [year, season, uncertain.value, approximate.value, unspecified.value, calendar,
+        year_zero? || unspecified.zero?]
     end
 
     private
@@ -144,13 +155,20 @@ module EDTF
       part.nil? ? !mask.zero? : mask.intersect?(part)
     end
 
-    # The first and last year the unspecified digits allow.
+    def written_year
+      Period.written_year(year, year_zero?)
+    end
+
+    # The first and last year the unspecified digits allow,
+    # from the written year.
     def years
       return year..year if unspecified.zero?
 
-      low, = unspecified.min([year.abs])
-      high, = unspecified.max([year.abs])
-      year.negative? ? -high..-low : low..high
+      low, = unspecified.min([written_year.abs])
+      high, = unspecified.max([written_year.abs])
+      low = unspecified.least_year(low) if low.zero? && !year_zero?
+      years = written_year.negative? ? [-high, -low] : [low, high]
+      years.map { |year| Period.astronomical_year(year, year_zero?) }.then { |a, b| a..b }
     end
   end
 

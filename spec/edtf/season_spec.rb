@@ -157,6 +157,22 @@ module EDTF
       end
     end
 
+    describe 'without year zero' do
+      it 'are written as read and stored astronomically' do
+        s = EDTF.parse('-0001-21', year_zero: false)
+        expect([s.year, s.edtf, s.begin.year]).to eq([0, '-0001-21', 0])
+        expect(s.succ.year_zero?).to be false
+      end
+
+      it 'apply unspecified digits to the written year' do
+        s = season(0, 21, unspecified: 'yyyxmmdd', year_zero: false)
+        expect([s.edtf, s.to_range.minmax.map(&:year)]).to eq(['-000X-21', [-8, 0]])
+        s = season(1, 21, unspecified: 'yyyxmmdd', year_zero: false)
+        expect([s.edtf, s.to_range.minmax.map(&:year)]).to eq(['000X-21', [1, 9]])
+        expect(s.prev.edtf).to eq('-000X-24')
+      end
+    end
+
     describe 'in other calendars' do
       let(:winter) { season(1499, 24, calendar: :julian) }
 

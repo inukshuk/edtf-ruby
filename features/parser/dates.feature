@@ -79,6 +79,23 @@ Feature: Parse dates
       | Y171010000S3 | 171010000 | 3      | 171000000-01-01     | 171999999-12-31     |
       | Y3388E2S3    | 338800    | 3      | 338000-01-01        | 338999-12-31        |
 
+  # ISO 8601 numbers years astronomically: 0000 is 1 BC, -0001 is 2 BC.
+  # Without year zero, years before 1 are written historically
+  # (-0001 is 1 BC) but stored astronomically, and written as read.
+  Scenario Outline: Years before 1 without year zero
+    Given the year zero option is off
+    When I parse "<string>"
+    Then it should be the date "<date>"
+    And its EDTF string should be "<string>"
+
+    Examples:
+      | string      | date        |
+      | -0001       | 0000        |
+      | -0002       | -0001       |
+      | -0044-03-15 | -0043-03-15 |
+      | -0001-02-29 | 0000-02-29  |
+      | 0001        | 0001        |
+
   # Dates are proleptic Gregorian, unless parsed in another calendar.
   Scenario Outline: Calendars
     Given the calendar option is "<calendar>"

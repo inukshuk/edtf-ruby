@@ -21,7 +21,7 @@ module EDTF
 
     attr_reader :value, :calendar
 
-    def initialize(value, uncertain: false, approximate: false, short: false, calendar: nil)
+    def initialize(value, uncertain: false, approximate: false, short: false, calendar: nil, year_zero: true)
       @value = Integer(value)
       raise ArgumentError, "invalid #{precision}: #{value}" unless (0...10**self.class.digits).cover?(@value)
 
@@ -29,6 +29,7 @@ module EDTF
       @approximate = qualified?(approximate)
       @short = !!short
       @calendar = Period.calendar(calendar)
+      @historical = !year_zero
       freeze
     end
 
@@ -52,6 +53,12 @@ module EDTF
       @short
     end
 
+    # False if years are written without year 0:
+    # then the first century and decade (00XX, 000X) begin with year 1.
+    def year_zero?
+      !@historical
+    end
+
     def with(**changes)
       return self if changes.empty?
 
@@ -62,12 +69,14 @@ module EDTF
         uncertain: changes.fetch(:uncertain, uncertain?),
         approximate: changes.fetch(:approximate, approximate?),
         short: changes.fetch(:short, short?),
-        calendar: calendar
+        calendar: calendar,
+        year_zero: year_zero?
       )
     end
 
     def begin
-      ::Date.new(span.first, 1, 1, Period.start(calendar))
+      first = span.first.zero? && !year_zero? ? 1 : span.first
+      ::Date.new(first, 1, 1, Period.start(calendar))
     end
 
     def end
@@ -95,7 +104,7 @@ module EDTF
     protected
 
     def state
-      [value, uncertain?, approximate?, calendar]
+      [value, uncertain?, approximate?, calendar, year_zero? || !value.zero?]
     end
 
     private

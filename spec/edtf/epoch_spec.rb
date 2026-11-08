@@ -119,6 +119,16 @@ module EDTF
     end
   end
 
+  describe 'Epochs without year zero' do
+    it 'begin with year 1 when they would begin with 0' do
+      expect(Century.new(0, year_zero: false).begin.year).to eq(1)
+      expect(Decade.new(0, year_zero: false).begin.year).to eq(1)
+      expect(EDTF.parse('00XX', year_zero: false).begin.year).to eq(1)
+      expect(Century.new(0, year_zero: false)).not_to eql(Century.new(0))
+      expect(Century.new(19, year_zero: false)).to eql(Century.new(19))
+    end
+  end
+
   describe 'Epochs in other calendars' do
     let(:century) { Century.new(15, calendar: :julian) }
 

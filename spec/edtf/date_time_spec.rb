@@ -40,6 +40,15 @@ module EDTF
       end
     end
 
+    describe 'without year zero' do
+      it 'writes years as read and stores them astronomically' do
+        t = EDTF.parse('-0001-01-01T10:00:00', year_zero: false)
+        expect([t.year, t.edtf]).to eq([0, '-0001-01-01T10:00:00'])
+        expect(t.with(hour: 11).edtf).to eq('-0001-01-01T11:00:00')
+        expect(t.succ.year_zero?).to be false
+      end
+    end
+
     describe '#edtf' do
       {
         '2001-02-03T09:30:01' => '2001-02-03T09:30:01',

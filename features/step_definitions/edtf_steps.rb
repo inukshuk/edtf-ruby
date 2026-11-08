@@ -48,6 +48,10 @@ Given('the century option is off') do
   @options = { centuries: false }
 end
 
+Given('the year zero option is off') do
+  @options = { year_zero: false }
+end
+
 Given('the calendar option is {string}') do |calendar|
   @options = { calendar: calendar.to_sym }
 end

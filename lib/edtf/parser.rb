@@ -40,6 +40,7 @@ module EDTF
       strict: false,
       max_year_digits: 100,
       calendar: nil,
+      year_zero: true,
       debug: false,
       warn: true
     )
@@ -57,6 +58,7 @@ module EDTF
         legacy: legacy,
         max_year_digits: max_year_digits,
         calendar: Period.calendar(calendar),
+        year_zero: !!year_zero,
         debug: debug,
         warn: warn
       }.freeze
@@ -157,6 +159,7 @@ module EDTF
       when Hash
         result[:values].each { |value| finish(value) }
         result[:level] ||= level(result)
+        check_year_zero(result) unless options[:year_zero]
         check_calendar(result)
       end
       result
@@ -181,10 +184,24 @@ module EDTF
       end
     end
 
+    # Without year zero, years are written historically (1 BC is -0001):
+    # results record year_zero: false, and year 0 is invalid.
+    def check_year_zero(result)
+      return unless %i[date year decade century season date_time].include?(result[:type])
+
+      result[:year_zero] = false
+      return if %i[decade century].include?(result[:type])
+      return unless result[:values][0].zero? && result[:unspecified].to_i & Bitmask::YEAR == 0
+
+      raise ArgumentError, 'there is no year 0 without year zero (1 BC is -0001)'
+    end
+
     def check_date(result, calendar)
       year, month, day = result[:values]
       return if day.nil?
-      return if ::Date.valid_date?(year, month, day, Period.start(calendar))
+
+      astronomical = Period.astronomical_year(year, result[:year_zero] != false)
+      return if ::Date.valid_date?(astronomical, month, day, Period.start(calendar))
 
       raise ArgumentError,
         format('invalid date %04d-%02d-%02d in the %s calendar', year, month, day, calendar)

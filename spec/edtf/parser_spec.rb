@@ -99,6 +99,27 @@ module EDTF
         expect { Parser.new(calendar: :hebrew) }.to raise_error(ArgumentError, /hebrew/)
       end
 
+      it 'read years without year zero with year_zero: false' do
+        historical = Parser.new(year_zero: false)
+        expect(historical.parse!('-0001')).to include(values: [-1], year_zero: false)
+        expect(historical.parse!('[-0001,0001]')[:values]).to all(include(year_zero: false))
+        expect(parser.parse!('-0001')).not_to include(:year_zero)
+      end
+
+      it 'reject year 0 without year zero' do
+        historical = Parser.new(year_zero: false)
+        %w[0000 -0000 0000-21 0000-01-01T00:00:00].each do |input|
+          expect { historical.parse!(input) }.to raise_error(ArgumentError, /no year 0/)
+        end
+        expect(historical.parse!('00XX')[:values]).to eq([0])
+        expect(historical.parse!('00')[:values]).to eq([0])
+      end
+
+      it 'check leap days in astronomical years' do
+        expect(Parser.new(year_zero: false).parse('-0001-02-29')).not_to be_nil
+        expect(Parser.new(year_zero: false).parse('-0002-02-29')).to be_nil
+      end
+
       it 'limit the year digits' do
         expect(Parser.new(max_year_digits: 10).parse('Y1E9')).not_to be_nil
         expect(Parser.new(max_year_digits: 10).parse('Y1E10')).to be_nil

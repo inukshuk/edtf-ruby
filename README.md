@@ -253,6 +253,16 @@ which widen their bounds:
     EDTF('1950S2').end.to_s                  #-> "1999-12-31"
     EDTF::Date.new(1950, significant: 2).edtf      #-> "1950S2"
 
+ISO 8601 numbers years astronomically:
+`0000` is 1 BC and `-0001` is 2 BC,
+so the first century BC is `-0099/0000`.
+With `year_zero: false`, years before 1 are read and written historically,
+without a year 0, but stored astronomically:
+
+    EDTF.parse('-0001', year_zero: false).year     #-> 0
+    EDTF.parse('-0001', year_zero: false).edtf     #-> "-0001"
+    EDTF.parse('0000', year_zero: false)           #-> nil
+
 
 Date-times
 ----------
@@ -493,6 +503,11 @@ The options are:
   unless you pass those options, too.
 * `max_year_digits:` longer years are rejected (default 100);
   exponents let short strings stand for huge years.
+* `calendar:` the calendar to read dates in:
+  `:gregorian` (the default), `:julian`, `:italy`, `:england`,
+  or the Julian day of a reform.
+* `year_zero:` `false` to read years before 1 without a year 0
+  (`-0001` is 1 BC); they are written the same way again.
 * `centuries:` (`EDTF.parse` only) whether to read `19XX` and `196X`
   as centuries and decades (default true, unless `strict: true`).
 
