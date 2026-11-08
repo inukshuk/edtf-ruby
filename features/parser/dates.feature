@@ -66,7 +66,7 @@ Feature: Parse dates
       | string | date |
       | -0000  | 0000 |
 
-  @level2 @wip
+  @level2
   Scenario Outline: Significant digits
     When I parse "<string>"
     Then it should be the date "<date>"

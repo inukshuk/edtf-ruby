@@ -28,6 +28,10 @@ module EDTF
     end
 
     def parse(input, debug: false)
+      unless input.encoding == Encoding::UTF_8 || input.ascii_only?
+        raise ParseError, "invalid encoding #{input.encoding}"
+      end
+
       @yydebug = debug
       @src = StringScanner.new(input)
       @deprecations = []
@@ -84,8 +88,10 @@ module EDTF
       sgnd * 10**exponent
     end
 
-    def year(value, level)
-      { type: :year, level: level, values: [value] }
+    def year(value, level, significant = nil)
+      result = { type: :year, level: level, values: [value] }
+      result[:significant] = significant if significant
+      result
     end
 
     def interval(from, to)
