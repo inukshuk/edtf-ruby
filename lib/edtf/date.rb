@@ -51,6 +51,8 @@ module EDTF
       values = [year, month, day].compact
       raise ArgumentError, 'day given without month' if day && month.nil?
 
+      year = Date.leap_years(year, unspecified).first || year if month == 2 && day == 29
+
       super(year, month || 1, day || 1, ::Date::GREGORIAN)
 
       @precision = PRECISION[values.length - 1]
@@ -64,6 +66,21 @@ module EDTF
     end
 
     attr_reader :significant
+
+    # February 29 in a year with unspecified digits (19XX-02-29)
+    # falls in the leap years the digits allow;
+    # such a date stores the first one (1904).
+    def self.leap_years(year, unspecified) # :nodoc:
+      pattern = Bitmask.new(unspecified).masks([format('%04d', year.abs)])[0]
+      return [year] unless pattern.include?('X')
+
+      digits = Regexp.new("\\A#{pattern.gsub('X') { '\\d' }}\\z")
+      sign = year.negative? ? -1 : 1
+
+      (0..9999).filter_map do |n|
+        sign * n if digits.match?(format('%04d', n)) && ::Date.gregorian_leap?(sign * n)
+      end
+    end
 
     # Instances created by Ruby's own date methods skip initialize;
     # they behave like unqualified dates with day precision.
@@ -123,6 +140,7 @@ module EDTF
     def begin
       return plain if atomic?
       return ::Date.new(significant_years.first, 1, 1, ::Date::GREGORIAN) if significant
+      return ::Date.new(leap_years.min, 2, 29, ::Date::GREGORIAN) if leap_day?
 
       year, month, day = unspecified.min(absolute_values)
       year = -unspecified.max([self.year.abs])[0] if self.year.negative?
@@ -133,6 +151,7 @@ module EDTF
     def end
       return plain if atomic?
       return ::Date.new(significant_years.last, 12, 31, ::Date::GREGORIAN) if significant
+      return ::Date.new(leap_years.max, 2, 29, ::Date::GREGORIAN) if leap_day?
 
       year, month, day = unspecified.max(absolute_values)
       year = -unspecified.min([self.year.abs])[0] if self.year.negative?
@@ -321,6 +340,15 @@ module EDTF
 
     def qualified?(mask, part)
       part.nil? ? !mask.zero? : mask.intersect?(part)
+    end
+
+    def leap_day?
+      precision == :day && month == 2 && day == 29 &&
+        unspecified.year? && !unspecified.month? && !unspecified.day?
+    end
+
+    def leap_years
+      Date.leap_years(year, unspecified)
     end
 
     def plain?
