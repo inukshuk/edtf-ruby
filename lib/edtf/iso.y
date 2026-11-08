@@ -1,0 +1,490 @@
+# -*- racc -*-
+#
+# The ISO 8601-2 grammar: EDTF levels 0 to 2 and EDTF-Ruby's extensions.
+# Section headers give the levels; rules for extensions are marked.
+#
+# Regenerate lib/edtf/iso.rb with `bundle exec rake racc`.
+
+class EDTF::ISO < EDTF::Grammar
+  token UA MINUS
+  expect 0
+
+rule
+
+  edtf
+    : date              # levels 0-2
+    | date_time         # level 0
+    | interval          # levels 0-2
+    | year              # levels 1-2
+    | set               # level 2
+    ;
+
+
+  # ---- Dates, seasons, decades and centuries ----
+
+  # A date is made of parts: the year, month and day.
+  # Each part may have unspecified digits (X, levels 1-2)
+  # and qualifiers on either side (levels 1-2):
+  # a qualifier left of a part qualifies only that part,
+  # one on its right that part and all parts to its left.
+  # A second part from 21 to 41 is a season (levels 1-2);
+  # a year of three or two digits is a decade (level 2)
+  # or a century (level 0).
+  date
+    : year_part                    { result = date_of(val[0]) }
+    | year_part '-' part           { result = date_of(val[0], val[2]) }
+    | year_part '-' part '-' part  { result = date_of(val[0], val[2], val[4]) }
+    ;
+
+  year_part
+    : ua sign xdigits ua  { result = [val[0], val[1] + val[2], val[3]] }
+    ;
+
+  part
+    : ua xdigits ua  { result = val }
+    ;
+
+  sign
+    : /* none */  { result = '' }
+    | minus
+    ;
+
+  # The minus sign U+2212 or its ASCII stand-in, the hyphen-minus.
+  minus
+    : '-'
+    | MINUS
+    ;
+
+  ua
+    : /* none */  { result = [] }
+    | UA
+    ;
+
+  xdigits
+    : xdigit
+    | xdigits xdigit  { result = val[0] + val[1] }
+    ;
+
+  xdigit
+    : digit  { result = val[0].to_s }
+    | 'X'
+    ;
+
+
+  # ---- Date-times (level 0) ----
+
+  date_time
+    : date 'T' time {
+        result = date_time(val[0], val[2])
+      }
+    | date 'T' time offset {
+        result = date_time(val[0], val[2], val[3])
+      }
+    ;
+
+  # Times may stop at the hour or minute (T14, T14:39);
+  # fractions of a second are read in milliseconds.
+  time
+    : hour             { result = val }
+    | hour ':' minute  { result = val.values_at(0, 2) }
+    | hour ':' minute ':' second {
+        result = val.values_at(0, 2, 4)
+      }
+    | hour ':' minute ':' second fraction {
+        result = val.values_at(0, 2, 4, 5)
+      }
+    ;
+
+  fraction
+    : decimal_sign digits  { result = milliseconds(val[1]) }
+    ;
+
+  decimal_sign
+    : '.'
+    | ','
+    ;
+
+  digits
+    : digit         { result = val[0].to_s }
+    | digits digit  { result = val[0] + val[1].to_s }
+    ;
+
+  hour   : d00_23 ;
+  minute : d00_59 ;
+  second : d00_59 ;
+
+  # Offsets are written +hh:mm, +hh, or +hhmm (extension: basic-offset).
+  offset
+    : 'Z'                 { result = 0 }
+    | '+' offset_time     { result = offset(1, *val[1]) }
+    | minus offset_time   { result = offset(-1, *val[1]) }
+    ;
+
+  offset_time
+    : hour ':' minute  { result = [val[0], val[2]] }
+    | hour             { result = [val[0], 0] }
+    | hour minute {
+        extension :basic_offset
+        result = [val[0], val[1]]
+      }
+    ;
+
+
+  # ---- Intervals (levels 0-2) ----
+
+  # An empty end is unknown, `..` is open.
+  interval
+    : interval_end '/' interval_end  { result = season_interval(val[0], val[2]) }
+    | interval_end '/' end_of_day    { result = season_interval(val[0], val[2]) }
+    ;
+
+  # 24:00 is the end of a day (ISO 8601-1), but only as an interval's end.
+  end_of_day
+    : date 'T' midnight         { result = date_time(val[0], val[2]) }
+    | date 'T' midnight offset  { result = date_time(val[0], val[2], val[3]) }
+    ;
+
+  midnight
+    : '2' '4'                          { result = [24] }
+    | '2' '4' ':' '0' '0'              { result = [24, 0] }
+    | '2' '4' ':' '0' '0' ':' '0' '0'  { result = [24, 0, 0] }
+    ;
+
+  interval_end
+    : /* none */  { result = :unknown }
+    | '..'        { result = :open }
+    | date        { result = interval_end(val[0]) }
+    | date_time
+    ;
+
+
+  # ---- Years with Y or significant digits (levels 1-2) ----
+
+  # Y marks years with more than four digits (level 1),
+  # E an exponent and S significant digits (level 2).
+  year
+    : 'Y' sign integer {
+        result = year(long_year(signed(val[1], val[2])), 1)
+      }
+    | 'Y' sign integer 'S' integer {
+        result = year(long_year(signed(val[1], val[2])), 2, val[4])
+      }
+    | 'Y' sign integer 'E' integer significant {
+        result = year(exponent(signed(val[1], val[2]), val[4]), 2, val[5])
+      }
+    | date 'S' integer {
+        result = significant_year(val[0], val[2])
+      }
+    ;
+
+  significant
+    : /* none */   { result = nil }
+    | 'S' integer  { result = val[1] }
+    ;
+
+
+  # ---- Sets and lists (level 2) ----
+
+  set
+    : '[' list ']'  { result = { type: :set, **val[1] } }
+    | '{' list '}'  { result = { type: :list, **val[1] } }
+    ;
+
+  list
+    : members              { result = list(*val[0]) }
+    | members ',' later    { result = list(*val[0], val[2], later: true) }
+    | later                { result = list(val[0], later: true) }
+    | earlier              { result = list(val[0], earlier: true) }
+    | earlier ',' members  { result = list(val[0], *val[2], earlier: true) }
+    | earlier ',' later {
+        result = list(val[0], val[2], earlier: true, later: true)
+      }
+    | earlier ',' members ',' later {
+        result = list(val[0], *val[2], val[4], earlier: true, later: true)
+      }
+    ;
+
+  members
+    : member              { result = [val[0]] }
+    | members ',' member  { result = val[0] + [val[2]] }
+    ;
+
+  member
+    : date  { result = member(val[0]) }
+    | consecutives
+    ;
+
+  # Open ends and consecutive dates are plain dates.
+  earlier
+    : '..' date  { result = plain(val[1]) }
+    ;
+
+  later
+    : date '..'  { result = plain(val[0]) }
+    ;
+
+  consecutives
+    : date '..' date  { result = consecutives(val[0], val[2]) }
+    ;
+
+
+  # ---- Digits ----
+
+  integer
+    : positive_digit
+    | integer digit  { result = 10 * val[0] + val[1] }
+    ;
+
+  digit
+    : '0'
+    | positive_digit
+    ;
+
+  positive_digit
+    : '1' | '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9'
+    ;
+
+  d00_23
+    : '0' digit  { result = val[1] }
+    | '1' digit  { result = 10 + val[1] }
+    | '2' d0_3   { result = 20 + val[1] }
+    ;
+
+  d00_59
+    : d0_5 digit  { result = 10 * val[0] + val[1] }
+    ;
+
+  d0_3 : '0' | '1' | '2' | '3' ;
+  d0_5 : d0_3 | '4' | '5' ;
+
+end
+
+---- inner
+
+  QUALIFIERS = {
+    '?' => [:uncertain],
+    '~' => [:approximate],
+    '%' => [:uncertain, :approximate]
+  }.freeze
+
+  # Digits are tokens with their value, qualifiers UA tokens;
+  # every other character is a token of its own.
+  # Characters the grammar does not know are syntax errors.
+  def next_token
+    case
+    when @src.eos?
+      nil
+    when @src.scan(/\d/)
+      [@src.matched, @src.matched.to_i]
+    when @src.scan(/[?~%]/)
+      [:UA, QUALIFIERS[@src.matched]]
+    when @src.scan(/\u2212/)
+      [:MINUS, '-']
+    when @src.scan(/\.\.|./m)
+      [@src.matched, @src.matched]
+    end
+  end
+
+  PART_NAMES = %i[year month day].freeze
+
+  # Builds a date, season, decade or century from its parts,
+  # each [left qualifiers, digits with X, right qualifiers].
+  def date_of(*parts)
+    digits = parts.map { |part| part[1] }
+    negative = digits[0].start_with?('-')
+    digits[0] = digits[0].delete_prefix('-')
+    raw = digits.map { |d| d.tr('X', '0').to_i }
+
+    if negative && raw[0].zero? && !digits[0].include?('X')
+      raise ParseError, "invalid year -#{digits[0]}, use #{digits[0]}"
+    end
+
+    case digits.map(&:length)
+    when [2], [3]
+      raise ArgumentError, 'decades and centuries are not negative' if negative
+      left, _, right = parts[0]
+      epoch(raw[0], digits[0], left | right)
+    when [4, 2]
+      if raw[1] > 12 && !digits[1].include?('X')
+        season_of(negative, raw[0], raw[1], parts)
+      else
+        calendar_date(negative, digits, raw, parts)
+      end
+    when [4], [4, 2, 2]
+      calendar_date(negative, digits, raw, parts)
+    else
+      raise ParseError, "invalid date #{digits.join('-')}"
+    end
+  end
+
+  def calendar_date(negative, digits, raw, parts)
+    mask = Bitmask.compute(digits.join.ljust(8, '0'))
+    values = mask.zero? ? raw : Bitmask.new(mask).min(raw)
+    year, month, day = values
+
+    if month && !fits?(digits[1], 1..12)
+      raise ArgumentError, "invalid month #{digits[1]}"
+    end
+
+    if day
+      unless fits?(digits[2], 1..31)
+        raise ArgumentError, "invalid day #{digits[2]}"
+      end
+
+      check_day(*values)
+    end
+
+    year = Bitmask.new(mask).least_year(year) if negative && year.zero?
+    values[0] = -year if negative
+    result = date(*values)
+    result[:unspecified] = mask unless mask.zero?
+
+    parts.each_with_index do |(left, _, right), i|
+      qualify(result, left, PART_NAMES[i])
+      qualify(result, right, PART_NAMES[0..i])
+    end
+
+    # Level 1 qualifies only at the end (2001?); ?2001 is level 2.
+    result[:level] = 2 if parts.any? { |left, _, _| left.any? }
+    result
+  end
+
+  # Returns true if a number in range can be written with digits,
+  # where X stands for any digit.
+  def fits?(digits, range)
+    pattern = Regexp.new(digits.gsub('X') { '\\d' })
+    range.any? { |n| pattern.match?(format('%02d', n)) }
+  end
+
+  def epoch(value, digits, qualifiers)
+    raise ArgumentError, "invalid year #{digits}" if digits.include?('X')
+    type = digits.length == 2 ? :century : :decade
+    qualify({ type: type, values: [value] }, qualifiers)
+  end
+
+  # Seasons 21-24 are level 1, 25-41 level 2.
+  # Qualified seasons and seasons with unspecified year digits
+  # are an extension (season-uncertainty, from edtf.js).
+  def season_of(negative, year, number, parts)
+    unless (21..41).cover?(number)
+      raise ArgumentError, "invalid month or season #{number}"
+    end
+
+    mask = Bitmask.compute(parts[0][1].delete_prefix('-').ljust(8, '0'))
+    year = Bitmask.new(mask).least_year(year) if negative && year.zero?
+    result = { type: :season, values: [negative ? -year : year, number] }
+
+    parts.each_with_index do |(left, _, right), i|
+      qualify(result, left, PART_NAMES[i])
+      qualify(result, right, PART_NAMES[0..i])
+    end
+
+    qualified = result.key?(:uncertain) || result.key?(:approximate)
+    extension :season_uncertainty if qualified || !mask.zero?
+    return result if mask.zero?
+
+    raise ArgumentError, 'unspecified digits cannot be qualified' if qualified
+    result.merge(unspecified: mask)
+  end
+
+  # Seasons are interval ends as an extension (season-intervals, from edtf.js),
+  # checked by season_interval.
+  def interval_end(result)
+    result[:type] == :season ? result : member(result)
+  end
+
+  # Season intervals go from season to season.
+  def season_interval(from, to)
+    seasons = [from, to].map { |value| value.is_a?(Hash) && value[:type] == :season }
+
+    if seasons.any?
+      raise ArgumentError, 'invalid season in an interval' unless seasons.all?
+      extension :season_intervals
+    end
+
+    interval(from, to)
+  end
+
+  # Interval ends and set members are dates, decades or centuries.
+  def member(result)
+    return result unless result[:type] == :season
+    raise ArgumentError, 'invalid season in an interval or set'
+  end
+
+  def plain(result)
+    if result[:type] != :date || result.keys != %i[type values]
+      raise ArgumentError, 'open ends and consecutive dates must be plain dates'
+    end
+
+    result
+  end
+
+  def consecutives(from, to)
+    unless plain(from)[:values].length == plain(to)[:values].length
+      raise ArgumentError, 'consecutive dates must have the same precision'
+    end
+
+    [from, to]
+  end
+
+  # Date-times have a plain, complete date.
+  def date_time(date, time, offset = nil)
+    if date.keys != %i[type values] || date[:values].length != 3
+      raise ParseError, 'a date-time needs a complete date'
+    end
+
+    result = { type: :date_time, values: [*date[:values], *time] }
+    result[:offset] = offset unless offset.nil?
+    result
+  end
+
+  # Returns the offset in minutes.
+  # ISO sets no range: hours run to 23 and minutes to 59
+  # (historical local times exceed today's zones).
+  # Zero is written +00:00; -00:00 is invalid.
+  def offset(sign, hours, minutes)
+    offset = 60 * hours + minutes
+
+    if sign < 0 && offset.zero?
+      sign = sign < 0 ? '-' : '+'
+      raise ArgumentError,
+        format('invalid offset %s%02d:%02d', sign, hours, minutes)
+    end
+
+    sign * offset
+  end
+
+  def milliseconds(digits)
+    if digits.length > 3
+      raise ArgumentError, "too many fraction digits: #{digits}, at most 3"
+    end
+
+    digits.ljust(3, '0').to_i
+  end
+
+  def signed(sign, number)
+    sign.empty? ? number : -number
+  end
+
+  # Years with fewer than five digits are written without Y.
+  def long_year(year)
+    if year.abs < 10000
+      raise ParseError, "invalid year Y#{year}, use #{year}"
+    end
+
+    year
+  end
+
+  # Four-digit years with significant digits, e.g. 1950S2.
+  def significant_year(date, significant)
+    if date[:type] != :date || date.keys != %i[type values] ||
+        date[:values].length != 1
+      raise ArgumentError, 'only years can have significant digits'
+    end
+
+    year(date[:values][0], 2, significant)
+  end
+
+  def list(*values, **open)
+    { values: values, **open }
+  end

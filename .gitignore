@@ -1,5 +1,5 @@
 Gemfile.lock
-lib/edtf/parser.output
+lib/edtf/*.output
 .rbx
 .ruby-version
 *.swp

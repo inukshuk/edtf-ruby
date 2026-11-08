@@ -27,6 +27,23 @@ Feature: Reject invalid strings
       | 1999-02-29 |
       | 1900-02-29 |
 
+  Scenario: Days skipped by a calendar reform
+    Given the calendar option is "italy"
+    Then the following strings should be rejected:
+      | 1582-10-05 |
+      | 1582-10-14 |
+
+  Scenario: Year 0 without year zero
+    Given the year zero option is off
+    Then the following strings should be rejected:
+      | 0000        |
+      | -0000       |
+      | -0002-02-29 |
+
+  Scenario: Unknown calendars
+    Then the following strings should be rejected:
+      | 2001-02-03^xyz |
+
   Scenario: Invalid date-times
     Then the following strings should be rejected:
       | 2016-05-02T24:00:01        |

@@ -4,7 +4,7 @@ module EDTFHelpers
   PARTS = %i[year month day].freeze
 
   def parse(string)
-    EDTF.parse!(string)
+    EDTF.parse!(string, **(@options || {}))
   end
 
   # "2004-06" -> [2004, 6]; "-0999" -> [-999]
@@ -43,26 +43,42 @@ Before do |scenario|
   @legacy = scenario.source_tag_names.include?('@legacy')
 end
 
+# By default, 19XX and 196X are centuries and decades.
+Given('the century option is off') do
+  @options = { centuries: false }
+end
+
+# Turns on the extensions that are off by default (season intervals).
+Given('the extensions are on') do
+  @options = { extensions: true }
+end
+
+Given('the year zero option is off') do
+  @options = { year_zero: false }
+end
+
+Given('the calendar option is {string}') do |calendar|
+  @options = { calendar: calendar.to_sym }
+end
+
 Given('the date {string}') do |date|
-  v = values(date)
-  @result = Date.new(*v)
-  @result.precision = EDTFHelpers::PARTS[v.length - 1]
+  @result = EDTF::Date.new(*values(date))
 end
 
 Given('the date {string} with {word} precision') do |date, precision|
-  @result = Date.parse(date)
-  @result.precision = precision
+  @result = EDTF::Date.new(*values(date)).with(precision: precision)
 end
 
 When('the uncertain parts are {string}') do |list|
-  parts(list).each { |part| @result.uncertain!(part) }
+  @result = @result.with(uncertain: parts(list))
 end
 
 When('the approximate parts are {string}') do |list|
-  parts(list).each { |part| @result.approximate!(part) }
+  @result = @result.with(approximate: parts(list))
 end
 
 When('I parse {string}') do |string|
+  @string = string
   @result = parse(string)
   expect(EDTF.legacy?(string)).to eq(@legacy)
 end
@@ -78,7 +94,7 @@ Then('it should be the date-time {string}') do |date_time|
 end
 
 Then('in UTC it should be {string}') do |date_time|
-  expect(@result.to_time.utc.strftime('%FT%T')).to eq(date_time)
+  expect(@result.getutc.strftime('%FT%T')).to eq(date_time)
 end
 
 Then('the uncertain parts should be {string}') do |list|
@@ -91,11 +107,11 @@ end
 
 # The mask marks unspecified digits with X, e.g. "YYYX-MM-DD".
 Then('the unspecified digits should be {string}') do |mask|
-  expect(@result.unspecified.to_s).to eq(mask.tr('YMD', 's'))
+  expect(@result.unspecified.to_s).to eq(mask)
 end
 
-Then('it should be unknown') do
-  expect(@result).to be_an(EDTF::Unknown)
+Then('it should be a {word}') do |type|
+  expect(@result).to be_an_instance_of(EDTF.const_get(type.capitalize))
 end
 
 Then('it should cover {string}') do |date|
@@ -125,8 +141,7 @@ Then('the end should be {string}') do |date|
 end
 
 Then('it should be the season {string}') do |season|
-  year, code = season.match(/\A(-?\d+)-(\d\d)\z/).captures.map(&:to_i)
-  expect([@result.year, EDTF::Season::CODES[@result.season]]).to eq([year, code])
+  expect(@result.values).to eq(season.match(/\A(-?\d+)-(\d\d)\z/).captures.map(&:to_i))
 end
 
 Then('it should be uncertain: {word}') do |answer|
@@ -137,17 +152,15 @@ Then('it should be approximate: {word}') do |answer|
   expect(@result.approximate?).to eq(yes?(answer))
 end
 
-Then('the season qualifier should be {string}') do |qualifier|
-  expect(@result.qualifier).to eq(qualifier)
-end
-
-Then('the calendar should be {string}') do |calendar|
-  expect(@result.calendar).to eq(calendar)
+# Calendars and season qualifiers have no ISO 8601-2 equivalent:
+# only the parse result keeps them.
+Then('the parse result should record the {word} {string}') do |key, value|
+  expect(EDTF::Parser.new(warn: false).parse!(@string)[key.to_sym].to_s).to eq(value)
 end
 
 # "one of" is a choice; "all of" includes every member.
 Then('it should be {string} the members {string}') do |kind, members|
-  expect(@result.choice?).to eq(kind == 'one of')
+  expect(@result).to be_an(kind == 'one of' ? EDTF::Set : EDTF::List)
   expected = members.split(/,\s*/)
   expect(@result.to_a.length).to eq(expected.length)
   @result.to_a.zip(expected).each { |actual, member| expect(actual).to eql(parse(member)) }
@@ -158,5 +171,13 @@ Then('the open end should be {string}') do |open|
 end
 
 Then('the significant digits should be {int}') do |digits|
-  expect(@result.significant_digits).to eq(digits)
+  expect(@result.significant).to eq(digits)
+end
+
+Then('it should be in the {word} calendar') do |calendar|
+  expect(@result.calendar).to eq(calendar.to_sym)
+end
+
+Then('its first day should be {string} in the Gregorian calendar') do |date|
+  expect(@result.begin.gregorian.iso8601).to eq(date)
 end

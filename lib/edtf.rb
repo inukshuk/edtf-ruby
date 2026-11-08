@@ -1,38 +1,29 @@
 require 'date'
 require 'time'
-
-autoload :Rational, 'rational'
-
-require 'forwardable'
-require 'enumerator'
 require 'set'
 
-require 'active_support'
-require 'active_support/core_ext/date/calculations'
-require 'active_support/core_ext/date_time/calculations'
-require 'active_support/core_ext/time/calculations'
-
-require 'active_support/core_ext/date/conversions'
-
-require 'edtf/compatibility'
-
 require 'edtf/version'
-require 'edtf/uncertainty'
+require 'edtf/bitmask'
+require 'edtf/period'
 require 'edtf/date'
 require 'edtf/date_time'
 require 'edtf/epoch'
 require 'edtf/season'
 require 'edtf/interval'
 require 'edtf/set'
-require 'edtf/unknown'
+require 'edtf/grammar'
+require 'edtf/iso'
+require 'edtf/legacy'
 require 'edtf/parser'
-require 'edtf/extensions'
+require 'edtf/builder'
 
 # = EDTF-Ruby
 #
-# This module extends the Ruby date/time classes to support the Extended
-# Date/Time Format (EDTF). See the `EDTF::ExtendedDate` module for an
-# overview of the features added to the Ruby `Date` class.
+# Implements the Extended Date/Time Format (EDTF) in ISO 8601-2.
+#
+# Every EDTF string stands for a period of time (see EDTF::Period):
+# dates (EDTF::Date, a Ruby Date), date-times (EDTF::DateTime, a Ruby Time),
+# decades and centuries, seasons, intervals, sets and lists.
 #
 # To parse EDTF strings use `EDTF.parse` or `EDTF()`.
 #
@@ -40,14 +31,17 @@ module EDTF
 
   module_function
 
-  def parse(input, options = {})
-    parse!(input, options)
+  def parse(input, **options)
+    parse!(input, **options)
   rescue
     nil
   end
   
-  def parse!(input, options = {})
-    Parser.new(options).parse!(input)
+  # Options go to the parser, except centuries: (see Builder),
+  # which is on unless strict: true.
+  def parse!(input, centuries: nil, **options)
+    centuries = !options[:strict] if centuries.nil?
+    Builder.build(Parser.new(**options).parse!(input), centuries: centuries)
   end
 
   def legacy?(input)
@@ -59,17 +53,37 @@ end
 module Kernel
   private
 
-  # Converts value to an EDTF object:
-  # strings are parsed, times become date-times,
-  # dates and other EDTF objects are returned unchanged.
+  # Converts any value to an EDTF object if possible.
+  # Raises an ArgumentError for invalid strings or parse results,
+  # and a TypeError for values that cannot be converted at all.
   def EDTF(value)
     case value
     when String
       EDTF.parse!(value)
-    when Time
-      value.to_datetime
-    when Date, EDTF::Season, EDTF::Epoch, EDTF::Interval, EDTF::Set, EDTF::Unknown
+    when Hash
+      EDTF::Builder.build(value)
+    when EDTF::Period
       value
+    when Time, ::DateTime
+      time = value.to_time
+
+      unless (time.utc_offset % 60).zero?
+        raise ArgumentError, "offset #{time.strftime('%::z')} is not in whole minutes"
+      end
+
+      EDTF::DateTime.new(
+        time.year,
+        time.month,
+        time.day,
+        time.hour,
+        time.min,
+        time.sec + time.subsec,
+        offset: time.utc_offset / 60)
+    # Days after their calendar's reform (Ruby's default: Italy, 1582)
+    # are Gregorian; earlier ones keep their calendar and digits.
+    when ::Date
+      calendar = value.gregorian? ? nil : value.start
+      EDTF::Date.new(value.year, value.month, value.day, calendar: calendar)
     else
       raise TypeError, "can't convert #{value.class} into EDTF"
     end

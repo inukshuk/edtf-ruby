@@ -154,7 +154,7 @@ Feature: Parse uncertain or approximate dates
       | 2004-(06)%-11     | 2004-06-11 | month            | month            |
       | 2004-06-(11)%     | 2004-06-11 | day              | day              |
 
-    @level2 @wip
+    @level2
     Examples: Qualification to the left of a part
       | string       | date       | uncertain | approximate |
       | ?2004-06-~11 | 2004-06-11 | year      | day         |

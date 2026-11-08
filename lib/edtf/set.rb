@@ -1,97 +1,188 @@
 module EDTF
 
-  class Set
-    extend Forwardable
-
+  # EDTF supports two kinds of sets:
+  # choice lists, meaning one date out of a list (EDTF::Set, [...]),
+  # or inclusive lists (EDTF::List, {...}).
+  # Both share their member handling through this module.
+  #
+  # Sets remember which members were specified as a range;
+  # ranges are however enumerated for membership tests:
+  #
+  #     EDTF('{1667,1668,1670..1672}').values.length       -> 3
+  #     EDTF('{1667,1668,1670..1672}').map(&:year)         -> [1667, 1668, 1670, 1671, 1672]
+  #
+  #     EDTF('{1667,1668,1670..1672}').include? EDTF('1671')  -> true
+  #     EDTF('{1667,1668,1670..1672}').include? EDTF('1669')  -> false
+  #
+  # Sets also feature #earlier? and #later?:
+  # an open start (..1667) or end (1672..) without bound.
+  module Members
     include Enumerable
-    include Comparable
+    include Period # after Enumerable, so ActiveSupport's Enumerable#as_json doesn't win
 
-    def_delegators :@dates, :size, :length, :empty?
+    attr_reader :values
 
-    attr_accessor :choice, :later, :earlier
-
-
-    def initialize(*dates)
-      @dates = ::Set.new(dates.flatten)
-      @choice, @later, @earlier = false, false, false
+    # An empty set has no open start or end.
+    def initialize(*values, earlier: false, later: false)
+      @values = values.map { |value| coerce_member(value) }.freeze
+      @earlier = !empty? && !!earlier
+      @later = !empty? && !!later
+      check_members
+      freeze
     end
 
-    def initialize_copy(other)
-      @set = other.to_set
+    def earlier?
+      @earlier
     end
 
-    [:choice, :later, :earlier].each do |m|
-      define_method("#{m}?") { send(m) }
-      define_method("#{m}!") do
-        send("#{m}=", true)
-        self
-      end
+    def later?
+      @later
     end
 
-    def include?(v)
-      return false unless v.is_a?(Date)
-      return false if empty?
-
-      dates_array = to_a
-      if earlier?
-        (min = dates_array.first) >= v && min.precision == v.precision
-      elsif later?
-        (max = dates_array.last) <= v && max.precision == v.precision
-      else
-        dates_array.member?(v)
-      end
+    def empty?
+      values.empty?
     end
-    alias member? include?
 
-    def <<(date)
-      dates << date
+    def precision
+      members.first&.precision
+    end
+
+    def begin
+      members.map(&:begin).min unless earlier? || empty?
+    end
+
+    def end
+      members.map(&:end).max unless later? || empty?
+    end
+
+    def with(**changes)
+      return self if changes.empty?
+
+      check_keys!(changes, %i[values earlier later])
+
+      self.class.new(
+        *changes.fetch(:values, values),
+        earlier: changes.fetch(:earlier, earlier?),
+        later: changes.fetch(:later, later?)
+      )
+    end
+
+    # Yields each member, enumerating ranges.
+    def each(&block)
+      return to_enum(:each) unless block_given?
+
+      values.each { |value| value.is_a?(Range) ? value.each(&block) : yield(value) }
       self
     end
 
-    def each(&block)
-      if block_given?
-        to_a.each(&block)
-        self
-      else
-        to_enum
+    def cover?(other)
+      !empty? && super
+    end
+
+    # Returns true if other is one of the (enumerated) members,
+    # like Enumerable#include?; ranges are tested by their bounds.
+    # Beyond an open start or end ([..1760], {1760..}),
+    # every period of the same precision is included,
+    # although #each yields only the members as written;
+    # like (..5).include?(3) for a beginless Ruby range.
+    def include?(other)
+      return false if empty?
+
+      precision = Period.precision(other)
+      return true if values.any? do |value|
+        value.is_a?(Range) ? value.begin.precision == precision && value.cover?(other) : value == other
       end
+
+      first, last = members.first, members.last
+      (earlier? && first.precision == precision && other <= first) ||
+        (later? && last.precision == precision && other >= last)
+    end
+
+    # Returns a Ruby Set of the enumerated members.
+    def to_set
+      raise RangeError, "cannot enumerate the open set #{edtf}" if earlier? || later?
+
+      ::Set.new(to_a)
     end
 
     def edtf
-      parenthesize(dates.map { |d|
-        d.respond_to?(:edtf) ? d.edtf : d.to_s
-      }.sort.join(','))
-    end
+      content = values.map { |value| value.is_a?(Range) ? "#{value.begin.edtf}..#{value.end.edtf}" : value.edtf }
+      return wrap('') if content.empty?
 
-    def to_a
-      dates.map { |d| Array(d) }.flatten.sort
-    end
-
-    def to_set
-      to_a.to_set
-    end
-
-    alias to_s edtf
-
-    def <=>(other)
-      return nil unless other.respond_to?(:to_a)
-      to_a <=> other.to_a
+      wrap("#{'..' if earlier?}#{content.join(',')}#{'..' if later?}")
     end
 
     protected
 
-    attr_reader :dates
+    def state
+      [values, earlier?, later?]
+    end
 
     private
 
-    def parenthesize(string)
-      p = choice? ? %w([ ]) : %w({ })
-      p[-1,0] = '..' if earlier?
-      p[-1,0] = string unless string.empty?
-      p[-1,0] = '..' if later?
-      p.join
+    # Open starts and ends sort like open interval ends.
+    def keys
+      [earlier? ? [-2] : super[0], later? ? [2] : super[1], rank]
     end
 
+    # The members as written, with ranges as their two ends.
+    def members
+      values.flat_map { |value| value.is_a?(Range) ? [value.begin, value.end] : [value] }
+    end
+
+    # As in the grammar: members are dates, decades or centuries;
+    # open ends and ranges are plain dates, ranges of one precision.
+    def check_members
+      invalid = members.find { |member| !member.is_a?(Date) && !member.is_a?(Epoch) }
+      raise ArgumentError, "invalid #{self.class} member: #{invalid.edtf}" if invalid
+
+      ranges = values.grep(Range)
+      ends = [(values.first if earlier?), (values.last if later?)].compact
+
+      unless (ends + ranges.flat_map { |r| [r.begin, r.end] }).all? { |v| plain?(v) }
+        raise ArgumentError, 'open ends and ranges must be plain dates'
+      end
+
+      unless ranges.all? { |r| r.begin.precision == r.end.precision }
+        raise ArgumentError, 'ranges must have one precision'
+      end
+    end
+
+    def plain?(value)
+      value.instance_of?(Date) && value.year.abs <= 9999 && value.significant.nil? &&
+        [value.uncertain, value.approximate, value.unspecified].all?(&:zero?)
+    end
+
+    def coerce_member(value)
+      case value
+      when Period then value
+      when ::Date then EDTF(value)
+      when Range then coerce_member(value.begin)..coerce_member(value.end)
+      else raise ArgumentError, "invalid #{self.class} member: #{value.inspect}"
+      end
+    end
+  end
+
+  # One of a set: [1667,1668,1670..1672].
+  class Set
+    include Members
+
+    private
+
+    def wrap(content)
+      "[#{content}]"
+    end
+  end
+
+  # All members of a set: {1667,1668,1670..1672}.
+  class List
+    include Members
+
+    private
+
+    def wrap(content)
+      "{#{content}}"
+    end
   end
 
 end

@@ -14,6 +14,218 @@ module EDTF
       it 'raises an ArgumentError for invalid input' do
         expect { parser.parse!('xyz') }.to raise_error(ArgumentError)
       end
+
+      it 'rejects years beyond 100 digits without computing them' do
+        expect(parser.parse!('Y3E99')[:values]).to eq([3 * 10**99])
+        expect { parser.parse!('Y3E100') }.to raise_error(ArgumentError, /too large/)
+        expect { parser.parse!('Y-1E99999999999999999999') }.to raise_error(ArgumentError, /too large/)
+      end
+
+      it 'rejects days the month cannot have' do
+        expect { parser.parse!('2019-02-29') }.to raise_error(ArgumentError)
+        expect { parser.parse!('156X-09-31') }.to raise_error(ArgumentError)
+        expect(parser.parse!('15XX-02-29')[:values]).to eq([1500, 2, 29])
+      end
+
+      it 'rejects whitespace other than spaces in sets' do
+        ['2004/ ..', '2004 /..', "{1960,\t1961}", "[1960,\n1961]"].each do |input|
+          expect { parser.parse!(input) }.to raise_error(ArgumentError)
+        end
+      end
+    end
+
+    describe 'options' do
+      it 'read legacy syntax by default' do
+        expect(parser.parse('2004/open')).not_to be_nil
+      end
+
+      it 'turn off legacy syntax with legacy: false' do
+        expect(Parser.new(legacy: false).parse('2004/open')).to be_nil
+        expect(Parser.new(legacy: false).parse('2004/..')).not_to be_nil
+      end
+
+      it 'turn off extensions with extensions: false' do
+        expect(Parser.new(extensions: false).parse('2001-21?')).to be_nil
+        expect(Parser.new(extensions: false).parse('2001-21')).not_to be_nil
+      end
+
+      it 'turn off extensions in legacy syntax too' do
+        expect(Parser.new(extensions: false).parse('2001-21?~')).to be_nil
+      end
+
+      it 'turn on the extensions given by name' do
+        parser = Parser.new(extensions: [:season_uncertainty])
+        expect(parser.parse('2001-21?')).not_to be_nil
+      end
+
+      it 'read season intervals only with the season_intervals extension' do
+        expect(parser.parse('2001-21/2001-22')).to be_nil
+        expect(parser.parse('2001-21?')).not_to be_nil
+        expect(Parser.new(extensions: true).parse('2001-21/2001-22')).not_to be_nil
+        intervals = Parser.new(extensions: [:season_intervals])
+        expect(intervals.parse('2001-21/2001-22')).not_to be_nil
+        expect(intervals.parse('2001-21?')).to be_nil
+      end
+
+      it 'read qualified parts and unspecified years of seasons by default' do
+        expect(parser.parse('2001?-21')).not_to be_nil
+        expect(parser.parse('200X-21')).to include(unspecified: Bitmask::YYYX, level: 2)
+        expect(Parser.new(extensions: false).parse('2001?-21')).to be_nil
+      end
+
+      it 'reject unknown extensions' do
+        expect { Parser.new(extensions: [:xyz]) }.to raise_error(ArgumentError, /xyz/)
+      end
+
+      it 'limit the level' do
+        expect(Parser.new(level: 0).parse('1984?')).to be_nil
+        expect(Parser.new(level: 1).parse('1984?')).not_to be_nil
+        expect(Parser.new(level: 1).parse('2004?-06')).to be_nil
+        expect { Parser.new(level: 3) }.to raise_error(ArgumentError)
+      end
+
+      it 'read dates in the calendar given' do
+        julian = Parser.new(calendar: :julian)
+        expect(julian.parse!('1500-02-29')).to include(values: [1500, 2, 29], calendar: :julian)
+        expect(julian.parse!('[1500,15]')[:values].map { _1[:calendar] }).to eq(%i[julian julian])
+        expect(parser.parse('1500-02-29')).to be_nil
+        expect(parser.parse!('1500-02-28')).not_to include(:calendar)
+      end
+
+      it 'reject days skipped by a calendar reform' do
+        expect(Parser.new(calendar: :italy).parse('1582-10-10')).to be_nil
+        expect(Parser.new(calendar: :england).parse('1582-10-10')).not_to be_nil
+        expect(Parser.new(calendar: 2299161).parse!('1582-10-15')).to include(calendar: :italy)
+        expect(Parser.new(calendar: 2299170).parse!('1582-10-30')).to include(calendar: 2299170)
+      end
+
+      it 'keep calendars named in legacy syntax' do
+        expect(parser.parse!('1500-02-29^julian')).to include(calendar: :julian)
+        expect(Parser.new(calendar: :julian).parse!('2001-02-03^gregorian')).to include(calendar: :gregorian)
+        expect { parser.parse!('2001-02-03^xyz') }.to raise_error(ArgumentError, /unknown calendar/)
+      end
+
+      it 'reject other calendars for date-times' do
+        expect { Parser.new(calendar: :julian).parse!('1500-02-03T10:00') }
+          .to raise_error(ArgumentError, /Gregorian/)
+      end
+
+      it 'reject unknown calendars' do
+        expect { Parser.new(calendar: :hebrew) }.to raise_error(ArgumentError, /hebrew/)
+      end
+
+      it 'read years without year zero with year_zero: false' do
+        historical = Parser.new(year_zero: false)
+        expect(historical.parse!('-0001')).to include(values: [-1], year_zero: false)
+        expect(historical.parse!('[-0001,0001]')[:values]).to all(include(year_zero: false))
+        expect(parser.parse!('-0001')).not_to include(:year_zero)
+      end
+
+      it 'reject year 0 without year zero' do
+        historical = Parser.new(year_zero: false)
+        %w[0000 -0000 0000-21 0000-01-01T00:00:00].each do |input|
+          expect { historical.parse!(input) }.to raise_error(ArgumentError, /no year 0/)
+        end
+        expect(historical.parse!('00XX')[:values]).to eq([0])
+        expect(historical.parse!('00')[:values]).to eq([0])
+      end
+
+      it 'check leap days in astronomical years' do
+        expect(Parser.new(year_zero: false).parse('-0001-02-29')).not_to be_nil
+        expect(Parser.new(year_zero: false).parse('-0002-02-29')).to be_nil
+      end
+
+      it 'limit the year digits' do
+        expect(Parser.new(max_year_digits: 10).parse('Y1E9')).not_to be_nil
+        expect(Parser.new(max_year_digits: 10).parse('Y1E10')).to be_nil
+      end
+
+      it 'turn off legacy syntax and extensions with strict: true' do
+        strict = Parser.new(strict: true)
+        expect(strict.parse('2004/open')).to be_nil
+        expect(strict.parse('2001-21?')).to be_nil
+        expect(strict.parse('2004?-06~')).not_to be_nil
+      end
+
+      it 'given explicitly override strict: true' do
+        expect(Parser.new(strict: true, legacy: true).parse('2004/open')).not_to be_nil
+      end
+
+      it 'reject unknown options' do
+        expect { Parser.new(lenient: true) }.to raise_error(ArgumentError)
+      end
+    end
+
+    describe 'grammars' do
+      it 'read ISO input with the ISO grammar' do
+        expect(parser.parse!('2004/..')).not_to include(:legacy)
+        expect(parser).not_to be_legacy
+      end
+
+      it 'raise the ISO error when no grammar reads the input' do
+        expect { parser.parse!('2004/ope') }.to raise_error(Grammar::ParseError, /'o'/)
+      end
+    end
+
+    describe 'results' do
+      let(:parser) { Parser.new(warn: false) }
+
+      def self.date(*values, level: 0, **attributes)
+        { type: :date, values: values, level: level, **attributes }
+      end
+
+      {
+        '2004' => date(2004),
+        '2004-06-11' => date(2004, 6, 11),
+        '-0999' => date(-999),
+        '2004-06?' => date(2004, 6, uncertain: Bitmask::YM, level: 1),
+        '2004-06-11%' => date(2004, 6, 11, uncertain: Bitmask::YMD, approximate: Bitmask::YMD, level: 1),
+        '2004?-06~' => date(2004, 6, uncertain: Bitmask::YEAR, approximate: Bitmask::YM, level: 2),
+        '?2004' => date(2004, uncertain: Bitmask::YEAR, level: 2),
+        '2004?' => date(2004, uncertain: Bitmask::YEAR, level: 1),
+        '2004-06-(11)~' => date(2004, 6, 11, approximate: Bitmask::DAY, level: 2, legacy: true),
+        '199X' => date(1990, unspecified: Bitmask::YYYX, level: 1),
+        '19XX?' => date(1900, unspecified: Bitmask::YYXX, uncertain: Bitmask::YEAR, level: 1),
+        '2004-XX-XX' => date(2004, 1, 1, unspecified: Bitmask::MD, level: 1),
+        '19XX-06' => date(1900, 6, unspecified: Bitmask::YYXX, level: 2),
+        'XXXX' => date(0, unspecified: Bitmask::XXXX, level: 1),
+        '2001-02-03^julian' => date(2001, 2, 3, calendar: :julian, level: 2, legacy: true),
+        '2016-05-02T16:54:59' =>
+          { type: :date_time, values: [2016, 5, 2, 16, 54, 59], level: 0 },
+        '2016-05-02T16:54:59-04:00' =>
+          { type: :date_time, values: [2016, 5, 2, 16, 54, 59], offset: -240, level: 0 },
+        'Y170000002' => { type: :year, level: 1, values: [170000002] },
+        'Y-17E7' => { type: :year, level: 2, values: [-170000000] },
+        '196x' => date(1960, unspecified: Bitmask::YYYX, level: 1, legacy: true),
+        '19xx' => date(1900, unspecified: Bitmask::YYXX, level: 1, legacy: true),
+        '2001-21' => { type: :season, values: [2001, 21], level: 1 },
+        '2001-21?' => { type: :season, values: [2001, 21], uncertain: Bitmask::YM, level: 2 },
+        '2001-21^southern' =>
+          { type: :season, values: [2001, 21], qualifier: 'southern', level: 2, legacy: true },
+        '1964/2008' => { type: :interval, values: [date(1964), date(2008)], level: 0 },
+        '2004/..' => { type: :interval, values: [date(2004), :open], level: 1 },
+        '/2004' => { type: :interval, values: [:unknown, date(2004)], level: 1 },
+        '2004-06-XX/2004-07-03' => {
+          type: :interval,
+          values: [date(2004, 6, 1, unspecified: Bitmask::DAY, level: 1), date(2004, 7, 3)],
+          level: 2
+        },
+        '[1667,1670..1672]' =>
+          { type: :set, values: [date(1667), [date(1670), date(1672)]], level: 2 },
+        '{..1984,1990..}' =>
+          { type: :list, values: [date(1984), date(1990)], earlier: true, later: true, level: 2 }
+      }.each do |input, result|
+        it "for #{input}" do
+          expect(parser.parse!(input)).to eq(result)
+        end
+      end
+
+      it 'are deeply frozen' do
+        result = parser.parse!('[1667,1670..1672]')
+        expect(result).to be_frozen
+        expect(result[:values]).to be_frozen
+        expect(result[:values][1][0][:values]).to be_frozen
+      end
     end
 
     describe '#deprecations' do
@@ -29,10 +241,11 @@ module EDTF
         '-0000' => [:negative_zero],
         '{1960, 1961-12}' => [:whitespace],
         '[1864 ..]' => [:whitespace],
-        '2004/ ..' => [:whitespace],
-        '2001-02-03^xyz' => [:caret],
-        'XXXX' => [:unknown_date],
-        'uuuu' => [:unspecified, :unknown_date],
+        '2001-02-03^julian' => [:caret],
+        'uuuu' => [:unspecified],
+        '2016-05-02T24:00:00' => [:midnight],
+        '2004T10:10:10' => [:partial_date_time],
+        'XXXX' => [],
         '1984%' => [],
         '2004/..' => [],
         '2004/' => [],
@@ -60,7 +273,7 @@ module EDTF
         expect(parser).to be_legacy
       end
 
-      it 'is false for input that only changes meaning' do
+      it 'is false for ISO input' do
         parser.parse!('XXXX')
         expect(parser).not_to be_legacy
       end
@@ -99,14 +312,6 @@ module EDTF
       it 'can be turned off per parser' do
         Warning[:deprecated] = true
         expect { Parser.new(warn: false).parse!('1984?~') }.not_to output.to_stderr
-      end
-    end
-
-    it 'handles the Gregorian 10-day correction' do
-      (4..15).each do |mday|
-        date = parser.parse('1582-10-%02d' % mday)
-        expect(date).to be_gregorian
-        expect([date.year, date.month, date.mday]).to eq([1582, 10, mday])
       end
     end
   end

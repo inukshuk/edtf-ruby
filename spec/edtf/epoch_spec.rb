@@ -1,85 +1,208 @@
+# Partly ported from edtf.js test/decade.js and test/century.js.
 module EDTF
-
   describe Decade do
+    it_behaves_like 'a period' do
+      let(:period) { Decade.new(196) }
+    end
 
-    it { is_expected.not_to be nil }
+    it_behaves_like 'a period' do
+      let(:period) { Decade.new(9, approximate: true) }
+    end
 
-    describe '.current' do
-      it 'creates the current decade' do
-        expect(Decade.current.year).to eq((Time.now.year / 10) * 10)
+    it 'has decade precision' do
+      expect(Decade.new(196).precision).to eq(:decade)
+    end
+
+    it 'rejects more than three digits' do
+      expect { Decade.new(1990) }.to raise_error(ArgumentError)
+    end
+
+    it 'rejects negative decades, as ISO 8601-2 does' do
+      expect { Decade.new(-9) }.to raise_error(ArgumentError)
+      expect(EDTF.parse('-196')).to be_nil
+    end
+
+    describe 'bounds' do
+      {
+        199 => %w[1990-01-01 1999-12-31],
+        0 => %w[0000-01-01 0009-12-31],
+        9 => %w[0090-01-01 0099-12-31]
+      }.each do |value, bounds|
+        it "are #{bounds.join(' and ')} for #{value}" do
+          d = Decade.new(value)
+          expect([d.begin, d.end].map(&:iso8601)).to eq(bounds)
+        end
       end
     end
 
-    describe '#min' do
-      it 'the year 1990 should be the minimum of the 1990s' do
-        expect(Decade.new(1999).min).to eq(Date.new(1990).year_precision!)
+    describe '#edtf' do
+      it 'writes NNNX by default' do
+        expect(Decade.new(198).edtf).to eq('198X')
+        expect(Decade.new(9).edtf).to eq('009X')
+        expect(Decade.new(198, approximate: true).edtf).to eq('198X~')
+      end
+
+      it 'pads to three digits if short' do
+        expect(Decade.new(198, short: true).edtf).to eq('198')
+        expect(Decade.new(99, short: true).edtf).to eq('099')
+        expect(Decade.new(9, short: true).edtf).to eq('009')
+      end
+
+      it 'qualifies the whole decade' do
+        expect(Decade.new(198, approximate: true, short: true).edtf).to eq('198~')
+        expect(Decade.new(198, uncertain: true, short: true).edtf).to eq('198?')
+        expect(Decade.new(198, uncertain: true, approximate: true).edtf).to eq('198X%')
+      end
+
+      it 'keeps the form it was read in' do
+        expect(EDTF.parse('196').edtf).to eq('196')
+        expect(EDTF.parse('196X').edtf).to eq('196X')
+        expect(EDTF.parse('196')).to eql(EDTF.parse('196X'))
+        expect(Decade.new(196).with(short: true).edtf).to eq('196')
       end
     end
 
-    describe '#max' do
-      it 'the year 1999 should be the maximum of the 1990s' do
-        expect(Decade.new(1999).max).to eq(Date.new(1999).year_precision!)
+    describe 'qualifiers' do
+      it 'reject parts: an epoch is qualified as a whole' do
+        expect { Decade.new(196, uncertain: :year) }.to raise_error(ArgumentError, /as a whole/)
       end
 
-      it 'has year precision' do
-        expect(Decade.new(1999).max).to be_year_precision
+      it 'stay frozen through Marshal' do
+        decade = Decade.new(198, uncertain: true)
+        expect(Marshal.load(Marshal.dump(decade))).to be_frozen.and eql(decade)
+      end
+
+      it 'are booleans, also given as bitmasks' do
+        expect(Decade.new(201, uncertain: true)).to be_uncertain
+        expect(Decade.new(201)).not_to be_uncertain
+        expect(Decade.new(201, approximate: Bitmask::YEAR)).to be_approximate
+        expect(Decade.new(201, approximate: 0)).not_to be_approximate
       end
     end
 
-    describe '#cover?' do
-      it '1989-12-31 should be covered by the 1980s' do
-        expect(Decade.new(1980)).to be_cover(Date.new(1989,12,31))
+    describe '#with' do
+      it 'replaces the given attributes' do
+        expect(Decade.new(196).with(approximate: true)).to eql(Decade.new(196, approximate: true))
+        expect(Decade.new(196).with(value: 197)).to eql(Decade.new(197))
+        expect { Decade.new(196).with(year: 1970) }.to raise_error(ArgumentError)
       end
     end
 
-    describe '#to_range' do
-
-      it 'returns a range' do
-        expect(Decade.new.to_range).to be_instance_of(::Range)
+    describe 'comparison' do
+      it '== means the same period; eql? includes the qualifiers' do
+        expect(Decade.new(199)).to eq(Decade.new(199, uncertain: true))
+        expect(Decade.new(199)).not_to eql(Decade.new(199, uncertain: true))
+        expect(Decade.new(199)).to eql(Decade.new(199))
       end
 
-      it 'the range starts with a date object' do
-        expect(Decade.new.to_range.begin).to be_instance_of(::Date)
+      it 'orders by bounds and precision' do
+        expect(Decade.new(199)).to be < Decade.new(200)
+        expect(Century.new(19)).to be > Decade.new(190)
+        expect(Decade.new(199) <=> ::Date.new(1980, 1, 1)).to eq(1)
+        expect(::Date.new(1980, 1, 1) <=> Decade.new(199)).to eq(-1)
       end
 
-      it 'the range ends with a date object' do
-        expect(Decade.new.to_range.end).to be_instance_of(::Date)
+      it 'covers the dates within' do
+        expect(Decade.new(198)).to be_cover(::Date.new(1989, 12, 31))
+        expect(Decade.new(198)).to be_cover(EDTF.parse('1985-06'))
+        expect(Decade.new(198)).not_to be_cover(::Date.new(1990, 1, 1))
       end
 
-      it 'the range start has year precision' do
-        expect(Decade.new.to_range.begin).to be_year_precision
+      it 'has no include?, as it is not a collection' do
+        expect(Decade.new(198)).not_to respond_to(:include?)
       end
-
-      it 'the range end has year precision' do
-        expect(Decade.new.to_range.end).to be_year_precision
-      end
-
     end
 
-    describe 'enumeration' do
+    it 'steps by decade' do
+      expect((Decade.new(199)..Decade.new(201)).map(&:value)).to eq([199, 200, 201])
+      expect(Decade.new(199).prev).to eql(Decade.new(198))
+    end
+  end
 
-      it 'always covers ten years' do
-        expect(Decade.new.to_a.size).to eq(10)
-      end
+  describe 'Epochs without year zero' do
+    it 'begin with year 1 when they would begin with 0' do
+      expect(Century.new(0, year_zero: false).begin.year).to eq(1)
+      expect(Decade.new(0, year_zero: false).begin.year).to eq(1)
+      expect(EDTF.parse('00XX', year_zero: false).begin.year).to eq(1)
+      expect(Century.new(0, year_zero: false)).not_to eql(Century.new(0))
+      expect(Century.new(19, year_zero: false)).to eql(Century.new(19))
+    end
+  end
 
-      it 'the 1970s should map to the years [1970, 1971, ... , 1979]' do
-        expect(Decade.new(1970).map(&:year)).to eq([1970, 1971, 1972, 1973, 1974, 1975, 1976, 1977, 1978, 1979])
-      end
+  describe 'Epochs in other calendars' do
+    let(:century) { Century.new(15, calendar: :julian) }
 
+    it 'have their bounds in the calendar' do
+      expect(century.to_range.minmax.map(&:jd)).to eq([
+        ::Date.new(1500, 1, 1, ::Date::JULIAN).jd, ::Date.new(1599, 12, 31, ::Date::JULIAN).jd
+      ])
     end
 
+    it 'keep it when stepping and copied' do
+      expect(century.succ.calendar).to eq(:julian)
+      expect(century.with(approximate: true).calendar).to eq(:julian)
+    end
+
+    it 'are not eql? to the epoch in another calendar' do
+      expect(century).not_to eql(Century.new(15))
+      expect(century.inspect).to eq('#<EDTF::Century 15XX julian>')
+    end
   end
 
   describe Century do
+    it_behaves_like 'a period' do
+      let(:period) { Century.new(19) }
+    end
 
-    it { is_expected.not_to be nil }
+    it 'has century precision' do
+      expect(Century.new(19).precision).to eq(:century)
+    end
 
-    describe '.current' do
-      it 'creates the current century' do
-        expect(Century.current.year).to eq((Time.now.year / 100) * 100)
+    it 'rejects more than two digits' do
+      expect { Century.new(190) }.to raise_error(ArgumentError)
+    end
+
+    describe 'bounds' do
+      {
+        19 => %w[1900-01-01 1999-12-31],
+        0 => %w[0000-01-01 0099-12-31]
+      }.each do |value, bounds|
+        it "are #{bounds.join(' and ')} for #{value}" do
+          c = Century.new(value)
+          expect([c.begin, c.end].map(&:iso8601)).to eq(bounds)
+        end
+      end
+
+      it 'match the unspecified year with the same digits' do
+        expect(Century.new(19).to_range).to eq(EDTF.parse('19XX', centuries: false).to_range)
       end
     end
 
-  end
+    describe '#edtf' do
+      it 'writes NNXX by default' do
+        expect(Century.new(20).edtf).to eq('20XX')
+        expect(Century.new(1, uncertain: true).edtf).to eq('01XX?')
+      end
 
+      it 'pads to two digits if short' do
+        expect(Century.new(20, short: true).edtf).to eq('20')
+        expect(Century.new(1, short: true).edtf).to eq('01')
+        expect(Century.new(0, short: true).edtf).to eq('00')
+      end
+
+      it 'rejects negative centuries, as ISO 8601 does' do
+        expect { Century.new(-19) }.to raise_error(ArgumentError)
+        expect(EDTF.parse('-19')).to be_nil
+      end
+
+      it 'qualifies the whole century' do
+        expect(Century.new(20, uncertain: true, short: true).edtf).to eq('20?')
+      end
+    end
+
+    it 'is a different period than the unspecified year with the same span' do
+      expect(Century.new(19)).not_to eq(EDTF.parse('19XX', centuries: false))
+      expect(Century.new(19).to_range).to eq(EDTF.parse('19XX', centuries: false).to_range)
+    end
+  end
 end

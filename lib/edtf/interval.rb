@@ -1,331 +1,174 @@
 module EDTF
 
-  # An interval behaves like a regular Range but is dedicated to EDTF dates.
-  # Most importantly, intervals use the date's precision when generating
-  # the set of contained values and for membership tests. All tests are
-  # implemented without iteration and should therefore be considerably faster
-  # than if you were to use a regular Range.
+  # An interval behaves like a regular Range but is dedicated to EDTF periods.
+  # Most importantly, intervals use the precision of their start
+  # when generating the set of contained values and for membership tests.
+  # All tests are implemented without iteration.
   #
-  # For example, the interval "2003/2006" covers the years 2003, 2004, 2005
-  # and 2006. Converting the interval to an array would result in a an array
-  # containing exactly four dates with year precision. This is also reflected
-  # in membership tests.
+  # For example, the interval "2003/2006" covers the years 2003, 2004, 2005 and 2006.
+  # Converting the interval to an array results in an array
+  # containing exactly four dates with year precision.
+  # This is also reflected in membership tests.
   #
-  #     EDTF('2003/2006').length                     -> 4
+  #     EDTF('2003/2006').count                      -> 4
   #
   #     EDTF('2003/2006').include? EDTF('2004')      -> true
   #     EDTF('2003/2006').include? EDTF('2004-03')   -> false
   #
   #     EDTF('2003/2006').cover? EDTF('2004-03')     -> true
   #
+  # Each end is a period, :open (no bound, written ..),
+  # or :unknown (written empty).
+  # The bounds of open or unknown ends are nil.
   class Interval
-
-    extend Forwardable
-
-    include Comparable
     include Enumerable
+    include Period # after Enumerable, so ActiveSupport's Enumerable#as_json doesn't win
 
-    # Intervals delegate hash calculation to Ruby Range
-    def_delegators :to_range, :eql?, :hash
-    def_delegators :to_a, :length, :empty?
+    ENDS = %i[open unknown].freeze
 
     attr_reader :from, :to
 
-    def initialize(from = Date.today, to = :open)
-      self.from, self.to = from, to
+    def initialize(from, to)
+      @from = coerce_end(from)
+      @to = coerce_end(to)
+      raise ArgumentError, "reversed interval: #{edtf}" if reversed?
+      freeze
     end
 
-    def from=(date)
-      case date
-      when Date, :unknown, :open
-        @from = date
-      else
-        throw ArgumentError.new("Intervals cannot start with: #{date}")
-      end
-    end
-
-    def to=(date)
-      case date
-      when Date, :unknown, :open
-        @to = date
-      else
-        throw ArgumentError.new("Intervals cannot end with: #{date}")
-      end
-    end
-
-    [:open, :unknown].each do |method_name|
-      define_method("#{method_name}_start!") do
-        @from = method_name
-        self
-      end
-
-      define_method("#{method_name}_start?") do
-        @from == method_name
-      end
-
-      define_method("#{method_name}_end!") do
-        @to = method_name
-        self
-      end
-
-      define_method("#{method_name}_end?") do
-        @to == method_name
-      end
-    end
-
-    def open?
-      open_start? || open_end?
-    end
-
-    def unknown?
-      unknown_start? || unknown_end?
-    end
-
-    # Returns the intervals precision. Mixed precisions are currently not
-    # supported; in that case, the start date's precision takes precedence.
+    # Mixed precisions are not supported;
+    # the start's precision takes precedence (the end's if the start has no date).
     def precision
-      min&.precision || max&.precision
+      [from, to].find { |value| value.is_a?(Period) }&.precision
     end
 
-    # Returns true if the precisions of start and end date are not the same.
-    def mixed_precision?
-      min&.precision != max&.precision
-    end
-
-    def each(&block)
-      step(1, &block)
-    end
-
-
-    # call-seq:
-    #     interval.step(by=1) { |date| block }  -> self
-    #     interval.step(by=1)                   -> Enumerator
-    #
-    # Iterates over the interval by passing by elements at each step and
-    # yielding each date to the passed-in block. Note that the semantics
-    # of by are precision dependent: e.g., a value of 2 can mean 2 days,
-    # 2 months, or 2 years.
-    #
-    # If not block is given, returns an enumerator instead.
-    #
-    def step(by = 1)
-      raise ArgumentError unless by.respond_to?(:to_i)
-
-      if block_given?
-        f, t, by = min, max, by.to_i
-
-        unless f.nil? || t.nil? || by < 1
-          by = { Date::PRECISIONS[precision] => by }
-
-          until f > t do
-            yield f
-            f = f.advance(by)
-          end
-        end
-
-        self
-      else
-        enum_for(:step, by)
-      end
-    end
-
-
-    # This method always returns false for Range compatibility. EDTF intervals
-    # always include the last date.
-    def exclude_end?
-      false
-    end
-
-
-    # TODO how to handle +/- Infinity for Dates?
-    # TODO we can't delegate to Ruby range for mixed precision intervals
-
-    # Returns the Interval as a Range.
-    def to_range
-      case
-      when open?, unknown?
-        nil
-      else
-        Range.new(unknown_start? ? Date.new : @from, max)
-      end
-    end
-
-    # Returns true if other is an element of the Interval, false otherwise.
-    # Comparision is done according to the Interval's min/max date and
-    # precision.
-    def include?(other)
-      cover?(other) && precision == other.precision
-    end
-    alias member? include?
-
-    # Returns true if other is an element of the Interval, false otherwise.
-    # In contrast to #include? and #member? this method does not take into
-    # account the date's precision.
-    def cover?(other)
-      return false unless other.is_a?(Date)
-
-      other = other.day_precision
-
-      (unbounded_start? || min.day_precision! <= other) &&
-        (unbounded_end? || other <= max.day_precision!)
-    end
-
-    # call-seq:
-    #     interval.first     -> Date or nil
-    #     interval.first(n)  -> Array
-    #
-    # Returns the first date in the interval, or the first n dates.
-    def first(n = 1)
-      if n > 1
-        (ds = Array(min)).empty? ? ds : ds.concat(ds[0].next(n - 1))
-      else
-        min
-      end
-    end
-
-    # call-seq:
-    #     interval.last     -> Date or nil
-    #     interval.last(n)  -> Array
-    #
-    # Returns the last date in the interval, or the last n dates.
-    def last(n = 1)
-      if n > 1
-        (ds = Array(max)).empty? ? ds : ds.concat(ds[0].prev(n - 1))
-      else
-        max
-      end
-    end
-
-    # call-seq:
-    #     interval.min                  -> Date or nil
-    #     interval.min { |a,b| block }  -> Date or nil
-    #
-    # Returns the minimum value in the interval. If a block is given, it is
-    # used to compare values (slower). Returns nil if the first date of the
-    # interval is larger than the last or if the interval has an unknown or
-    # open start.
-    def min(&block)
-      if block_given?
-        to_a.min(&block)
-      else
-        case
-        when open_start?, unknown_start?, !(open_end? || unknown_end?) && !open? && to < from
-          nil
-        when from.day_precision?
-          from
-        when from.month_precision?
-          from.beginning_of_month
-        else
-          from.beginning_of_year
-        end
-      end
+    def values
+      [from, to]
     end
 
     def begin
-      min
-    end
-
-    # call-seq:
-    #     interval.max                  -> Date or nil
-    #     interval.max { |a,b| block }  -> Date or nil
-    #
-    # Returns the maximum value in the interval. If a block is given, it is
-    # used to compare values (slower). Returns nil if the first date of the
-    # interval is larger than the last or if the interval has an unknown or
-    # open end.
-    #
-    # To calculate the dates, precision is taken into account. Thus, the max
-    # Date of "2007/2008" would be 2008-12-31, whilst the max Date of
-    # "2007-12/2008-10" would be 2009-10-31.
-    def max(&block)
-      if block_given?
-        to_a.max(&block)
-      else
-        case
-        when open_end?, unknown_end?, !(open_start? || unknown_start?) && to < from
-          nil
-        when to.day_precision?
-          to
-        when to.month_precision?
-          to.end_of_month
-        else
-          to.end_of_year
-        end
-      end
+      from.begin unless ENDS.include?(from)
     end
 
     def end
-      max
+      to.end unless ENDS.include?(to)
     end
 
-    # Intervals are compared by their min and max dates. Open and unknown
-    # starts and ends are treated like -/+ infinity, with open being the
-    # more extreme of the two. Dates are equal to an interval if they are
-    # covered by it.
-    def <=>(other)
-      case other
-      when Interval, Season, Epoch
-        bounds <=> bounds_of(other)
-      when Date
-        case
-        when cover?(other) then 0
-        when unbounded_start? then -1
-        else min.day_precision <=> other.day_precision
-        end
-      else
-        nil
+    def open?
+      from == :open || to == :open
+    end
+
+    def unknown?
+      from == :unknown || to == :unknown
+    end
+
+    def with(**changes)
+      return self if changes.empty?
+
+      check_keys!(changes, %i[from to])
+
+      self.class.new(changes.fetch(:from, from), changes.fetch(:to, to))
+    end
+
+    # call-seq:
+    #     interval.each { |period| block }  -> self
+    #     interval.each                     -> Enumerator
+    #
+    # Iterates over the interval by the start's precision,
+    # yielding each unit that begins within the interval,
+    # without the qualifiers of the start:
+    # 1980-08?/1994 yields the months from 1980-08 to 1994-12.
+    # Like endless ranges, intervals with an open or unknown end iterate endlessly;
+    # those without a dated start raise a RangeError.
+    def each
+      return to_enum(:each) unless block_given?
+      raise RangeError, "cannot iterate the interval #{edtf} without a start" if ENDS.include?(from)
+
+      unit = unqualified(from)
+      while within?(unit)
+        yield unit
+        unit = unit.succ
       end
+      self
     end
 
-    def ===(other)
-      case other
-      when Interval
-        (other.unbounded_start? ? unbounded_start? : cover?(other.min)) &&
-          (other.unbounded_end? ? unbounded_end? : cover?(other.max))
-      when Date
-        cover?(other)
-      else
-        false
-      end
+    def to_a
+      raise RangeError, "cannot convert the endless interval #{edtf} to an array" if endless?
+
+      super
     end
 
+    alias entries to_a
 
-    # Returns the Interval as an EDTF string.
+    # Like Range#count, endless intervals count infinitely many units.
+    def count(*args, &block)
+      args.empty? && block.nil? && endless? ? Float::INFINITY : super
+    end
+
+    # Returns true if other is one of the units the interval yields,
+    # like Range#include?, but without iterating:
+    # covered and of the interval's precision.
+    def include?(other)
+      cover?(other) && Period.precision(other) == precision
+    end
+
     def edtf
-      [
-        from.send(from.respond_to?(:edtf) ? :edtf : :to_s),
-        to.send(to.respond_to?(:edtf) ? :edtf : :to_s)
-      ] * '/'
+      [from, to].map { |value| value == :open ? '..' : value == :unknown ? '' : value.edtf }.join('/')
     end
-
-    alias to_s edtf
 
     protected
 
-    def unbounded_start?
-      open_start? || unknown_start?
-    end
-
-    def unbounded_end?
-      open_end? || unknown_end?
-    end
-
-    START_RANK = { :open => -2, :unknown => -1 }.freeze
-    END_RANK = { :unknown => 1, :open => 2 }.freeze
-
-    def bounds
-      [
-        unbounded_start? ? START_RANK[from] : 0, min,
-        unbounded_end? ? END_RANK[to] : 0, max
-      ]
+    def state
+      [from, to]
     end
 
     private
 
-    def bounds_of(other)
-      other.is_a?(Interval) ? other.bounds : [0, other.min, 0, other.max]
+    # The end lies before the start (ISO 8601-2 Annex C.1.3.3).
+    # Two times compare by instant, so T10:00/T09:00 on one day is reversed.
+    def reversed?
+      return false if ENDS.include?(from) || ENDS.include?(to)
+      return self.end < self.begin unless from.is_a?(::Time) && to.is_a?(::Time)
+
+      span = DateTime.span(to)
+      span.zero? ? to.to_r < from.to_r : to.to_r + span <= from.to_r
     end
 
+    def endless?
+      ENDS.include?(to)
+    end
+
+    def within?(unit)
+      case to
+      when *ENDS then true
+      when ::Time then unit <= to
+      else unit.begin <= self.end
+      end
+    end
+
+    def unqualified(period)
+      case period
+      when Date, Season then period.with(uncertain: nil, approximate: nil)
+      when Epoch then period.with(uncertain: false, approximate: false)
+      else period
+      end
+    end
+
+    # Open starts sort before unknown ones, unknown ends before open ones.
+    def keys
+      [
+        { open: [-2], unknown: [-1] }.fetch(from) { [0, self.begin] },
+        { unknown: [1], open: [2] }.fetch(to) { [0, self.end] },
+        rank
+      ]
+    end
+
+    def coerce_end(value)
+      case value
+      when *ENDS, Period then value
+      when ::Date then EDTF(value)
+      else raise ArgumentError, "invalid interval end: #{value.inspect}"
+      end
+    end
   end
 
 end

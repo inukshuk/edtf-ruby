@@ -1,109 +1,136 @@
 module EDTF
 
+  # Decades and centuries are dedicated periods,
+  # which always cover 10 or 100 years, respectively:
+  # the years that begin with the given digits (196 is 1960 to 1969).
+  # As in ISO 8601, they are never negative.
+  # Epoch is their shared base.
+  #
+  # Qualifiers apply to the whole epoch:
+  # 196~ is an approximate decade, not an approximate year.
+  #
+  # Epochs are written 196X and 19XX, or 196 and 19 if short
+  # (as read from those strings); both forms are the same epoch.
   class Epoch
-    extend Forwardable
-
-    include Enumerable
-    include Comparable
+    include Period
 
     class << self
-      attr_reader :duration, :format
-
-      def current
-        new(Date.today.year)
-      end
-
-      private :new, :current
+      # The number of years, the number of digits, and the precision.
+      attr_reader :span, :digits, :precision
     end
 
-    attr_reader :year
+    attr_reader :value, :calendar
 
-    def_delegators :to_range, *Range.instance_methods(false).reject { |m|
-        m.to_s =~ /^(each|min|max|cover\?|inspect|to_s)$|^\W/
-    }
+    def initialize(value, uncertain: false, approximate: false, short: false, calendar: nil, year_zero: true)
+      @value = Integer(value)
+      raise ArgumentError, "invalid #{precision}: #{value}" unless (0...10**self.class.digits).cover?(@value)
 
-
-    def initialize(year = 0)
-      self.year = year
+      @uncertain = qualified?(uncertain)
+      @approximate = qualified?(approximate)
+      @short = !!short
+      @calendar = Period.calendar(calendar)
+      @historical = !year_zero
+      freeze
     end
 
-    def year=(year)
-      @year = (year / self.class.duration) * self.class.duration
+    def precision
+      self.class.precision
     end
 
-    alias get year
-    alias set year=
-
-    def cover?(other)
-      return false unless other.respond_to?(:day_precision)
-      other = other.day_precision
-      min.day_precision! <= other && other <= max.day_precision!
+    def values
+      [value]
     end
 
-    def <=>(other)
-      case other
-      when Date
-        cover?(other) ? 0 : to_date <=> other
-      when Interval
-        (c = other <=> self) && -c
-      when Season
-        [min, max] <=> [other.min, other.max]
-      when Epoch
-        [year, self.class.duration] <=> [other.year, other.class.duration]
-      else
-        nil
-      end
-    rescue
-      nil
+    def uncertain?
+      @uncertain
     end
 
-    def ===(other)
-      (self <=> other) == 0
-    rescue
-      false
+    def approximate?
+      @approximate
     end
 
-    def each(&block)
-      if block_given?
-        to_range.each(&block)
-      else
-        to_enum
-      end
+    def short?
+      @short
     end
 
-    def to_date
-      Date.new(year).year_precision!
+    # False if years are written without year 0:
+    # then the first century and decade (00XX, 000X) begin with year 1.
+    def year_zero?
+      !@historical
     end
 
-    alias min to_date
+    def with(**changes)
+      return self if changes.empty?
 
-    def max
-      to_date.advance(:years => self.class.duration - 1).end_of_year
+      check_keys!(changes, %i[value uncertain approximate short])
+
+      self.class.new(
+        changes.fetch(:value, value),
+        uncertain: changes.fetch(:uncertain, uncertain?),
+        approximate: changes.fetch(:approximate, approximate?),
+        short: changes.fetch(:short, short?),
+        calendar: calendar,
+        year_zero: year_zero?
+      )
     end
 
-    def to_range
-      min..max
+    def begin
+      first = span.first.zero? && !year_zero? ? 1 : span.first
+      ::Date.new(first, 1, 1, Period.start(calendar))
+    end
+
+    def end
+      ::Date.new(span.last, 12, 31, Period.start(calendar))
+    end
+
+    def succ(by = 1)
+      with(value: value + by)
+    end
+
+    alias next succ
+
+    def prev(by = 1)
+      succ(-by)
     end
 
     def edtf
-      self.class.format % (year / self.class.duration)
+      string = format("%0#{self.class.digits}d", value)
+      string += 'X' * (4 - self.class.digits) unless short?
+      string += '?' if uncertain?
+      string += '~' if approximate?
+      string.sub('?~', '%')
     end
 
-    alias to_s edtf
+    protected
 
-  end
+    def state
+      [value, uncertain?, approximate?, calendar, year_zero? || !value.zero?]
+    end
 
-  class Century < Epoch
-    @duration = 100.freeze
-    @format = '%02dxx'.freeze
+    private
 
-    public_class_method :current, :new
+    # The first and last year.
+    def span
+      low = value * self.class.span
+      low..(low + self.class.span - 1)
+    end
+
+    # Qualifiers are booleans, or bitmasks as in parse results.
+    def qualified?(qualifier)
+      case qualifier
+      when true, false, nil then !!qualifier
+      when Integer then !qualifier.zero?
+      else raise ArgumentError, "invalid qualifier: #{qualifier.inspect} (an epoch is qualified as a whole)"
+      end
+    end
   end
 
   class Decade < Epoch
-    @duration = 10.freeze
-    @format = '%03dx'.freeze
-
-    public_class_method :current, :new
+    @span, @digits, @precision = 10, 3, :decade
   end
+
+  class Century < Epoch
+    @span, @digits, @precision = 100, 2, :century
+  end
+
 end

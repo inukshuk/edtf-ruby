@@ -1,373 +1,437 @@
-class Date
+module EDTF
 
-  PRECISION = [:year, :month, :day].freeze
-  PRECISIONS = Hash[*PRECISION.map { |p| [p, "#{p}s".to_sym] }.flatten].freeze
+  # EDTF dates extend the regular Ruby Date class.
+  # Every EDTF date acts as you would normally expect,
+  # but provides additional functionality.
+  #
+  # Most notably, EDTF dates come in day, month, or year precision.
+  # This is a subtle difference that determines how many other methods work:
+  # the bounds, stepping with `succ`, `prev`, `upto` and `downto`,
+  # and the EDTF string all follow the precision.
+  # Dates are proleptic Gregorian unless in another calendar Ruby supports
+  # (calendar: :julian, :italy, :england, or the Julian day of a reform).
+  # Years are astronomical (0 is 1 BC), as in ISO 8601;
+  # with year_zero: false, they are written without year 0 (1 BC is -0001),
+  # and unspecified digits apply to the written year.
+  # Dates can also be uncertain, approximate, or have unspecified digits,
+  # marked by bitmasks.
+  #
+  # Years of any size are written with a Y prefix beyond four digits (Y170000002),
+  # and may have significant digits (1950S2 spans 1900 to 1999).
+  #
+  # Dates are frozen; use `with` for a modified copy.
+  # Date math (+, -, >>, <<) and calendar conversions return plain dates,
+  # because the result no longer stands for the same EDTF string.
+  # Create dates with `new`, `EDTF()` or `EDTF.parse`;
+  # Ruby's other constructors (today, parse, …) are private.
+  class Date < ::Date
+    include Period
 
-  FORMATS = %w{ %04d %02d %02d }.freeze
+    PRECISION = %i[year month day].freeze
 
-  SYMBOLS = {
-    :uncertain   => '?',
-    :approximate => '~',
-    :calendar    => '^',
-    :unspecified => 'X'
-  }.freeze
+    # The masks that cover the whole date, by number of values.
+    MASKS = [
+      nil,
+      Bitmask::YEAR,
+      Bitmask::YM,
+      Bitmask::YMD
+    ].freeze
 
-  EXTENDED_ATTRIBUTES = %w{
-    calendar precision uncertain approximate unspecified skip_timezone
-  }.map(&:to_sym).freeze
+    QUALIFIERS = %i[
+      uncertain approximate unspecified significant
+    ].freeze
 
-  extend Forwardable
+    ATTRIBUTES = [*PRECISION, :precision, *QUALIFIERS].freeze
 
-  class << self
-    def gregorian(year = -4712, month = 1, mday = 1)
-      new(year, month, mday, Date::GREGORIAN)
+    # Ruby's constructors skip initialize, so their dates would not be frozen.
+    private_class_method(*%i[
+      today civil jd ordinal commercial parse strptime
+      iso8601 rfc3339 xmlschema rfc2822 rfc822 httpdate jisx0301
+    ].select { |name| ::Date.respond_to?(name) })
+
+    DATE_MARSHAL = %i[marshal_dump marshal_load].to_h { |name| [name, ::Date.instance_method(name)] }.freeze
+    private_constant :DATE_MARSHAL
+
+    # JRuby's Date.new is a native Date.civil that skips initialize.
+    def self.new(...)
+      allocate.tap { |date| date.send(:initialize, ...) }
     end
-    
-    def edtf(input, options = {})
-      warn '`Date.edtf` is deprecated, use `EDTF.parse`', category: :deprecated, uplevel: 1
-      ::EDTF.parse(input, options)
+
+    def initialize(year, month = nil, day = nil, uncertain: nil, approximate: nil, unspecified: nil, significant: nil, calendar: nil, year_zero: true)
+      values = [year, month, day].compact
+      raise ArgumentError, 'day given without month' if day && month.nil?
+
+      start = Period.start(calendar)
+      if month == 2 && day == 29
+        year = Date.leap_years(year, unspecified, start, year_zero).first || year
+      end
+
+      # Ruby's Date#initialize takes other arguments on JRuby;
+      # both read the day from a plain date's Marshal data.
+      DATE_MARSHAL[:marshal_load].bind_call(self, ::Date.civil(year, month || 1, day || 1, start).marshal_dump)
+
+      @precision = PRECISION[values.length - 1]
+      @uncertain = bits(uncertain)
+      @approximate = bits(approximate)
+      @unspecified = bits(unspecified)
+      @significant = significant && Integer(significant)
+      @historical = !year_zero
+
+      check_digits
+      freeze
     end
 
-    def edtf!(input, options = {})
-      warn '`Date.edtf!` is deprecated, use `EDTF.parse!` or `EDTF()`', category: :deprecated, uplevel: 1
-      ::EDTF.parse!(input, options)
+    attr_reader :significant
+
+    def calendar
+      Period.calendar(start)
     end
-  end
 
-  attr_accessor :calendar, :skip_timezone
+    # False if years are written without year 0 (1 BC is -0001).
+    def year_zero?
+      !@historical
+    end
 
-  PRECISION.each do |p|
-    define_method("#{p}_precision?") { precision == p }
+    # February 29 in a year with unspecified digits (19XX-02-29)
+    # falls in the leap years the digits allow;
+    # such a date stores the first one (1904).
+    def self.leap_years(year, unspecified, start = ::Date::GREGORIAN, year_zero = true) # :nodoc:
+      written = Period.written_year(year, year_zero)
+      pattern = Bitmask.new(unspecified).masks([format('%04d', written.abs)])[0]
+      return [year] unless pattern.include?('X')
 
-    define_method("#{p}_precision!") do
-      self.precision = p
+      digits = Regexp.new("\\A#{pattern.gsub('X') { '\\d' }}\\z")
+      sign = written.negative? ? -1 : 1
+
+      (year_zero ? 0 : 1).upto(9999).filter_map do |n|
+        year = Period.astronomical_year(sign * n, year_zero)
+        year if digits.match?(format('%04d', n)) && ::Date.valid_date?(year, 2, 29, start)
+      end
+    end
+
+    # Instances created by Ruby's own date methods skip initialize;
+    # they behave like unqualified dates with day precision.
+    def precision
+      @precision || :day
+    end
+
+    def uncertain
+      @uncertain || Bitmask.new
+    end
+
+    def approximate
+      @approximate || Bitmask.new
+    end
+
+    def unspecified
+      @unspecified || Bitmask.new
+    end
+
+    def uncertain?(part = nil)
+      qualified?(uncertain, part)
+    end
+
+    def approximate?(part = nil)
+      qualified?(approximate, part)
+    end
+
+    def unspecified?(part = nil)
+      qualified?(unspecified, part)
+    end
+
+    # Unspecified digits hold their lowest values.
+    def values
+      [year, month, day].take(values_count)
+    end
+
+    # Returns a copy with the given EDTF attributes replaced, like Data#with.
+    # Values beyond the precision raise (2016 has no month to replace).
+    def with(**changes)
+      return self if changes.empty?
+
+      check_keys!(changes, ATTRIBUTES)
+
+      precision = changes.fetch(:precision, self.precision).to_sym
+      raise ArgumentError, "invalid precision: #{precision.inspect}" unless PRECISION.include?(precision)
+
+      count = PRECISION.index(precision) + 1
+      beyond = PRECISION.drop(count) & changes.keys
+      raise ArgumentError, "#{beyond.join(' and ')} beyond #{precision} precision" unless beyond.empty?
+
+      self.class.new(
+        *PRECISION.take(count).map { |name| changes.fetch(name) { send(name) } },
+        **QUALIFIERS.to_h { |name| [name, changes.fetch(name) { send(name) }] },
+        calendar: calendar,
+        year_zero: year_zero?
+      )
+    end
+
+    def begin
+      return plain if atomic?
+      return ::Date.new(significant_years.first, 1, 1, start) if significant
+      return ::Date.new(leap_years.min, 2, 29, start) if leap_day?
+
+      year, month, day = unspecified.min(absolute_values, start)
+      year = written_year.negative? ? -unspecified.max([written_year.abs])[0] : nonzero(year)
+
+      ::Date.new(astronomical(year), month || 1, day || 1, start)
+    end
+
+    def end
+      return plain if atomic?
+      return ::Date.new(significant_years.last, 12, 31, start) if significant
+      return ::Date.new(leap_years.max, 2, 29, start) if leap_day?
+
+      year, month, day = unspecified.max(absolute_values, start)
+      year = -least(unspecified.min([written_year.abs])[0]) if written_year.negative?
+      year = astronomical(year)
+
+      return ::Date.new(year, 12, 31, start) if month.nil?
+      return ::Date.new(year, month, -1, start) if day.nil?
+
+      last = ::Date.new(year, month, -1, start).day
+      ::Date.new(year, month, [day, last].min, start)
+    end
+
+    # Returns the next day, month, or year depending on the date's precision.
+    # Unspecified digits step by the unit they leave open (201X -> 202X).
+    def succ(by = 1)
+      year, month, day = unspecified.zero? ? values : bound_values(forward: by.positive? ^ written_year.negative?)
+
+      values =
+        case precision
+        when :year then [year + by]
+        when :month then (year * 12 + month - 1 + by).divmod(12).then { |y, m| [y, m + 1] }
+        else (::Date.new(year, month, day, start) + by).then { |d| [d.year, d.month, d.day] }
+        end
+
+      # Keep the lowest values the unspecified digits allow, as parsing does.
+      unless unspecified.zero?
+        written = Period.written_year(values[0], year_zero?)
+        values = unspecified.min([written.abs, *values.drop(1)], start)
+        values[0] = astronomical(written.negative? ? -least(values[0]) : nonzero(values[0]))
+      end
+
+      self.class.new(*values, uncertain: uncertain, approximate: approximate, unspecified: unspecified,
+        significant: significant, calendar: calendar, year_zero: year_zero?)
+    end
+
+    alias next succ
+
+    def prev(by = 1)
+      succ(-by)
+    end
+
+    # Yields each date at this precision that begins on or before max ends.
+    def upto(max)
+      return to_enum(:upto, max) unless block_given?
+
+      last = Period.bounds(max)&.last
+      date = self
+      while last && date.begin <= last
+        yield date
+        date = date.succ
+      end
       self
     end
 
-    define_method("#{p}_precision") do
-      change(:precision => p)
+    # Yields each date at this precision that ends on or after min begins.
+    def downto(min)
+      return to_enum(:downto, min) unless block_given?
+
+      first = Period.bounds(min)&.first
+      date = self
+      while first && date.end >= first
+        yield date
+        date = date.prev
+      end
+      self
     end
-  end
 
-
-  alias original_initialize_copy initialize_copy
-
-  def initialize_copy(other)
-    original_initialize_copy(other)
-    copy_extended_attributes(other)
-  end
-
-
-  # Alias advance method from Active Support.
-  alias original_advance advance
-
-  # Provides precise Date calculations for years, months, and days.  The +options+ parameter takes a hash with
-  # any of these keys: <tt>:years</tt>, <tt>:months</tt>, <tt>:weeks</tt>, <tt>:days</tt>.
-  def advance(options)
-    original_advance(options).copy_extended_attributes(self)
-  end
-
-  # Alias change method from Active Support.
-  alias original_change change
-
-  # Returns a new Date where one or more of the elements have been changed according to the +options+ parameter.
-  def change(options)
-    d = original_change(options)
-    EXTENDED_ATTRIBUTES.each do |attribute|
-      d.send("#{attribute}=", options[attribute] || send(attribute))
+    def +(other)
+      plain + other
     end
-    d
-  end
 
+    def -(other)
+      plain - other
+    end
 
-  # Returns a copy with the given EDTF attributes replaced.
-  def with(precision: self.precision,
-           uncertain: PRECISION.select { |p| uncertain?(p) },
-           approximate: PRECISION.select { |p| approximate?(p) })
-    date = dup
-    date.precision = precision
-    date.uncertain.certain!.uncertain!(uncertain)
-    date.approximate.certain!.uncertain!(approximate)
-    date
-  end
+    def >>(other)
+      plain >> other
+    end
 
-  # Returns this Date's precision.
-  def precision
-    @precision ||= :day
-  end
+    def <<(other)
+      plain << other
+    end
 
-  # Sets this Date/Time's precision to the passed-in value.
-  def precision=(precision)
-    precision = precision.to_sym
-    raise ArgumentError, "invalid precision #{precision.inspect}" unless PRECISION.include?(precision)
-    @precision = precision
-    update_precision_filter[-1]
-  end
+    %i[next_day prev_day next_month prev_month next_year prev_year].each do |name|
+      define_method(name) { |n = 1| plain.send(name, n) }
+    end
 
-  def uncertain
-    @uncertain ||= EDTF::Uncertainty.new
-  end
+    def new_start(start = ::Date::ITALY)
+      plain.new_start(start)
+    end
 
-  def approximate
-    @approximate ||= EDTF::Uncertainty.new(nil, nil, nil, 8)
-  end
+    %i[julian gregorian italy england].each do |name|
+      define_method(name) { plain.send(name) }
+    end
 
-  def unspecified
-    @unspecified ||= EDTF::Unspecified.new
-  end
+    # Ruby's Date Marshal data keeps instance variables on MRI only.
+    def marshal_dump
+      variables = instance_variables.to_h { |name| [name, instance_variable_get(name)] }
+      [DATE_MARSHAL[:marshal_dump].bind_call(self), variables]
+    end
 
-  def_delegators :uncertain, :uncertain?, :certain?
+    def marshal_load((data, variables))
+      DATE_MARSHAL[:marshal_load].bind_call(self, data)
+      variables.each { |name, value| instance_variable_set(name, value) }
+      freeze
+    end
 
-  def certain!(arguments = precision_filter)
-    uncertain.certain!(arguments)
-    self
-  end
+    def ==(other)
+      (self <=> other) == 0
+    end
 
-  def uncertain!(arguments = precision_filter)
-    uncertain.uncertain!(arguments)
-    self
-  end
-
-  def approximate?(arguments = precision_filter)
-    approximate.uncertain?(arguments)
-  end
-
-  alias approximately? approximate?
-
-  def approximate!(arguments = precision_filter)
-    approximate.uncertain!(arguments)
-    self
-  end
-
-  alias approximately! approximate!
-
-  def precise?(arguments = precision_filter)
-    !approximate?(arguments)
-  end
-
-  alias precisely? precise?
-
-  def precise!(arguments = precision_filter)
-    approximate.certain!(arguments)
-    self
-  end
-
-  alias precisely! precise!
-
-  def_delegators :unspecified, :unspecified?, :specified?, :unspecific?, :specific?
-
-  def unspecified!(arguments = precision_filter)
-    unspecified.unspecified!(arguments)
-    self
-  end
-
-  alias unspecific! unspecified!
-
-  def specified!(arguments = precision_filter)
-    unspecified.specified!(arguments)
-    self
-  end
-
-  alias specific! specified!
-
-  # Returns false for Dates.
-  def season?; false; end
-
-  # Returns true if the Date has an EDTF calendar string attached.
-  def calendar?; !!@calendar; end
-
-  # Returns true if the Date's EDTF string should be printed without timezone.
-  def skip_timezone?; !!@skip_timezone; end
-
-  # Converts the Date into a season.
-  def season
-    Season.new(self)
-  end
-
-  # Returns the Date's EDTF string.
-  def edtf
-    return "Y#{year}" if long_year?
-
-    v = values
-    s = FORMATS.take(v.length).zip(v).map { |f,d| f % d.abs }
-    s[0] = "-#{s[0]}" if year < 0
-    s = unspecified.mask(s)
-
-    unless (h = ua_hash).zero?
-      #
-      # To efficiently calculate the uncertain/approximate state we use
-      # the bitmask. The primary flags are:
-      #
-      # Uncertain:    1 - year,  2 - month,  4 - day
-      # Approximate:  8 - year, 16 - month, 32 - day
-      #
-      # Invariant: assumes that uncertain/approximate are not set for values
-      # not covered by precision!
-      #
-      y, m, d = s
-
-      # ?/~ if true-false or true-true and other false-true
-      y << SYMBOLS[:uncertain]   if  3&h==1 || 27&h==19
-      y << SYMBOLS[:approximate] if 24&h==8 || 27&h==26
-
-
-      # combine if false-true-true and other m == d
-      if 7&h==6 && (48&h==48 || 48&h==0)  || 56&h==48 && (6&h==6 || 6&h==0)
-        m[0,0] = '('
-        d << ')'
+    # Returns true if other is the same date and has the same EDTF attributes.
+    def eql?(other)
+      case other
+      when Date
+        jd == other.jd && state == other.state
+      when ::Date
+        plain? && plain.eql?(other)
       else
-        case
-        # false-true
-        when 3&h==2 || 24&h==16
-          m[0,0] = '('
-          m << ')'
+        false
+      end
+    end
 
-        # *-false-true
-        when 6&h==4 || 48&h==32
-          d[0,0] = '('
-          d << ')'
-        end
+    # Returns the plain Date hash unless EDTF attributes are set.
+    def hash
+      plain? ? plain.hash : [jd, *state].hash
+    end
 
-        # ?/~ if *-true-false or *-true-true and other m != d
-        m << SYMBOLS[:uncertain]   if h!=31 && (6&h==2  ||  6&h==6  && (48&h==16 || 48&h==32))
-        m << SYMBOLS[:approximate] if h!=59 && (48&h==16 || 48&h==48 && (6&h==2 || 6&h==4))
+    def edtf
+      year = written_year
+      return "Y#{year}#{"S#{significant}" if significant}" if long_year?
+      return "#{'-' if year.negative?}#{format('%04d', year.abs)}S#{significant}" if significant
+
+      sign = year.negative? ? '-' : ''
+      values = [year, *self.values.drop(1)].each_with_index.map { |value, idx| format(idx.zero? ? '%04d' : '%02d', value.abs) }
+
+      return sign + unspecified.masks(values).join('-') unless unspecified.zero?
+
+      values = uncertain.marks(values, '?') unless uncertain.zero?
+      values = approximate.marks(values, '~').map { |value| value.sub(/~\?|\?~/, '%') } unless approximate.zero?
+
+      sign + values.join('-')
+    end
+
+    protected
+
+    # Plain days compare by day like Ruby dates, whatever their calendar.
+    # Year zero matters only to unspecified year digits (00XX).
+    def state
+      state = [precision, uncertain.value, approximate.value, unspecified.value, significant,
+        year_zero? || !unspecified.year?]
+      plain? ? state : state << calendar
+    end
+
+    private
+
+    def bits(value)
+      mask = value == true ? MASKS[values_count] : Bitmask.convert(value)
+      Bitmask.new(mask & MASKS[values_count])
+    end
+
+    def values_count
+      PRECISION.index(precision) + 1
+    end
+
+    def long_year?
+      precision == :year && written_year.abs > 9999
+    end
+
+    # Masks cover four-digit years only,
+    # and EDTF does not qualify long years or years with significant digits.
+    def check_digits
+      raise ArgumentError, 'years beyond four digits need year precision' if written_year.abs > 9999 && precision != :year
+      raise ArgumentError, 'significant digits need year precision' if significant && precision != :year
+      raise ArgumentError, "invalid significant digits: #{significant}" if significant && significant < 1
+      unless unspecified.zero? || (uncertain.zero? && approximate.zero?)
+        raise ArgumentError, 'unspecified digits cannot be qualified'
       end
 
-      # ?/~ if *-*-true
-      d << SYMBOLS[:uncertain]   if  4&h==4
-      d << SYMBOLS[:approximate] if 32&h==32
+      return unless long_year? || significant
+
+      unless [uncertain, approximate, unspecified].all?(&:zero?)
+        raise ArgumentError, 'long years and significant digits cannot be qualified or unspecified'
+      end
     end
 
-    s = s.join('-')
-    s << SYMBOLS[:calendar] << calendar if calendar?
-    s
-  end
+    # The first and last year the significant digits allow.
+    def significant_years
+      return year..year if significant >= written_year.abs.to_s.length
 
-  alias to_edtf edtf
+      unit = 10**(written_year.abs.to_s.length - significant)
+      low = written_year.abs / unit * unit
+      high = low + unit - 1
+      low = 1 if low.zero? && !year_zero?
 
-  remove_method :next
-
-  # Returns an array of the next n days, months, or years depending on the
-  # current Date/Time's precision.
-  def next(n = 1)
-    1.upto(n).map { |by| advance(PRECISIONS[precision] => by) }
-  end
-
-  remove_method :succ
-
-  def succ
-    advance(PRECISIONS[precision] => 1)
-  end
-
-  # Returns the Date of the previous day, month, or year depending on the
-  # current Date/Time's precision.
-  def prev(n = 1)
-    if n > 1
-      1.upto(n).map { |by| advance(PRECISIONS[precision] => -by) }
-    else
-      advance(PRECISIONS[precision] => -1)
+      years = written_year.negative? ? [-high, -low] : [low, high]
+      astronomical(years[0])..astronomical(years[1])
     end
-  end
 
-  def <=>(other)
-    case other
-    when ::Date
-      values <=> other.values
-    when EDTF::Interval, EDTF::Season, EDTF::Epoch
-      (c = other <=> self) && -c
-    else
-      nil
+    def qualified?(mask, part)
+      part.nil? ? !mask.zero? : mask.intersect?(part)
     end
-  end
 
-  alias original_eql? eql?
-  alias original_hash hash
-
-  # Returns true if other is the same date and has the same EDTF attributes.
-  def eql?(other)
-    if original_eql?(other)
-      extended_hash == other.extended_hash && calendar == other.calendar
-    else
-      false
+    def leap_day?
+      precision == :day && month == 2 && day == 29 &&
+        unspecified.year? && !unspecified.month? && !unspecified.day?
     end
-  end
 
-  # Returns the original Date hash unless EDTF attributes are set.
-  def hash
-    h = extended_hash
-    if h.zero? && !calendar?
-      original_hash
-    else
-      [original_hash, h, @calendar].hash
+    def leap_years
+      Date.leap_years(year, unspecified, start, year_zero?)
     end
-  end
 
-
-  # Returns an array of the current year, month, and day values filtered by
-  # the Date/Time's precision.
-  def values
-    precision_filter.map { |p| send(p) }
-  end
-
-  # Returns the same date but with negated year.
-  def negate
-    change(:year => year * -1)
-  end
-
-  alias -@ negate
-
-  # Returns true if this Date/Time has year precision and the year exceeds four digits.
-  def long_year?
-    year_precision? && year.abs > 9999
-  end
-
-
-  private
-
-  def ua_hash
-    uncertain.hash + approximate.hash
-  end
-
-  def precision_filter
-    @precision_filter ||= update_precision_filter
-  end
-
-  def update_precision_filter
-    @precision_filter = case precision
-    when :year
-      [:year]
-    when :month
-      [:year,:month]
-    else
-      [:year,:month,:day]
+    def plain?
+      precision == :day && uncertain.zero? && approximate.zero? && unspecified.zero?
     end
-  end
 
-  protected
+    def atomic?
+      precision == :day && unspecified.zero?
+    end
 
-  attr_writer :uncertain, :unspecified, :approximate
+    def plain
+      ::Date.jd(jd, start)
+    end
 
-  # Bits 0-1: precision (0 - day, 1 - month, 2 - year)
-  # Bits 2-4: uncertain year, month, day (Uncertainty#hash with base 1)
-  # Bits 5-7: approximate year, month, day (Uncertainty#hash with base 8)
-  # Bits 8-15: unspecified year, month, and day digits
-  def extended_hash
-    h = @precision == :year ? 2 : @precision == :month ? 1 : 0
-    h |= @uncertain.hash << 2 if @uncertain
-    h |= @approximate.hash << 2 if @approximate
-    h |= @unspecified.hash << 8 if @unspecified
-    h
-  end
+    def least(year)
+      year.zero? ? unspecified.least_year(year) : year
+    end
 
-  def copy_extended_attributes(other)
-    @uncertain   = other.uncertain.dup
-    @approximate = other.approximate.dup
-    @unspecified = other.unspecified.dup
+    # Without year zero, positive written years skip 0, too (00XX begins at 1).
+    def nonzero(year)
+      year_zero? ? year : least(year)
+    end
 
-    @calendar    = other.calendar.dup if other.calendar?
-    @precision   = other.precision
+    def written_year
+      @historical && year < 1 ? year - 1 : year
+    end
 
-    self
+    def astronomical(year)
+      Period.astronomical_year(year, year_zero?)
+    end
+
+    # The digits as written: masks apply to the written year.
+    def absolute_values
+      [written_year.abs, *values.drop(1)]
+    end
+
+    def bound_values(forward:)
+      values = forward ? unspecified.max(absolute_values, start) : unspecified.min(absolute_values, start)
+      values[0] = astronomical(written_year.negative? ? -values[0] : values[0])
+      values
+    end
   end
 
 end

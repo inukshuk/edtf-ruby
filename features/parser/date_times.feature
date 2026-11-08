@@ -12,13 +12,13 @@ Feature: Parse date-times
       | 2001-02-03T09:30:01 | 2001-02-03T09:30:01 |
       | 1985-04-12T23:20:30 | 1985-04-12T23:20:30 |
 
-    # ISO 8601-1:2019/Amd 1 allows 24:00 as the end of a day.
-    @level0
-    Examples: Midnight at the end of a day
+    # ISO 8601-1 allows 24:00 only as the end of an interval.
+    @level0 @legacy
+    Examples: Legacy syntax: midnight at the end of a day
       | string              | date-time           |
       | 2016-05-02T24:00:00 | 2016-05-03T00:00:00 |
 
-    @level0 @wip
+    @level0
     Examples: Fractional seconds
       | string                  | date-time               |
       | 2016-05-02T16:54:59.042 | 2016-05-02T16:54:59.042 |
@@ -39,13 +39,24 @@ Feature: Parse date-times
       | 1985-04-12T23:20:30+04:30 | 1985-04-12T23:20:30 | 1985-04-12T18:50:30 |
       | 2016-05-02T16:54:59-12:00 | 2016-05-02T16:54:59 | 2016-05-03T04:54:59 |
 
-    @level0 @wip
+    @level0
     Examples: Time zone offset in hours only
       | string                 | date-time           | utc                 |
       | 1985-04-12T23:20:30-04 | 1985-04-12T23:20:30 | 1985-04-13T03:20:30 |
 
     # EDTF requires the extended format; edtf.js also accepts +hhmm.
-    @level0 @ext-basic-offset @wip
+    @level0 @ext-basic-offset
     Examples: Time zone offset without a colon
       | string                   | date-time           | utc                 |
       | 2016-05-02T16:54:59+0230 | 2016-05-02T16:54:59 | 2016-05-02T14:24:59 |
+
+  Scenario Outline: Times to the hour or minute
+    When I parse "<string>"
+    Then its EDTF string should be "<edtf>"
+
+    @level0
+    Examples:
+      | string              | edtf                   |
+      | 2016-05-02T16       | 2016-05-02T16          |
+      | 2016-05-02T16:54    | 2016-05-02T16:54       |
+      | 2016-05-02T16:54-04 | 2016-05-02T16:54-04:00 |

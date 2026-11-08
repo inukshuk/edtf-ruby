@@ -16,16 +16,15 @@ Gem::Specification.new do |s|
   }
 
   s.required_ruby_version = '>= 3.3'
-  s.add_dependency('activesupport', '>= 3.0', '< 9.0')
   s.add_dependency('racc', '~> 1.7')
 
   s.rdoc_options = %w{
     --line-numbers
     --title EDTF-Ruby
     --main README.md
-    --exclude lib/edtf/parser.rb
+    --exclude lib/edtf/(iso|legacy).rb
   }
-  s.extra_rdoc_files = %w{README.md LICENSE}
+  s.extra_rdoc_files = %w{README.md CHANGELOG.md UPGRADING.md LICENSE}
 
-  s.files = Dir['lib/**/*.{rb,y}'] + %w[LICENSE README.md]
+  s.files = Dir['lib/**/*.{rb,y}'] + %w[LICENSE README.md CHANGELOG.md UPGRADING.md]
 end
