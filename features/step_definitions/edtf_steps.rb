@@ -48,6 +48,11 @@ Given('the century option is off') do
   @options = { centuries: false }
 end
 
+# Turns on the extensions that are off by default (season intervals).
+Given('the extensions are on') do
+  @options = { extensions: true }
+end
+
 Given('the year zero option is off') do
   @options = { year_zero: false }
 end

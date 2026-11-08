@@ -48,7 +48,7 @@ module EDTF
         raise ArgumentError, "invalid level #{level.inspect}"
       end
 
-      extensions = !strict if extensions.nil?
+      extensions = strict ? false : Grammar::DEFAULT_EXTENSIONS if extensions.nil?
       legacy = !strict if legacy.nil?
       extensions = check_extensions(extensions)
 
@@ -234,7 +234,7 @@ module EDTF
       when :decade, :set, :list
         2
       when :season
-        level_2 = qualified?(result) || result[:qualifier]
+        level_2 = qualified?(result) || result[:qualifier] || result[:unspecified]
         level_2 || result[:values][1] > 24 ? 2 : 1
       when :interval
         # Open or unknown ends are level 1, unspecified digits level 2.

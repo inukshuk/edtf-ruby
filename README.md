@@ -20,14 +20,17 @@ EDTF-Ruby fully implements EDTF levels 0, 1, and 2
 as specified by ISO 8601-2
 with the following exceptions:
 
-1. Uncertain or approximate seasons (`2001-21?`)
+1. Uncertain or approximate seasons (`2001-21?`, `2001?-21`)
+   and seasons with unspecified years (`200X-21`)
    are a non-standard extension.
 2. Offsets without a colon after an extended date
    (`2004-01-01T10:10:10+0230`) are a non-standard extension.
-3. Fractions of a second are read to the millisecond.
+3. Seasons in intervals (`2001-21/2002-22`) are a non-standard extension,
+   off by default.
+4. Fractions of a second are read to the millisecond.
 
-Both extensions are on by default;
-see [Parser options][options] to turn them off.
+The first two extensions are on by default;
+see [Parser options][options] to turn them on or off.
 
 EDTF-Ruby still reads the draft syntax of earlier EDTF versions
 (`?~`, parentheses, `u`, `open`, `unknown`, …)
@@ -494,8 +497,10 @@ The options are:
 
 * `level:` the highest level to accept (0–2, default 2).
 * `extensions:` the non-standard extensions to accept:
-  `true` (all, the default), `false` (none),
-  or a list of names (`:season_uncertainty`, `:basic_offset`).
+  `true` (all), `false` (none),
+  or a list of names (`:season_uncertainty`, `:season_intervals`,
+  `:basic_offset`);
+  by default all but `:season_intervals`.
 * `legacy:` whether to read [legacy syntax][legacy-syntax] (default true).
 * `strict:` ISO 8601-2 only:
   turns off extensions, legacy syntax,

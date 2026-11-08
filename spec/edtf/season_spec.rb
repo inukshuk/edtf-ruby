@@ -157,6 +157,33 @@ module EDTF
       end
     end
 
+    describe 'in intervals (season-intervals extension)' do
+      def interval(string)
+        EDTF.parse(string, extensions: true)
+      end
+
+      it 'iterate by season' do
+        i = interval('2001-21/2002-22')
+        expect(i.map(&:edtf)).to eq(%w[2001-21 2001-22 2001-23 2001-24 2002-21 2002-22])
+        expect(i.include?(season(2001, 23))).to be true
+      end
+
+      it 'go from season to season, as in edtf.js' do
+        %w[2001-21/.. ../2001-21 2001-21/ 2001-21/2002 2001/2001-22].each do |string|
+          expect(interval(string)).to be_nil
+        end
+        expect { EDTF.parse!('2002-22/2001-21', extensions: true) }.to raise_error(ArgumentError, /reversed/)
+      end
+    end
+
+    describe 'stepping with unspecified year digits around year 0' do
+      it 'keeps the sign' do
+        expect(EDTF('000X-21').prev.edtf).to eq('-000X-24')
+        expect(EDTF('-000X-24').succ.edtf).to eq('000X-21')
+        expect(EDTF('-001X-21').prev.edtf).to eq('-002X-24')
+      end
+    end
+
     describe 'without year zero' do
       it 'are written as read and stored astronomically' do
         s = EDTF.parse('-0001-21', year_zero: false)

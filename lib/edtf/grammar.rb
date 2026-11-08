@@ -12,7 +12,11 @@ module EDTF
       day:   Bitmask::DAY
     }.freeze
 
-    EXTENSIONS = %i[season_uncertainty basic_offset].freeze
+    EXTENSIONS = %i[season_uncertainty season_intervals basic_offset].freeze
+
+    # Season intervals are off by default, as in edtf.js;
+    # qualified seasons are on (EDTF-Ruby 4.x read them as a whole).
+    DEFAULT_EXTENSIONS = %i[season_uncertainty basic_offset].freeze
 
     class ParseError < ArgumentError; end
 
@@ -20,7 +24,7 @@ module EDTF
 
     # Exponents let short strings stand for huge years (Y3E9999999 has ten
     # million digits); years beyond max_year_digits are rejected unread.
-    def initialize(extensions: EXTENSIONS, max_year_digits: 100)
+    def initialize(extensions: DEFAULT_EXTENSIONS, max_year_digits: 100)
       @extensions = extensions
       @max_year_digits = max_year_digits
     end
