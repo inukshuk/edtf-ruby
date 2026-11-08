@@ -1443,7 +1443,7 @@ module_eval(<<'.,.,', 'legacy.y', 355)
 
 module_eval(<<'.,.,', 'legacy.y', 361)
   def _reduce_120(val, _values, result)
-            check_day(val[0][0], val[2], val[4], leap: true)
+            check_day(val[0][0], val[2], val[4])
         result = date(val[0][0], val[2], val[4], unspecified: val[0][1])
 
     result

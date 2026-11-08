@@ -1,6 +1,6 @@
 module EDTF
 
-  # EDTF dates extend the regular (proleptic Gregorian) Ruby Date class.
+  # EDTF dates extend the regular Ruby Date class.
   # Every EDTF date acts as you would normally expect,
   # but provides additional functionality.
   #
@@ -8,6 +8,8 @@ module EDTF
   # This is a subtle difference that determines how many other methods work:
   # the bounds, stepping with `succ`, `prev`, `upto` and `downto`,
   # and the EDTF string all follow the precision.
+  # Dates are proleptic Gregorian unless in another calendar Ruby supports
+  # (calendar: :julian, :italy, :england, or the Julian day of a reform).
   # Dates can also be uncertain, approximate, or have unspecified digits,
   # marked by bitmasks.
   #
@@ -47,13 +49,14 @@ module EDTF
     DATE_MARSHAL = %i[marshal_dump marshal_load].to_h { |name| [name, ::Date.instance_method(name)] }.freeze
     private_constant :DATE_MARSHAL
 
-    def initialize(year, month = nil, day = nil, uncertain: nil, approximate: nil, unspecified: nil, significant: nil)
+    def initialize(year, month = nil, day = nil, uncertain: nil, approximate: nil, unspecified: nil, significant: nil, calendar: nil)
       values = [year, month, day].compact
       raise ArgumentError, 'day given without month' if day && month.nil?
 
-      year = Date.leap_years(year, unspecified).first || year if month == 2 && day == 29
+      start = Period.start(calendar)
+      year = Date.leap_years(year, unspecified, start).first || year if month == 2 && day == 29
 
-      super(year, month || 1, day || 1, ::Date::GREGORIAN)
+      super(year, month || 1, day || 1, start)
 
       @precision = PRECISION[values.length - 1]
       @uncertain = bits(uncertain)
@@ -67,10 +70,14 @@ module EDTF
 
     attr_reader :significant
 
+    def calendar
+      Period.calendar(start)
+    end
+
     # February 29 in a year with unspecified digits (19XX-02-29)
     # falls in the leap years the digits allow;
     # such a date stores the first one (1904).
-    def self.leap_years(year, unspecified) # :nodoc:
+    def self.leap_years(year, unspecified, start = ::Date::GREGORIAN) # :nodoc:
       pattern = Bitmask.new(unspecified).masks([format('%04d', year.abs)])[0]
       return [year] unless pattern.include?('X')
 
@@ -78,7 +85,7 @@ module EDTF
       sign = year.negative? ? -1 : 1
 
       (0..9999).filter_map do |n|
-        sign * n if digits.match?(format('%04d', n)) && ::Date.gregorian_leap?(sign * n)
+        sign * n if digits.match?(format('%04d', n)) && ::Date.valid_date?(sign * n, 2, 29, start)
       end
     end
 
@@ -133,34 +140,35 @@ module EDTF
 
       self.class.new(
         *PRECISION.take(count).map { |name| changes.fetch(name) { send(name) } },
-        **QUALIFIERS.to_h { |name| [name, changes.fetch(name) { send(name) }] }
+        **QUALIFIERS.to_h { |name| [name, changes.fetch(name) { send(name) }] },
+        calendar: calendar
       )
     end
 
     def begin
       return plain if atomic?
-      return ::Date.new(significant_years.first, 1, 1, ::Date::GREGORIAN) if significant
-      return ::Date.new(leap_years.min, 2, 29, ::Date::GREGORIAN) if leap_day?
+      return ::Date.new(significant_years.first, 1, 1, start) if significant
+      return ::Date.new(leap_years.min, 2, 29, start) if leap_day?
 
-      year, month, day = unspecified.min(absolute_values)
+      year, month, day = unspecified.min(absolute_values, start)
       year = -unspecified.max([self.year.abs])[0] if self.year.negative?
 
-      ::Date.new(year, month || 1, day || 1, ::Date::GREGORIAN)
+      ::Date.new(year, month || 1, day || 1, start)
     end
 
     def end
       return plain if atomic?
-      return ::Date.new(significant_years.last, 12, 31, ::Date::GREGORIAN) if significant
-      return ::Date.new(leap_years.max, 2, 29, ::Date::GREGORIAN) if leap_day?
+      return ::Date.new(significant_years.last, 12, 31, start) if significant
+      return ::Date.new(leap_years.max, 2, 29, start) if leap_day?
 
-      year, month, day = unspecified.max(absolute_values)
+      year, month, day = unspecified.max(absolute_values, start)
       year = -least(unspecified.min([self.year.abs])[0]) if self.year.negative?
 
-      return ::Date.new(year, 12, 31, ::Date::GREGORIAN) if month.nil?
-      return ::Date.new(year, month, -1, ::Date::GREGORIAN) if day.nil?
+      return ::Date.new(year, 12, 31, start) if month.nil?
+      return ::Date.new(year, month, -1, start) if day.nil?
 
-      last = ::Date.new(year, month, -1, ::Date::GREGORIAN).day
-      ::Date.new(year, month, [day, last].min, ::Date::GREGORIAN)
+      last = ::Date.new(year, month, -1, start).day
+      ::Date.new(year, month, [day, last].min, start)
     end
 
     # Returns the next day, month, or year depending on the date's precision.
@@ -172,15 +180,15 @@ module EDTF
         case precision
         when :year then [year + by]
         when :month then (year * 12 + month - 1 + by).divmod(12).then { |y, m| [y, m + 1] }
-        else (::Date.new(year, month, day, ::Date::GREGORIAN) + by).then { |d| [d.year, d.month, d.day] }
+        else (::Date.new(year, month, day, start) + by).then { |d| [d.year, d.month, d.day] }
         end
 
       # Keep the lowest values the unspecified digits allow, as parsing does.
       unless unspecified.zero?
-        values = unspecified.min([values[0].abs, *values.drop(1)]).tap { |v| v[0] = -least(v[0]) if values[0].negative? }
+        values = unspecified.min([values[0].abs, *values.drop(1)], start).tap { |v| v[0] = -least(v[0]) if values[0].negative? }
       end
 
-      self.class.new(*values, uncertain: uncertain, approximate: approximate, unspecified: unspecified, significant: significant)
+      self.class.new(*values, uncertain: uncertain, approximate: approximate, unspecified: unspecified, significant: significant, calendar: calendar)
     end
 
     alias next succ
@@ -290,8 +298,10 @@ module EDTF
 
     protected
 
+    # Plain days compare by day like Ruby dates, whatever their calendar.
     def state
-      [precision, uncertain.value, approximate.value, unspecified.value, significant]
+      state = [precision, uncertain.value, approximate.value, unspecified.value, significant]
+      plain? ? state : state << calendar
     end
 
     private
@@ -348,7 +358,7 @@ module EDTF
     end
 
     def leap_years
-      Date.leap_years(year, unspecified)
+      Date.leap_years(year, unspecified, start)
     end
 
     def plain?
@@ -360,7 +370,7 @@ module EDTF
     end
 
     def plain
-      ::Date.jd(jd, ::Date::GREGORIAN)
+      ::Date.jd(jd, start)
     end
 
     def least(year)
@@ -372,7 +382,7 @@ module EDTF
     end
 
     def bound_values(forward:)
-      values = forward ? unspecified.max(absolute_values) : unspecified.min(absolute_values)
+      values = forward ? unspecified.max(absolute_values, start) : unspecified.min(absolute_values, start)
       values[0] = -values[0] if year.negative?
       values
     end

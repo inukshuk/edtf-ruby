@@ -27,10 +27,10 @@ Feature: Print level 2 EDTF strings
       | 2004-06-uu/2004-07-03 | 2004-06-XX/2004-07-03 |
 
     # Hemisphere qualifiers become ISO 8601-2 hemisphere seasons;
-    # other season qualifiers and calendars have no equivalent,
-    # the upgrade path will report the loss (step 4).
+    # other season qualifiers have no equivalent,
+    # and ISO 8601-2 strings do not name calendars.
     @level2 @legacy
     Examples: Draft syntax: qualified seasons and calendars
       | string                     | edtf                       |
       | 2001-21^southernHemisphere | 2001-29                    |
-      | 2001-02-03^xyz             | 2001-02-03                 |
+      | 2001-02-03^julian          | 2001-02-03                 |

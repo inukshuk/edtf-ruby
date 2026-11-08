@@ -54,14 +54,15 @@ module EDTF
 
         # Negative years stay dates: decades and centuries are not negative.
         if epoch && !year.negative?
-          return epoch.new(year / size, **result.slice(:uncertain, :approximate))
+          return epoch.new(year / size, **result.slice(:uncertain, :approximate, :calendar))
         end
       end
 
       Date.new(*result[:values], **result.slice(
         :uncertain,
         :approximate,
-        :unspecified
+        :unspecified,
+        :calendar
       ))
     end
 
@@ -83,18 +84,18 @@ module EDTF
     end
 
     def year(result)
-      Date.new(result[:values][0], significant: result[:significant])
+      Date.new(result[:values][0], **result.slice(:significant, :calendar))
     end
 
     # Decades and centuries in results were written 196 and 19.
     def decade(result)
       Decade.new(result[:values][0], short: true,
-        **result.slice(:uncertain, :approximate))
+        **result.slice(:uncertain, :approximate, :calendar))
     end
 
     def century(result)
       Century.new(result[:values][0], short: true,
-        **result.slice(:uncertain, :approximate))
+        **result.slice(:uncertain, :approximate, :calendar))
     end
 
     def season(result)
@@ -103,7 +104,8 @@ module EDTF
       Season.new(year, season, **result.slice(
         :uncertain,
         :approximate,
-        :unspecified))
+        :unspecified,
+        :calendar))
     end
 
     def hemisphere(qualifier, season)

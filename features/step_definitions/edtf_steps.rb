@@ -48,6 +48,10 @@ Given('the century option is off') do
   @options = { centuries: false }
 end
 
+Given('the calendar option is {string}') do |calendar|
+  @options = { calendar: calendar.to_sym }
+end
+
 Given('the date {string}') do |date|
   @result = EDTF::Date.new(*values(date))
 end
@@ -142,7 +146,7 @@ end
 # Calendars and season qualifiers have no ISO 8601-2 equivalent:
 # only the parse result keeps them.
 Then('the parse result should record the {word} {string}') do |key, value|
-  expect(EDTF::Parser.new(warn: false).parse!(@string)[key.to_sym]).to eq(value)
+  expect(EDTF::Parser.new(warn: false).parse!(@string)[key.to_sym].to_s).to eq(value)
 end
 
 # "one of" is a choice; "all of" includes every member.
@@ -159,4 +163,12 @@ end
 
 Then('the significant digits should be {int}') do |digits|
   expect(@result.significant).to eq(digits)
+end
+
+Then('it should be in the {word} calendar') do |calendar|
+  expect(@result.calendar).to eq(calendar.to_sym)
+end
+
+Then('its first day should be {string} in the Gregorian calendar') do |date|
+  expect(@result.begin.gregorian.iso8601).to eq(date)
 end

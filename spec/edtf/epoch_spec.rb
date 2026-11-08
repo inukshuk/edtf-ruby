@@ -119,6 +119,26 @@ module EDTF
     end
   end
 
+  describe 'Epochs in other calendars' do
+    let(:century) { Century.new(15, calendar: :julian) }
+
+    it 'have their bounds in the calendar' do
+      expect(century.to_range.minmax.map(&:jd)).to eq([
+        ::Date.new(1500, 1, 1, ::Date::JULIAN).jd, ::Date.new(1599, 12, 31, ::Date::JULIAN).jd
+      ])
+    end
+
+    it 'keep it when stepping and copied' do
+      expect(century.succ.calendar).to eq(:julian)
+      expect(century.with(approximate: true).calendar).to eq(:julian)
+    end
+
+    it 'are not eql? to the epoch in another calendar' do
+      expect(century).not_to eql(Century.new(15))
+      expect(century.inspect).to eq('#<EDTF::Century 15XX julian>')
+    end
+  end
+
   describe Century do
     it_behaves_like 'a period' do
       let(:period) { Century.new(19) }

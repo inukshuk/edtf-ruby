@@ -79,9 +79,11 @@ module Kernel
         time.min,
         time.sec + time.subsec,
         offset: time.utc_offset / 60)
+    # Days after their calendar's reform (Ruby's default: Italy, 1582)
+    # are Gregorian; earlier ones keep their calendar and digits.
     when ::Date
-      date = ::Date.jd(value.jd, ::Date::GREGORIAN)
-      EDTF::Date.new(date.year, date.month, date.day)
+      calendar = value.gregorian? ? nil : value.start
+      EDTF::Date.new(value.year, value.month, value.day, calendar: calendar)
     else
       raise TypeError, "can't convert #{value.class} into EDTF"
     end

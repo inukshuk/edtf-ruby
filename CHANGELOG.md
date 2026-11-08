@@ -15,6 +15,8 @@ see [UPGRADING.md](UPGRADING.md) for the API changes and migration.
   `level:`, `extensions:`, `legacy:`, `strict:` and `max_year_digits:`.
 * `19XX` and `196X` are read as centuries and decades
   (`centuries: false` to turn off).
+* Dates, seasons, decades and centuries in other calendars Ruby supports
+  (`calendar: :julian`, also a parse option); legacy `^julian` is kept.
 * Reversed intervals and years beyond 100 digits are rejected.
 * ActiveSupport is no longer a dependency; EDTF-Ruby works with it.
 

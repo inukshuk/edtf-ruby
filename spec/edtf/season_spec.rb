@@ -157,6 +157,19 @@ module EDTF
       end
     end
 
+    describe 'in other calendars' do
+      let(:winter) { season(1499, 24, calendar: :julian) }
+
+      it 'have their bounds in the calendar' do
+        expect(winter.end.jd).to eq(::Date.new(1500, 2, 29, ::Date::JULIAN).jd)
+      end
+
+      it 'keep it when stepping' do
+        expect(winter.succ).to eql(season(1500, 21, calendar: :julian))
+        expect(winter).not_to eql(season(1499, 24))
+      end
+    end
+
     describe 'legacy season qualifiers' do
       it 'become hemisphere seasons' do
         expect(EDTF.parse('2001-21^southern')).to eql(season(2001, 29))
