@@ -26,6 +26,12 @@ module EDTF
         expect { parser.parse!('156X-09-31') }.to raise_error(ArgumentError)
         expect(parser.parse!('15XX-02-29')[:values]).to eq([1500, 2, 29])
       end
+
+      it 'rejects whitespace other than spaces in sets' do
+        ['2004/ ..', '2004 /..', "{1960,\t1961}", "[1960,\n1961]"].each do |input|
+          expect { parser.parse!(input) }.to raise_error(ArgumentError)
+        end
+      end
     end
 
     describe 'results' do
@@ -99,7 +105,6 @@ module EDTF
         '-0000' => [:negative_zero],
         '{1960, 1961-12}' => [:whitespace],
         '[1864 ..]' => [:whitespace],
-        '2004/ ..' => [:whitespace],
         '2001-02-03^xyz' => [:caret],
         'XXXX' => [:unknown_date],
         'uuuu' => [:unspecified, :unknown_date],
