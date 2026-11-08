@@ -192,9 +192,14 @@ rule
     ;
 
   season
-    : year '-' season_number     { result = season(val[0], val[2]) }
+    : year '-' season_number {
+        result = season(val[0], val[2])
+      }
     # Extension: season-uncertainty
-    | year '-' season_number UA  { result = season(val[0], val[2], val[3]) }
+    | year '-' season_number UA {
+        extension :season_uncertainty
+        result = season(val[0], val[2], val[3])
+      }
     ;
 
   season_number
@@ -345,7 +350,7 @@ end
   end
 
   def negative(year)
-    raise ArgumentError, 'invalid year -0000, use 0000' if year.zero?
+    raise ParseError, 'invalid year -0000, use 0000' if year.zero?
     -year
   end
 
@@ -371,7 +376,7 @@ end
 
   # Years with fewer than five digits are written without Y.
   def long_year(year)
-    raise ArgumentError, "invalid year Y#{year}, use #{year}" if year < 10000
+    raise ParseError, "invalid year Y#{year}, use #{year}" if year < 10000
     year
   end
 

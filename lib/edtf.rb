@@ -31,14 +31,14 @@ module EDTF
 
   module_function
 
-  def parse(input, options = {})
-    parse!(input, options)
+  def parse(input, **options)
+    parse!(input, **options)
   rescue
     nil
   end
   
-  def parse!(input, options = {})
-    Builder.build(Parser.new(options).parse!(input))
+  def parse!(input, **options)
+    Builder.build(Parser.new(**options).parse!(input))
   end
 
   def legacy?(input)

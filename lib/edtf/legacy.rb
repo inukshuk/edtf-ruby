@@ -8,7 +8,7 @@ require 'racc/parser.rb'
 module EDTF
   class Legacy < EDTF::Grammar
 
-module_eval(<<'...end legacy.y/module_eval...', 'legacy.y', 547)
+module_eval(<<'...end legacy.y/module_eval...', 'legacy.y', 551)
 
   def parse(input, debug: false)
     @set = false
@@ -879,6 +879,7 @@ module_eval(<<'.,.,', 'legacy.y', 31)
 module_eval(<<'.,.,', 'legacy.y', 36)
   def _reduce_9(val, _values, result)
             year, month, day = val[0][:values]
+        deprecate :partial_date_time if day.nil?
         values = [year, month || 1, day || 1, *val[2][0, 3]]
         result = { type: :date_time, values: values }
         result[:offset] = val[2][3] if val[2].length > 3
@@ -889,14 +890,14 @@ module_eval(<<'.,.,', 'legacy.y', 36)
 
 # reduce 10 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 45)
+module_eval(<<'.,.,', 'legacy.y', 46)
   def _reduce_11(val, _values, result)
      result = val.flatten
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 49)
+module_eval(<<'.,.,', 'legacy.y', 50)
   def _reduce_12(val, _values, result)
      result = val.values_at(0, 2, 4)
     result
@@ -905,28 +906,30 @@ module_eval(<<'.,.,', 'legacy.y', 49)
 
 # reduce 13 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 54)
+module_eval(<<'.,.,', 'legacy.y', 56)
   def _reduce_14(val, _values, result)
-     result = [24, 0, 0]
+            deprecate :midnight
+        result = [24, 0, 0]
+
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 58)
+module_eval(<<'.,.,', 'legacy.y', 62)
   def _reduce_15(val, _values, result)
      result = 0
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 59)
+module_eval(<<'.,.,', 'legacy.y', 63)
   def _reduce_16(val, _values, result)
      result = -1 * val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 60)
+module_eval(<<'.,.,', 'legacy.y', 64)
   def _reduce_17(val, _values, result)
      result = val[1]
     result
@@ -935,28 +938,28 @@ module_eval(<<'.,.,', 'legacy.y', 60)
 
 # reduce 18 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 65)
+module_eval(<<'.,.,', 'legacy.y', 69)
   def _reduce_19(val, _values, result)
      result = 0
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 69)
+module_eval(<<'.,.,', 'legacy.y', 73)
   def _reduce_20(val, _values, result)
      result = val[0] * 60 + val[2]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 70)
+module_eval(<<'.,.,', 'legacy.y', 74)
   def _reduce_21(val, _values, result)
      result = 840
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 71)
+module_eval(<<'.,.,', 'legacy.y', 75)
   def _reduce_22(val, _values, result)
      result = val[3]
     result
@@ -965,7 +968,7 @@ module_eval(<<'.,.,', 'legacy.y', 71)
 
 # reduce 23 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 77)
+module_eval(<<'.,.,', 'legacy.y', 81)
   def _reduce_24(val, _values, result)
             result = -val[1]
         deprecate :negative_zero if result.zero?
@@ -974,7 +977,7 @@ module_eval(<<'.,.,', 'legacy.y', 77)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 83)
+module_eval(<<'.,.,', 'legacy.y', 87)
   def _reduce_25(val, _values, result)
      result = number(val)
     result
@@ -985,14 +988,14 @@ module_eval(<<'.,.,', 'legacy.y', 83)
 
 # reduce 27 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 90)
+module_eval(<<'.,.,', 'legacy.y', 94)
   def _reduce_28(val, _values, result)
      result = [val[0], val[2]]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 94)
+module_eval(<<'.,.,', 'legacy.y', 98)
   def _reduce_29(val, _values, result)
      result = check_day(*val[0], val[2])
     result
@@ -1015,16 +1018,15 @@ module_eval(<<'.,.,', 'legacy.y', 94)
 
 # reduce 37 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 117)
+module_eval(<<'.,.,', 'legacy.y', 121)
   def _reduce_38(val, _values, result)
             result = date(0, unspecified: Bitmask::XXXX)
-        deprecate :unknown_date
 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 125)
+module_eval(<<'.,.,', 'legacy.y', 128)
   def _reduce_39(val, _values, result)
      result = date(val[0][0], unspecified: val[0][1])
     result
@@ -1039,7 +1041,7 @@ module_eval(<<'.,.,', 'legacy.y', 125)
 
 # reduce 43 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 134)
+module_eval(<<'.,.,', 'legacy.y', 137)
   def _reduce_44(val, _values, result)
             result = val[1]
         result[0] = -result[0]
@@ -1048,28 +1050,28 @@ module_eval(<<'.,.,', 'legacy.y', 134)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 140)
+module_eval(<<'.,.,', 'legacy.y', 143)
   def _reduce_45(val, _values, result)
      result = [number(val[0, 3]) * 10, Bitmask::YYYX]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 141)
+module_eval(<<'.,.,', 'legacy.y', 144)
   def _reduce_46(val, _values, result)
      result = [number(val[0, 2]) * 100, Bitmask::YYXX]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 145)
+module_eval(<<'.,.,', 'legacy.y', 148)
   def _reduce_47(val, _values, result)
      result = date(val[0], 1, unspecified: Bitmask::MONTH)
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 150)
+module_eval(<<'.,.,', 'legacy.y', 153)
   def _reduce_48(val, _values, result)
             result = date(*val[0], 1, unspecified: Bitmask::DAY)
 
@@ -1077,7 +1079,7 @@ module_eval(<<'.,.,', 'legacy.y', 150)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 156)
+module_eval(<<'.,.,', 'legacy.y', 159)
   def _reduce_49(val, _values, result)
             result = date(val[0], 1, 1, unspecified: Bitmask::MD)
 
@@ -1091,7 +1093,7 @@ module_eval(<<'.,.,', 'legacy.y', 156)
 
 # reduce 52 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 167)
+module_eval(<<'.,.,', 'legacy.y', 170)
   def _reduce_53(val, _values, result)
      result = interval(val[0], val[2])
     result
@@ -1102,14 +1104,14 @@ module_eval(<<'.,.,', 'legacy.y', 167)
 
 # reduce 55 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 176)
+module_eval(<<'.,.,', 'legacy.y', 179)
   def _reduce_56(val, _values, result)
      result = interval(:open, val[2])
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 180)
+module_eval(<<'.,.,', 'legacy.y', 183)
   def _reduce_57(val, _values, result)
      result = interval(val[0], :open)
     result
@@ -1128,28 +1130,28 @@ module_eval(<<'.,.,', 'legacy.y', 180)
 
 # reduce 63 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 196)
+module_eval(<<'.,.,', 'legacy.y', 199)
   def _reduce_64(val, _values, result)
      result = interval(:unknown, val[1])
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 200)
+module_eval(<<'.,.,', 'legacy.y', 203)
   def _reduce_65(val, _values, result)
      result = interval(val[0], :unknown)
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 204)
+module_eval(<<'.,.,', 'legacy.y', 207)
   def _reduce_66(val, _values, result)
      result = interval(:unknown, val[2])
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 208)
+module_eval(<<'.,.,', 'legacy.y', 211)
   def _reduce_67(val, _values, result)
      result = interval(val[0], :unknown)
     result
@@ -1166,65 +1168,66 @@ module_eval(<<'.,.,', 'legacy.y', 208)
 
 # reduce 72 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 221)
+module_eval(<<'.,.,', 'legacy.y', 224)
   def _reduce_73(val, _values, result)
      result = year(val[1], 1)
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 222)
+module_eval(<<'.,.,', 'legacy.y', 225)
   def _reduce_74(val, _values, result)
      result = year(-val[2], 1)
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 226)
+module_eval(<<'.,.,', 'legacy.y', 229)
   def _reduce_75(val, _values, result)
      result = number(val)
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 227)
+module_eval(<<'.,.,', 'legacy.y', 230)
   def _reduce_76(val, _values, result)
      result = 10 * val[0] + val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 233)
+module_eval(<<'.,.,', 'legacy.y', 236)
   def _reduce_77(val, _values, result)
-            season = { type: :season, values: [val[0], val[2]] }
+            extension :season_uncertainty unless val[3].empty?
+        season = { type: :season, values: [val[0], val[2]] }
         result = qualify(season, val[3], Bitmask::YM)
 
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 239)
+module_eval(<<'.,.,', 'legacy.y', 243)
   def _reduce_78(val, _values, result)
      result = 21
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 240)
+module_eval(<<'.,.,', 'legacy.y', 244)
   def _reduce_79(val, _values, result)
      result = 22
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 241)
+module_eval(<<'.,.,', 'legacy.y', 245)
   def _reduce_80(val, _values, result)
      result = 23
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 242)
+module_eval(<<'.,.,', 'legacy.y', 246)
   def _reduce_81(val, _values, result)
      result = 24
     result
@@ -1247,14 +1250,14 @@ module_eval(<<'.,.,', 'legacy.y', 242)
 
 # reduce 89 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 261)
+module_eval(<<'.,.,', 'legacy.y', 265)
   def _reduce_90(val, _values, result)
      result = val[0]; result[:qualifier] = val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 266)
+module_eval(<<'.,.,', 'legacy.y', 270)
   def _reduce_91(val, _values, result)
             result = year(exponent(val[0][:values][0], val[2]), 2)
 
@@ -1262,7 +1265,7 @@ module_eval(<<'.,.,', 'legacy.y', 266)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 269)
+module_eval(<<'.,.,', 'legacy.y', 273)
   def _reduce_92(val, _values, result)
             result = year(exponent(val[1], val[3]), 2)
 
@@ -1270,7 +1273,7 @@ module_eval(<<'.,.,', 'legacy.y', 269)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 272)
+module_eval(<<'.,.,', 'legacy.y', 276)
   def _reduce_93(val, _values, result)
             result = year(exponent(-val[2], val[4]), 2)
 
@@ -1278,14 +1281,14 @@ module_eval(<<'.,.,', 'legacy.y', 272)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 277)
+module_eval(<<'.,.,', 'legacy.y', 281)
   def _reduce_94(val, _values, result)
      result = val[0]; result[:calendar] = val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 282)
+module_eval(<<'.,.,', 'legacy.y', 286)
   def _reduce_95(val, _values, result)
             result = { type: :decade, values: [number(val[0, 3])] }
 
@@ -1293,7 +1296,7 @@ module_eval(<<'.,.,', 'legacy.y', 282)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 285)
+module_eval(<<'.,.,', 'legacy.y', 289)
   def _reduce_96(val, _values, result)
             result = { type: :century, values: [number(val[0, 2])] }
 
@@ -1301,21 +1304,21 @@ module_eval(<<'.,.,', 'legacy.y', 285)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 290)
+module_eval(<<'.,.,', 'legacy.y', 294)
   def _reduce_97(val, _values, result)
      result = { type: :set, **val[1] }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 294)
+module_eval(<<'.,.,', 'legacy.y', 298)
   def _reduce_98(val, _values, result)
      result = { type: :list, **val[1] }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 299)
+module_eval(<<'.,.,', 'legacy.y', 303)
   def _reduce_99(val, _values, result)
             result = { values: [val[0]], earlier: true }
 
@@ -1323,7 +1326,7 @@ module_eval(<<'.,.,', 'legacy.y', 299)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 302)
+module_eval(<<'.,.,', 'legacy.y', 306)
   def _reduce_100(val, _values, result)
             values = [val[0], *val[2], val[4]]
         result = { values: values, earlier: true, later: true }
@@ -1332,7 +1335,7 @@ module_eval(<<'.,.,', 'legacy.y', 302)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 306)
+module_eval(<<'.,.,', 'legacy.y', 310)
   def _reduce_101(val, _values, result)
             result = { values: [val[0], *val[2]], earlier: true }
 
@@ -1340,7 +1343,7 @@ module_eval(<<'.,.,', 'legacy.y', 306)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 309)
+module_eval(<<'.,.,', 'legacy.y', 313)
   def _reduce_102(val, _values, result)
             result = { values: [val[0], val[2]], earlier: true, later: true }
 
@@ -1348,7 +1351,7 @@ module_eval(<<'.,.,', 'legacy.y', 309)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 312)
+module_eval(<<'.,.,', 'legacy.y', 316)
   def _reduce_103(val, _values, result)
             result = { values: [*val[0], val[2]], later: true }
 
@@ -1356,7 +1359,7 @@ module_eval(<<'.,.,', 'legacy.y', 312)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 315)
+module_eval(<<'.,.,', 'legacy.y', 319)
   def _reduce_104(val, _values, result)
             result = { values: val[0] }
 
@@ -1364,7 +1367,7 @@ module_eval(<<'.,.,', 'legacy.y', 315)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 318)
+module_eval(<<'.,.,', 'legacy.y', 322)
   def _reduce_105(val, _values, result)
             result = { values: [val[0]], later: true }
 
@@ -1372,14 +1375,14 @@ module_eval(<<'.,.,', 'legacy.y', 318)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 323)
+module_eval(<<'.,.,', 'legacy.y', 327)
   def _reduce_106(val, _values, result)
      result = [val[0]]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 324)
+module_eval(<<'.,.,', 'legacy.y', 328)
   def _reduce_107(val, _values, result)
      result = val[0] + [val[2]]
     result
@@ -1396,35 +1399,35 @@ module_eval(<<'.,.,', 'legacy.y', 324)
 
 # reduce 112 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 339)
+module_eval(<<'.,.,', 'legacy.y', 343)
   def _reduce_113(val, _values, result)
      result = val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 343)
+module_eval(<<'.,.,', 'legacy.y', 347)
   def _reduce_114(val, _values, result)
      result = date(*val[0])
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 344)
+module_eval(<<'.,.,', 'legacy.y', 348)
   def _reduce_115(val, _values, result)
      result = date(*val[0])
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 345)
+module_eval(<<'.,.,', 'legacy.y', 349)
   def _reduce_116(val, _values, result)
      result = date(val[0])
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 350)
+module_eval(<<'.,.,', 'legacy.y', 354)
   def _reduce_117(val, _values, result)
             result = [date(*val[0]), date(*val[2])]
 
@@ -1432,7 +1435,7 @@ module_eval(<<'.,.,', 'legacy.y', 350)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 353)
+module_eval(<<'.,.,', 'legacy.y', 357)
   def _reduce_118(val, _values, result)
             result = [date(*val[0]), date(*val[2])]
 
@@ -1440,7 +1443,7 @@ module_eval(<<'.,.,', 'legacy.y', 353)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 356)
+module_eval(<<'.,.,', 'legacy.y', 360)
   def _reduce_119(val, _values, result)
             result = [date(val[0]), date(val[2])]
 
@@ -1448,7 +1451,7 @@ module_eval(<<'.,.,', 'legacy.y', 356)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 362)
+module_eval(<<'.,.,', 'legacy.y', 366)
   def _reduce_120(val, _values, result)
             check_day(val[0][0], val[2], val[4], leap: true)
         result = date(val[0][0], val[2], val[4], unspecified: val[0][1])
@@ -1457,7 +1460,7 @@ module_eval(<<'.,.,', 'legacy.y', 362)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 366)
+module_eval(<<'.,.,', 'legacy.y', 370)
   def _reduce_121(val, _values, result)
             result = date(val[0][0], val[2], unspecified: val[0][1])
 
@@ -1465,7 +1468,7 @@ module_eval(<<'.,.,', 'legacy.y', 366)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 369)
+module_eval(<<'.,.,', 'legacy.y', 373)
   def _reduce_122(val, _values, result)
             mask = val[0][1] | Bitmask::MONTH
         result = date(val[0][0], 1, val[5], unspecified: mask)
@@ -1474,7 +1477,7 @@ module_eval(<<'.,.,', 'legacy.y', 369)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 373)
+module_eval(<<'.,.,', 'legacy.y', 377)
   def _reduce_123(val, _values, result)
             result = date(val[0][0], 1, 1, unspecified: val[0][1] | Bitmask::MD)
 
@@ -1482,7 +1485,7 @@ module_eval(<<'.,.,', 'legacy.y', 373)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 376)
+module_eval(<<'.,.,', 'legacy.y', 380)
   def _reduce_124(val, _values, result)
             mask = val[0][1] | Bitmask::DAY
         result = date(val[0][0], val[2], 1, unspecified: mask)
@@ -1491,7 +1494,7 @@ module_eval(<<'.,.,', 'legacy.y', 376)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 380)
+module_eval(<<'.,.,', 'legacy.y', 384)
   def _reduce_125(val, _values, result)
             result = date(val[0], 1, val[5], unspecified: Bitmask::MONTH)
 
@@ -1501,7 +1504,7 @@ module_eval(<<'.,.,', 'legacy.y', 380)
 
 # reduce 126 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 386)
+module_eval(<<'.,.,', 'legacy.y', 390)
   def _reduce_127(val, _values, result)
      result = qualify(val[1], val[3])
     result
@@ -1510,7 +1513,7 @@ module_eval(<<'.,.,', 'legacy.y', 386)
 
 # reduce 128 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 391)
+module_eval(<<'.,.,', 'legacy.y', 395)
   def _reduce_129(val, _values, result)
      result = val[0][0]
     result
@@ -1519,14 +1522,14 @@ module_eval(<<'.,.,', 'legacy.y', 391)
 
 # reduce 130 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 396)
+module_eval(<<'.,.,', 'legacy.y', 400)
   def _reduce_131(val, _values, result)
      result = qualify(date(val[0]), val[1], :year)
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 401)
+module_eval(<<'.,.,', 'legacy.y', 405)
   def _reduce_132(val, _values, result)
             result = [qualify(extend_date(val[0], val[2]), val[3], [:month, :year])]
 
@@ -1534,7 +1537,7 @@ module_eval(<<'.,.,', 'legacy.y', 401)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 404)
+module_eval(<<'.,.,', 'legacy.y', 408)
   def _reduce_133(val, _values, result)
             result = [qualify(date(val[0], val[2]), val[3], [:year, :month])]
 
@@ -1542,7 +1545,7 @@ module_eval(<<'.,.,', 'legacy.y', 404)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 407)
+module_eval(<<'.,.,', 'legacy.y', 411)
   def _reduce_134(val, _values, result)
             result = [qualify(date(val[0], val[2]), val[4], [:month]), true]
 
@@ -1550,7 +1553,7 @@ module_eval(<<'.,.,', 'legacy.y', 407)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 410)
+module_eval(<<'.,.,', 'legacy.y', 414)
   def _reduce_135(val, _values, result)
             result = [qualify(extend_date(val[0], val[2]), val[4], [:month]), true]
 
@@ -1558,7 +1561,7 @@ module_eval(<<'.,.,', 'legacy.y', 410)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 416)
+module_eval(<<'.,.,', 'legacy.y', 420)
   def _reduce_136(val, _values, result)
             parts = val[0][1] ? [:day] : nil
         result = qualify(extend_date(val[0][0], val[2]), val[3], parts)
@@ -1567,7 +1570,7 @@ module_eval(<<'.,.,', 'legacy.y', 416)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 420)
+module_eval(<<'.,.,', 'legacy.y', 424)
   def _reduce_137(val, _values, result)
             result = qualify(extend_date(val[0][0], val[2]), val[4], [:day])
 
@@ -1575,7 +1578,7 @@ module_eval(<<'.,.,', 'legacy.y', 420)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 423)
+module_eval(<<'.,.,', 'legacy.y', 427)
   def _reduce_138(val, _values, result)
             result = qualify(date(val[0], val[2], val[5]), val[4], :month)
         result = qualify(result, val[6], :day)
@@ -1584,7 +1587,7 @@ module_eval(<<'.,.,', 'legacy.y', 423)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 427)
+module_eval(<<'.,.,', 'legacy.y', 431)
   def _reduce_139(val, _values, result)
             result = qualify(date(val[0][0], val[0][1], val[2]), val[3])
 
@@ -1592,7 +1595,7 @@ module_eval(<<'.,.,', 'legacy.y', 427)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 430)
+module_eval(<<'.,.,', 'legacy.y', 434)
   def _reduce_140(val, _values, result)
             result = qualify(date(val[0][0], val[0][1], val[2]), val[4], [:day])
 
@@ -1600,7 +1603,7 @@ module_eval(<<'.,.,', 'legacy.y', 430)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 433)
+module_eval(<<'.,.,', 'legacy.y', 437)
   def _reduce_141(val, _values, result)
             result = qualify(date(val[0], val[2], val[4]), val[6], [:month, :day])
 
@@ -1608,7 +1611,7 @@ module_eval(<<'.,.,', 'legacy.y', 433)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 436)
+module_eval(<<'.,.,', 'legacy.y', 440)
   def _reduce_142(val, _values, result)
             result = date(val[0], val[2], val[4])
         result = qualify(result, val[6], [:day])
@@ -1618,7 +1621,7 @@ module_eval(<<'.,.,', 'legacy.y', 436)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 441)
+module_eval(<<'.,.,', 'legacy.y', 445)
   def _reduce_143(val, _values, result)
             result = extend_date(val[0], val[2], val[4])
         result = qualify(result, val[6], [:month, :day])
@@ -1627,7 +1630,7 @@ module_eval(<<'.,.,', 'legacy.y', 441)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 445)
+module_eval(<<'.,.,', 'legacy.y', 449)
   def _reduce_144(val, _values, result)
             result = extend_date(val[0], val[2], val[4])
         result = qualify(result, val[6], [:day])
@@ -1637,7 +1640,7 @@ module_eval(<<'.,.,', 'legacy.y', 445)
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 457)
+module_eval(<<'.,.,', 'legacy.y', 461)
   def _reduce_145(val, _values, result)
      result = []
     result
@@ -1646,7 +1649,7 @@ module_eval(<<'.,.,', 'legacy.y', 457)
 
 # reduce 146 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 465)
+module_eval(<<'.,.,', 'legacy.y', 469)
   def _reduce_147(val, _values, result)
      result = 0
     result
@@ -1673,28 +1676,28 @@ module_eval(<<'.,.,', 'legacy.y', 465)
 
 # reduce 157 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 474)
+module_eval(<<'.,.,', 'legacy.y', 478)
   def _reduce_158(val, _values, result)
      result = val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 475)
+module_eval(<<'.,.,', 'legacy.y', 479)
   def _reduce_159(val, _values, result)
      result = 10
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 476)
+module_eval(<<'.,.,', 'legacy.y', 480)
   def _reduce_160(val, _values, result)
      result = 11
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 477)
+module_eval(<<'.,.,', 'legacy.y', 481)
   def _reduce_161(val, _values, result)
      result = 12
     result
@@ -1703,49 +1706,49 @@ module_eval(<<'.,.,', 'legacy.y', 477)
 
 # reduce 162 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 482)
+module_eval(<<'.,.,', 'legacy.y', 486)
   def _reduce_163(val, _values, result)
      result = 13
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 486)
+module_eval(<<'.,.,', 'legacy.y', 490)
   def _reduce_164(val, _values, result)
      result = val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 487)
+module_eval(<<'.,.,', 'legacy.y', 491)
   def _reduce_165(val, _values, result)
      result = 10 + val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 488)
+module_eval(<<'.,.,', 'legacy.y', 492)
   def _reduce_166(val, _values, result)
      result = 20
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 489)
+module_eval(<<'.,.,', 'legacy.y', 493)
   def _reduce_167(val, _values, result)
      result = 21
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 490)
+module_eval(<<'.,.,', 'legacy.y', 494)
   def _reduce_168(val, _values, result)
      result = 22
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 491)
+module_eval(<<'.,.,', 'legacy.y', 495)
   def _reduce_169(val, _values, result)
      result = 23
     result
@@ -1758,42 +1761,42 @@ module_eval(<<'.,.,', 'legacy.y', 491)
 
 # reduce 172 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 501)
+module_eval(<<'.,.,', 'legacy.y', 505)
   def _reduce_173(val, _values, result)
      result = 24
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 502)
+module_eval(<<'.,.,', 'legacy.y', 506)
   def _reduce_174(val, _values, result)
      result = 25
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 503)
+module_eval(<<'.,.,', 'legacy.y', 507)
   def _reduce_175(val, _values, result)
      result = 26
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 504)
+module_eval(<<'.,.,', 'legacy.y', 508)
   def _reduce_176(val, _values, result)
      result = 27
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 505)
+module_eval(<<'.,.,', 'legacy.y', 509)
   def _reduce_177(val, _values, result)
      result = 28
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 506)
+module_eval(<<'.,.,', 'legacy.y', 510)
   def _reduce_178(val, _values, result)
      result = 29
     result
@@ -1802,7 +1805,7 @@ module_eval(<<'.,.,', 'legacy.y', 506)
 
 # reduce 179 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 511)
+module_eval(<<'.,.,', 'legacy.y', 515)
   def _reduce_180(val, _values, result)
      result = 30
     result
@@ -1811,7 +1814,7 @@ module_eval(<<'.,.,', 'legacy.y', 511)
 
 # reduce 181 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 516)
+module_eval(<<'.,.,', 'legacy.y', 520)
   def _reduce_182(val, _values, result)
      result = 31
     result
@@ -1820,21 +1823,21 @@ module_eval(<<'.,.,', 'legacy.y', 516)
 
 # reduce 183 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 521)
+module_eval(<<'.,.,', 'legacy.y', 525)
   def _reduce_184(val, _values, result)
      result = 30 + val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 522)
+module_eval(<<'.,.,', 'legacy.y', 526)
   def _reduce_185(val, _values, result)
      result = 40 + val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 523)
+module_eval(<<'.,.,', 'legacy.y', 527)
   def _reduce_186(val, _values, result)
      result = 50 + val[1]
     result
@@ -1845,42 +1848,42 @@ module_eval(<<'.,.,', 'legacy.y', 523)
 
 # reduce 188 omitted
 
-module_eval(<<'.,.,', 'legacy.y', 532)
+module_eval(<<'.,.,', 'legacy.y', 536)
   def _reduce_189(val, _values, result)
      result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 533)
+module_eval(<<'.,.,', 'legacy.y', 537)
   def _reduce_190(val, _values, result)
      result = number(val)
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 534)
+module_eval(<<'.,.,', 'legacy.y', 538)
   def _reduce_191(val, _values, result)
      result = number(val)
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 535)
+module_eval(<<'.,.,', 'legacy.y', 539)
   def _reduce_192(val, _values, result)
      result = number(val)
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 539)
+module_eval(<<'.,.,', 'legacy.y', 543)
   def _reduce_193(val, _values, result)
      result = val[0]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'legacy.y', 540)
+module_eval(<<'.,.,', 'legacy.y', 544)
   def _reduce_194(val, _values, result)
      result = 10 * val[0] + val[1]
     result

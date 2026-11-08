@@ -16,9 +16,16 @@ module EDTF
       nil, Bitmask::YEAR, Bitmask::YM, Bitmask::YMD
     ].freeze
 
-    MAX_YEAR_DIGITS = 100
+    EXTENSIONS = %i[season_uncertainty].freeze
+
+    class ParseError < ArgumentError; end
 
     attr_reader :deprecations
+
+    def initialize(extensions: EXTENSIONS, max_year_digits: 100)
+      @extensions = extensions
+      @max_year_digits = max_year_digits
+    end
 
     def parse(input, debug: false)
       @yydebug = debug
@@ -28,12 +35,17 @@ module EDTF
     end
 
     def on_error(tid, value, stack)
-      raise ArgumentError,
+      raise ParseError,
         "failed to parse date: unexpected '#{value}' at #{stack.inspect}"
     end
 
     def deprecate(name)
       @deprecations << name
+    end
+
+    def extension(name)
+      return if @extensions.include?(name)
+      raise ArgumentError, "extension #{name} is turned off"
     end
 
     # Rejects days the month cannot have.
@@ -64,9 +76,9 @@ module EDTF
     end
 
     def exponent(sgnd, exponent)
-      if sgnd.abs.to_s.length + exponent > MAX_YEAR_DIGITS
+      if sgnd.abs.to_s.length + exponent > @max_year_digits
         raise ArgumentError,
-          "year too large: more than #{MAX_YEAR_DIGITS} digits"
+          "year too large: more than #{@max_year_digits} digits"
       end
 
       sgnd * 10**exponent

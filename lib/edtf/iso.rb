@@ -8,7 +8,7 @@ require 'racc/parser.rb'
 module EDTF
   class ISO < EDTF::Grammar
 
-module_eval(<<'...end iso.y/module_eval...', 'iso.y', 324)
+module_eval(<<'...end iso.y/module_eval...', 'iso.y', 329)
 
   QUALIFIERS = {
     '?' => [:uncertain],
@@ -33,7 +33,7 @@ module_eval(<<'...end iso.y/module_eval...', 'iso.y', 324)
   end
 
   def negative(year)
-    raise ArgumentError, 'invalid year -0000, use 0000' if year.zero?
+    raise ParseError, 'invalid year -0000, use 0000' if year.zero?
     -year
   end
 
@@ -59,7 +59,7 @@ module_eval(<<'...end iso.y/module_eval...', 'iso.y', 324)
 
   # Years with fewer than five digits are written without Y.
   def long_year(year)
-    raise ArgumentError, "invalid year Y#{year}, use #{year}" if year < 10000
+    raise ParseError, "invalid year Y#{year}, use #{year}" if year < 10000
     year
   end
 
@@ -911,49 +911,52 @@ module_eval(<<'.,.,', 'iso.y', 190)
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 194)
+module_eval(<<'.,.,', 'iso.y', 195)
   def _reduce_64(val, _values, result)
-     result = season(val[0], val[2])
+            result = season(val[0], val[2])
+
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 196)
+module_eval(<<'.,.,', 'iso.y', 199)
   def _reduce_65(val, _values, result)
-     result = season(val[0], val[2], val[3])
+            extension :season_uncertainty
+        result = season(val[0], val[2], val[3])
+
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 200)
+module_eval(<<'.,.,', 'iso.y', 205)
   def _reduce_66(val, _values, result)
      result = 21
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 201)
+module_eval(<<'.,.,', 'iso.y', 206)
   def _reduce_67(val, _values, result)
      result = 22
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 202)
+module_eval(<<'.,.,', 'iso.y', 207)
   def _reduce_68(val, _values, result)
      result = 23
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 203)
+module_eval(<<'.,.,', 'iso.y', 208)
   def _reduce_69(val, _values, result)
      result = 24
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 211)
+module_eval(<<'.,.,', 'iso.y', 216)
   def _reduce_70(val, _values, result)
             result = year(exponent(val[1], val[3]), 2)
 
@@ -961,7 +964,7 @@ module_eval(<<'.,.,', 'iso.y', 211)
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 214)
+module_eval(<<'.,.,', 'iso.y', 219)
   def _reduce_71(val, _values, result)
             result = year(exponent(-val[2], val[4]), 2)
 
@@ -969,56 +972,56 @@ module_eval(<<'.,.,', 'iso.y', 214)
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 219)
+module_eval(<<'.,.,', 'iso.y', 224)
   def _reduce_72(val, _values, result)
      result = { type: :set, **val[1] }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 220)
+module_eval(<<'.,.,', 'iso.y', 225)
   def _reduce_73(val, _values, result)
      result = { type: :list, **val[1] }
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 224)
+module_eval(<<'.,.,', 'iso.y', 229)
   def _reduce_74(val, _values, result)
      result = list(*val[0])
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 225)
+module_eval(<<'.,.,', 'iso.y', 230)
   def _reduce_75(val, _values, result)
      result = list(*val[0], val[2], later: true)
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 226)
+module_eval(<<'.,.,', 'iso.y', 231)
   def _reduce_76(val, _values, result)
      result = list(val[0], later: true)
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 227)
+module_eval(<<'.,.,', 'iso.y', 232)
   def _reduce_77(val, _values, result)
      result = list(val[0], earlier: true)
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 228)
+module_eval(<<'.,.,', 'iso.y', 233)
   def _reduce_78(val, _values, result)
      result = list(val[0], *val[2], earlier: true)
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 230)
+module_eval(<<'.,.,', 'iso.y', 235)
   def _reduce_79(val, _values, result)
             result = list(val[0], val[2], earlier: true, later: true)
 
@@ -1026,7 +1029,7 @@ module_eval(<<'.,.,', 'iso.y', 230)
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 233)
+module_eval(<<'.,.,', 'iso.y', 238)
   def _reduce_80(val, _values, result)
             result = list(val[0], *val[2], val[4], earlier: true, later: true)
 
@@ -1034,14 +1037,14 @@ module_eval(<<'.,.,', 'iso.y', 233)
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 238)
+module_eval(<<'.,.,', 'iso.y', 243)
   def _reduce_81(val, _values, result)
      result = [val[0]]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 239)
+module_eval(<<'.,.,', 'iso.y', 244)
   def _reduce_82(val, _values, result)
      result = val[0] + [val[2]]
     result
@@ -1056,35 +1059,35 @@ module_eval(<<'.,.,', 'iso.y', 239)
 
 # reduce 86 omitted
 
-module_eval(<<'.,.,', 'iso.y', 250)
+module_eval(<<'.,.,', 'iso.y', 255)
   def _reduce_87(val, _values, result)
      result = val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 254)
+module_eval(<<'.,.,', 'iso.y', 259)
   def _reduce_88(val, _values, result)
      result = date(val[0])
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 255)
+module_eval(<<'.,.,', 'iso.y', 260)
   def _reduce_89(val, _values, result)
      result = date(*val[0])
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 256)
+module_eval(<<'.,.,', 'iso.y', 261)
   def _reduce_90(val, _values, result)
      result = date(*val[0])
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 261)
+module_eval(<<'.,.,', 'iso.y', 266)
   def _reduce_91(val, _values, result)
             result = [date(val[0]), date(val[2])]
 
@@ -1092,7 +1095,7 @@ module_eval(<<'.,.,', 'iso.y', 261)
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 264)
+module_eval(<<'.,.,', 'iso.y', 269)
   def _reduce_92(val, _values, result)
             result = [date(*val[0]), date(*val[2])]
 
@@ -1100,7 +1103,7 @@ module_eval(<<'.,.,', 'iso.y', 264)
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 267)
+module_eval(<<'.,.,', 'iso.y', 272)
   def _reduce_93(val, _values, result)
             result = [date(*val[0]), date(*val[2])]
 
@@ -1108,7 +1111,7 @@ module_eval(<<'.,.,', 'iso.y', 267)
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 275)
+module_eval(<<'.,.,', 'iso.y', 280)
   def _reduce_94(val, _values, result)
      result = number(val)
     result
@@ -1117,7 +1120,7 @@ module_eval(<<'.,.,', 'iso.y', 275)
 
 # reduce 95 omitted
 
-module_eval(<<'.,.,', 'iso.y', 280)
+module_eval(<<'.,.,', 'iso.y', 285)
   def _reduce_96(val, _values, result)
      result = 10 * val[0] + val[1]
     result
@@ -1146,91 +1149,91 @@ module_eval(<<'.,.,', 'iso.y', 280)
 
 # reduce 107 omitted
 
-module_eval(<<'.,.,', 'iso.y', 293)
+module_eval(<<'.,.,', 'iso.y', 298)
   def _reduce_108(val, _values, result)
      result = val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 294)
+module_eval(<<'.,.,', 'iso.y', 299)
   def _reduce_109(val, _values, result)
      result = 10
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 295)
+module_eval(<<'.,.,', 'iso.y', 300)
   def _reduce_110(val, _values, result)
      result = 11
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 296)
+module_eval(<<'.,.,', 'iso.y', 301)
   def _reduce_111(val, _values, result)
      result = 12
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 300)
+module_eval(<<'.,.,', 'iso.y', 305)
   def _reduce_112(val, _values, result)
      result = val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 301)
+module_eval(<<'.,.,', 'iso.y', 306)
   def _reduce_113(val, _values, result)
      result = 10 + val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 302)
+module_eval(<<'.,.,', 'iso.y', 307)
   def _reduce_114(val, _values, result)
      result = 20 + val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 303)
+module_eval(<<'.,.,', 'iso.y', 308)
   def _reduce_115(val, _values, result)
      result = 30
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 304)
+module_eval(<<'.,.,', 'iso.y', 309)
   def _reduce_116(val, _values, result)
      result = 31
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 308)
+module_eval(<<'.,.,', 'iso.y', 313)
   def _reduce_117(val, _values, result)
      result = val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 309)
+module_eval(<<'.,.,', 'iso.y', 314)
   def _reduce_118(val, _values, result)
      result = 10 + val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 310)
+module_eval(<<'.,.,', 'iso.y', 315)
   def _reduce_119(val, _values, result)
      result = 20 + val[1]
     result
   end
 .,.,
 
-module_eval(<<'.,.,', 'iso.y', 314)
+module_eval(<<'.,.,', 'iso.y', 319)
   def _reduce_120(val, _values, result)
      result = 10 * val[0] + val[1]
     result

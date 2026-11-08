@@ -5,12 +5,8 @@ module EDTF
   # EDTF::ISO reads ISO 8601-2,
   # EDTF::Legacy the legacy syntax of the EDTF draft.
   class Parser
-    @defaults = {
-      :level => 2,
-      :debug => false,
-      :warn => true
-    }.freeze
 
+    # Legacy syntax and what to write in ISO syntax instead.
     LEGACY = {
       combined_qualifier: '`?~` is legacy syntax, use `%`',
       parentheses: '`(...)` is legacy syntax, qualify from the left: `2004-?06`',
@@ -22,11 +18,9 @@ module EDTF
       lowercase_e: '`e` is legacy syntax, use `E`',
       negative_zero: '`-0000` is legacy syntax, use `0000`',
       whitespace: 'spaces in sets are legacy syntax, remove them',
-      caret: '`^...` is legacy syntax, only hemispheres are kept (seasons 25-32)'
-    }.freeze
-
-    CHANGED = {
-      unknown_date: '`XXXX` is a date with an unspecified year'
+      caret: '`^...` is legacy syntax, only hemispheres are kept (seasons 25-32)',
+      midnight: '`T24:00:00` is legacy syntax, use `T00:00:00` of the next day',
+      partial_date_time: '`2004T...` is legacy syntax, use `2004-01-01T...`'
     }.freeze
 
     # Unspecified digits allowed at level 1, by precision.
@@ -37,15 +31,39 @@ module EDTF
       [Bitmask::DAY, Bitmask::MD, Bitmask::YMD]
     ].freeze
 
-    class << self
-      attr_reader :defaults
-    end
-
     attr_reader :options, :deprecations
 
-    def initialize(options = {})
-      @options = Parser.defaults.merge(options)
-      @grammar = Legacy.new
+    def initialize(
+      level: 2,
+      extensions: nil,
+      legacy: nil,
+      strict: false,
+      max_year_digits: 100,
+      debug: false,
+      warn: true
+    )
+      unless (0..2).cover?(level)
+        raise ArgumentError, "invalid level #{level.inspect}"
+      end
+
+      extensions = !strict if extensions.nil?
+      legacy = !strict if legacy.nil?
+      extensions = check_extensions(extensions)
+
+      @options = {
+        level: level,
+        extensions: extensions,
+        legacy: legacy,
+        max_year_digits: max_year_digits,
+        debug: debug,
+        warn: warn
+      }.freeze
+
+      @grammars = [ISO]
+      @grammars << Legacy if legacy
+      @grammars.map! do |grammar|
+        grammar.new(extensions: extensions, max_year_digits: max_year_digits)
+      end
     end
 
     def debug?
@@ -65,25 +83,62 @@ module EDTF
     # Results for legacy syntax carry `legacy: true`.
     def parse!(input)
       @deprecations = []
-      result = finish(@grammar.parse(input, debug: debug?))
-      @deprecations = @grammar.deprecations.uniq
+      result = finish(read(input))
+
+      if result[:level] > options[:level]
+        raise ArgumentError,
+          "level #{result[:level]} input, parser level #{options[:level]}"
+      end
+
       result[:legacy] = true if legacy?
       warn_deprecations(input) if options[:warn]
       deep_freeze(result)
     end
 
-    # Returns true if the last successful parse used legacy syntax.
+    # Returns true if the last successful parse read legacy syntax.
     def legacy?
-      deprecations.any? { |d| LEGACY.key?(d) }
+      !deprecations.empty?
     end
 
     private
 
+    def check_extensions(extensions)
+      case extensions
+      when true
+        Grammar::EXTENSIONS
+      when false
+        []
+      else
+        unknown = Array(extensions) - Grammar::EXTENSIONS
+
+        unless unknown.empty?
+          raise ArgumentError, "unknown extensions #{unknown.inspect}"
+        end
+
+        Array(extensions).freeze
+      end
+    end
+
+    # The ISO grammar reads the input first;
+    # the legacy grammar only what the ISO grammar cannot read.
+    # If neither can, raises the ISO grammar's error.
+    def read(input)
+      error = nil
+
+      @grammars.each do |grammar|
+        result = grammar.parse(input, debug: debug?)
+        @deprecations = grammar.deprecations.uniq
+        return result
+      rescue Grammar::ParseError => e
+        error ||= e
+      end
+
+      raise error
+    end
+
     def warn_deprecations(input)
       unless deprecations.empty?
-        messages = deprecations.map {
-          |d| LEGACY[d] || CHANGED[d]
-        }
+        messages = deprecations.map { |d| LEGACY[d] }
         warn "EDTF #{input.inspect}: #{messages.join('; ')}",
           category: :deprecated
       end
