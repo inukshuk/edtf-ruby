@@ -52,6 +52,11 @@ module EDTF
     DATE_MARSHAL = %i[marshal_dump marshal_load].to_h { |name| [name, ::Date.instance_method(name)] }.freeze
     private_constant :DATE_MARSHAL
 
+    # JRuby's Date.new is a native Date.civil that skips initialize.
+    def self.new(...)
+      allocate.tap { |date| date.send(:initialize, ...) }
+    end
+
     def initialize(year, month = nil, day = nil, uncertain: nil, approximate: nil, unspecified: nil, significant: nil, calendar: nil, year_zero: true)
       values = [year, month, day].compact
       raise ArgumentError, 'day given without month' if day && month.nil?
@@ -61,7 +66,9 @@ module EDTF
         year = Date.leap_years(year, unspecified, start, year_zero).first || year
       end
 
-      super(year, month || 1, day || 1, start)
+      # Ruby's Date#initialize takes other arguments on JRuby;
+      # both read the day from a plain date's Marshal data.
+      DATE_MARSHAL[:marshal_load].bind_call(self, ::Date.civil(year, month || 1, day || 1, start).marshal_dump)
 
       @precision = PRECISION[values.length - 1]
       @uncertain = bits(uncertain)
