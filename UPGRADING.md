@@ -183,6 +183,9 @@ Decades, centuries, and seasons
 | `season.summer?`                    | `season.season == 22`                |
 | `season.season` (a Symbol)          | `season.season` (21–41)              |
 | `season.qualifier`                  | hemisphere seasons (`2001-29`)       |
+| `19XX`, `196X` were years           | a century, a decade                  |
+
+`EDTF.parse(s, centuries: false)` reads `19XX` and `196X` as years.
 
 `EDTF::Parser` results keep season qualifiers (`qualifier:`).
 Seasons 21–24 still span three months, meteorologically

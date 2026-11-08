@@ -16,17 +16,18 @@ to upgrade, see [UPGRADING.md][upgrading].
 
 Compatibility
 -------------
-EDTF-Ruby implements EDTF levels 0, 1, and 2
-as specified by ISO 8601-2.
-Its classes support all features of these levels;
-the parser does not read the following yet:
-qualification from the left (`2004-?06-11`),
-unspecified digits anywhere (`1XXX-12`),
-significant digits (`1950S2`),
-decades and centuries (`196`, `19`),
-seasons 25–41,
-fractional seconds,
-and hour-only or basic-format offsets (`-04`, `+0230`).
+EDTF-Ruby fully implements EDTF levels 0, 1, and 2
+as specified by ISO 8601-2
+with the following exceptions:
+
+1. Uncertain or approximate seasons (`2001-21?`)
+   are a non-standard extension.
+2. Offsets without a colon after an extended date
+   (`2004-01-01T10:10:10+0230`) are a non-standard extension.
+3. Fractions of a second are read to the millisecond.
+
+Both extensions are on by default;
+see [Parser options][options] to turn them off.
 
 EDTF-Ruby still reads the draft syntax of earlier EDTF versions
 (`?~`, parentheses, `u`, `open`, `unknown`, …)
@@ -38,8 +39,16 @@ It does not depend on ActiveSupport,
 but works with it and with Rails;
 see [Rails and ActiveSupport][rails].
 
+[options]: #parser-options
 [legacy-syntax]: #legacy-syntax
 [rails]: #rails-and-activesupport
+
+
+Installation
+------------
+    $ gem install edtf
+
+Or add `gem 'edtf'` to your Gemfile.
 
 
 Quickstart
@@ -87,14 +96,14 @@ and its values.
     EDTF('2016-02').end.to_s         #-> "2016-02-29"
     EDTF('2016-02').precision        #-> :month
 
-    EDTF('2016-02-XX').begin.to_s    #-> "2016-02-01"
-    EDTF('2016-02-XX').end.to_s      #-> "2016-02-29"
+    EDTF('2016-02-2X').begin.to_s    #-> "2016-02-20"
+    EDTF('2016-02-2X').end.to_s      #-> "2016-02-29"
 
     EDTF('[..2016,2017]').begin      #-> nil
     EDTF('[..2016,2017]').end.to_s   #-> "2017-12-31"
 
-    EDTF('2016-23').begin.to_s       #-> "2016-09-01"
-    EDTF('2016-23').end.to_s         #-> "2016-11-30"
+    EDTF('2016-34').begin.to_s       #-> "2016-04-01"
+    EDTF('2016-34').end.to_s         #-> "2016-06-30"
 
     EDTF('2016?-02').values          #-> [2016, 2]
 
@@ -182,17 +191,18 @@ You can ask about the whole date, or about its year, month, or day:
     EDTF('2016-05?').approximate?            #-> false
     EDTF('2016-05?').uncertain?(:month)      #-> true
     EDTF('2016-05?').uncertain?(:day)        #-> false
-    EDTF('2016?-05').uncertain?(:month)      #-> false
+    EDTF('2016-?05').uncertain?(:year)       #-> false
+    EDTF('2016-?05').uncertain?(:month)      #-> true
 
-    EDTF('201X').unspecified?(:year)         #-> true
+    EDTF('201X-XX').unspecified?(:year)      #-> true
     EDTF('1999-XX').unspecified.to_s         #-> "YYYY-XX-DD"
 
 When printing qualified dates,
 EDTF-Ruby finds the shortest rendition of the qualification symbols,
 so you can use it to normalize EDTF strings:
 
-    EDTF('2016-05-31%').edtf                 #-> "2016-05-31%"
-    EDTF::Date.new(2016, 5, 31, uncertain: [:year, :month]).edtf  #-> "2016-05?-31"
+    EDTF('?2016-?05-31').edtf                #-> "2016-05?-31"
+    EDTF('?2016-?05~-31').edtf               #-> "2016-05%-31"
     EDTF::Date.new(2004, 6, 11, uncertain: :year, approximate: :day).edtf  #-> "2004?-06-~11"
 
 Uncertain, approximate, and unspecified parts
@@ -207,7 +217,27 @@ Unspecified digits widen a date's bounds,
 and its successor steps over them:
 
     EDTF('1999-03-XX').end.to_s              #-> "1999-03-31"
-    EDTF('201X').succ.edtf                   #-> "202X"
+    EDTF('201X-05').succ.edtf                #-> "201X-06"
+
+EDTF-Ruby will not parse impossible unspecified dates.
+For instance, none of the following examples can be valid dates:
+
+    EDTF.parse('2016-02-3X')   #-> nil (a day in February cannot start with a 3)
+    EDTF.parse('2016-2X-XX')   #-> nil (there are only 12 months)
+    EDTF.parse('2016-XX-32')   #-> nil (no month has 32 days)
+
+### Enumerating dates
+
+Dates step by their precision:
+
+    EDTF('2016-02-28').succ.edtf             #-> "2016-02-29"
+    EDTF('2017-02-28').succ.edtf             #-> "2017-03-01"
+
+`upto` and `downto` yield all the dates, by precision,
+from one date to another:
+
+    EDTF('2016-05').upto(EDTF('2016-07')).map(&:edtf)    #-> ["2016-05", "2016-06", "2016-07"]
+    EDTF('2016-07').downto(EDTF('2016-05')).map(&:edtf)  #-> ["2016-07", "2016-06", "2016-05"]
 
 ### Years
 
@@ -220,8 +250,8 @@ and may use an exponent:
 Years may have significant digits,
 which widen their bounds:
 
+    EDTF('1950S2').end.to_s                  #-> "1999-12-31"
     EDTF::Date.new(1950, significant: 2).edtf      #-> "1950S2"
-    EDTF::Date.new(1950, significant: 2).end.to_s  #-> "1999-12-31"
 
 
 Date-times
@@ -235,6 +265,14 @@ EDTF-Ruby keeps it on the UTC clock, never in the system's time zone.
     t.offset                                 #-> 300
     t == EDTF('2004-01-01T05:10:10Z')        #-> true
     EDTF('2004-01-01T10:10:10').floating?    #-> true
+
+Date-times come in hour, minute, or second precision;
+like dates, they step by their precision,
+and a time to the hour covers the whole hour:
+
+    EDTF('2004-01-01T10').precision          #-> :hour
+    EDTF('2004-01-01T10:30').succ.edtf       #-> "2004-01-01T10:31"
+    EDTF('2004-01-01T10').cover?(EDTF('2004-01-01T10:30'))  #-> true
 
 Compared with dates,
 a time counts as its own calendar date in its own offset,
@@ -291,6 +329,15 @@ whose bounds are nil:
     EDTF('2004/..').cover?(Date.today)       #-> true
     EDTF('/2004').unknown?                   #-> true
 
+An interval may end at 24:00, the end of a day:
+that is the next day's midnight,
+and it is written as it was read:
+
+    i = EDTF('2004-01-01T10:00/2004-01-01T24:00')
+    i.end.to_s                               #-> "2004-01-02"
+    i.edtf                                   #-> "2004-01-01T10:00/2004-01-01T24:00"
+    i.to.t24?                                #-> true
+
 
 Sets and lists
 --------------
@@ -339,13 +386,27 @@ Decades and centuries are dedicated periods,
 which always cover 10 or 100 years, respectively:
 the years that begin with the given digits.
 
-    d = EDTF::Decade.new(196)
-    d.edtf                                   #-> "196"
+    d = EDTF('196')
+    d.class                                  #-> EDTF::Decade
     [d.begin.to_s, d.end.to_s]               #-> ["1960-01-01", "1969-12-31"]
-    EDTF::Century.new(19, approximate: true).edtf  #-> "19~"
 
-The years of a decade can also be written with unspecified digits (`196X`):
-that is a year, with year precision, in the same span.
+By default, EDTF-Ruby also reads years whose last digits are unspecified
+as decades and centuries (`196X`, `19XX`).
+Decades and centuries are written as they were read;
+new ones are written with unspecified digits,
+or with digits only if `short`:
+
+    EDTF('19XX').class                       #-> EDTF::Century
+    EDTF('19').edtf                          #-> "19"
+    EDTF('19XX').edtf                        #-> "19XX"
+    EDTF::Century.new(19, approximate: true).edtf  #-> "19XX~"
+    EDTF::Century.new(19, short: true).edtf  #-> "19"
+
+Both forms are the same century.
+With `centuries: false` (or `strict: true`),
+`19XX` is a year with unspecified digits instead:
+
+    EDTF.parse('19XX', centuries: false).class   #-> EDTF::Date
 
 
 Seasons
@@ -385,7 +446,7 @@ the values array contains the individual date parts (months are 1-based).
 Unspecified, uncertain, or approximate digits are returned
 as the numeric value of a bitmask:
 
-    EDTF::Parser.new.parse('2016?-02')       #-> {type: :date, values: [2016, 2], uncertain: 15, level: 2}
+    EDTF::Parser.new.parse('2016?-~02')      #-> {type: :date, values: [2016, 2], uncertain: 15, approximate: 48, level: 2}
     EDTF::Parser.new.parse('20XX-02')        #-> {type: :date, values: [2000, 2], unspecified: 12, level: 2}
 
 Unspecified digits always hold the least possible value,
@@ -398,6 +459,39 @@ the values array:
 Parse results are plain data:
 you can store them, e.g. as JSON,
 and `EDTF()` builds objects from them again, also when read back from JSON.
+
+### Parser options
+
+By passing options to `EDTF.parse` or `EDTF::Parser.new`,
+you can ensure EDTF-Ruby accepts only dates supported by your application.
+
+    EDTF.parse('2016?', level: 0)            #-> nil
+    EDTF.parse('2016?', level: 1)            #-> #<EDTF::Date 2016?>
+
+    EDTF.parse('2016?-02', level: 1)         #-> nil
+    EDTF.parse('2016?-02', level: 2)         #-> #<EDTF::Date 2016?-02>
+
+The options are:
+
+* `level:` the highest level to accept (0–2, default 2).
+* `extensions:` the non-standard extensions to accept:
+  `true` (all, the default), `false` (none),
+  or a list of names (`:season_uncertainty`, `:basic_offset`).
+* `legacy:` whether to read [legacy syntax][legacy-syntax] (default true).
+* `strict:` ISO 8601-2 only:
+  turns off extensions, legacy syntax,
+  and reading `19XX` as a century,
+  unless you pass those options, too.
+* `max_year_digits:` longer years are rejected (default 100);
+  exponents let short strings stand for huge years.
+* `centuries:` (`EDTF.parse` only) whether to read `19XX` and `196X`
+  as centuries and decades (default true, unless `strict: true`).
+
+For example:
+
+    EDTF.parse('2001-21?', extensions: false)  #-> nil
+    EDTF.parse('2004/open', strict: true)      #-> nil
+    EDTF.parse('2004/..', strict: true)        #-> #<EDTF::Interval 2004/..>
 
 
 Rails and ActiveSupport
@@ -437,7 +531,8 @@ e.g. to print each line of a file that uses legacy syntax:
 
     $ ruby -redtf -ne 'print if EDTF.legacy?($_.chomp)' dates.txt
 
-EDTF-Ruby 5.0 will read the draft syntax only in a legacy mode.
+To convert stored strings, see [UPGRADING.md][upgrading];
+`legacy: false` (or `strict: true`) turns legacy syntax off.
 
 
 Contributing
