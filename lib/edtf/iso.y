@@ -83,33 +83,63 @@ rule
       }
     ;
 
+  # Fractions of a second are read in milliseconds.
   time
-    : hour ':' minute ':' second  { result = val.values_at(0, 2, 4) }
+    : hour ':' minute ':' second {
+        result = val.values_at(0, 2, 4)
+      }
+    | hour ':' minute ':' second fraction {
+        result = val.values_at(0, 2, 4, 5)
+      }
+    ;
+
+  fraction
+    : decimal_sign digits  { result = milliseconds(val[1]) }
+    ;
+
+  decimal_sign
+    : '.'
+    | ','
+    ;
+
+  digits
+    : digit         { result = val[0].to_s }
+    | digits digit  { result = val[0] + val[1].to_s }
     ;
 
   hour   : d00_23 ;
   minute : d00_59 ;
   second : d00_59 ;
 
+  # Offsets are written +hh:mm, +hh, or +hhmm (extension: basic-offset).
   offset
-    : 'Z'                    { result = 0 }
-    | '+' hour ':' minute    { result = offset(1, val[1], val[3]) }
-    | minus hour ':' minute  { result = offset(-1, val[1], val[3]) }
+    : 'Z'                 { result = 0 }
+    | '+' offset_time     { result = offset(1, *val[1]) }
+    | minus offset_time   { result = offset(-1, *val[1]) }
+    ;
+
+  offset_time
+    : hour ':' minute  { result = [val[0], val[2]] }
+    | hour             { result = [val[0], 0] }
+    | hour minute {
+        extension :basic_offset
+        result = [val[0], val[1]]
+      }
     ;
 
 
   # ---- Intervals (levels 0-2) ----
 
+  # An empty end is unknown, `..` is open.
   interval
-    : interval_date '/' interval_date  { result = interval(val[0], val[2]) }
-    | interval_date '/' '..'           { result = interval(val[0], :open) }
-    | '..' '/' interval_date           { result = interval(:open, val[2]) }
-    | interval_date '/'                { result = interval(val[0], :unknown) }
-    | '/' interval_date                { result = interval(:unknown, val[1]) }
+    : interval_end '/' interval_end  { result = interval(val[0], val[2]) }
     ;
 
-  interval_date
-    : date  { result = member(val[0]) }
+  interval_end
+    : /* none */  { result = :unknown }
+    | '..'        { result = :open }
+    | date        { result = member(val[0]) }
+    | date_time
     ;
 
 
@@ -363,17 +393,27 @@ end
   end
 
   # Returns the offset in minutes.
-  # Offsets range from -14:00 to +14:00; -00:00 is invalid.
+  # ISO sets no range: hours run to 23 and minutes to 59
+  # (historical local times exceed today's zones).
+  # Zero is written +00:00; -00:00 is invalid.
   def offset(sign, hours, minutes)
     offset = 60 * hours + minutes
 
-    if offset > 840 || (sign < 0 && offset.zero?)
+    if sign < 0 && offset.zero?
       sign = sign < 0 ? '-' : '+'
       raise ArgumentError,
         format('invalid offset %s%02d:%02d', sign, hours, minutes)
     end
 
     sign * offset
+  end
+
+  def milliseconds(digits)
+    if digits.length > 3
+      raise ArgumentError, "too many fraction digits: #{digits}, at most 3"
+    end
+
+    digits.ljust(3, '0').to_i
   end
 
   def signed(sign, number)

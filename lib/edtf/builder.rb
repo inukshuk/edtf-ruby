@@ -20,11 +20,13 @@ module EDTF
         type = result[:type].to_s.to_sym
 
         unless TYPES.include?(type)
-          raise ArgumentError, "invalid parse result type: #{result[:type].inspect}"
+          raise ArgumentError,
+            "invalid parse result type: #{result[:type].inspect}"
         end
 
         unless result[:values].is_a?(Array)
-          raise ArgumentError, "invalid parse result values: #{result[:values].inspect}"
+          raise ArgumentError,
+            "invalid parse result values: #{result[:values].inspect}"
         end
 
         send(type, result)
@@ -34,11 +36,18 @@ module EDTF
     end
 
     def date(result)
-      Date.new(*result[:values], **result.slice(:uncertain, :approximate, :unspecified))
+      Date.new(*result[:values], **result.slice(
+        :uncertain,
+        :approximate,
+        :unspecified
+      ))
     end
 
     def date_time(result)
-      DateTime.new(*result[:values], offset: result[:offset])
+      values = result[:values].take(6)
+      ms = result[:values][6]
+      values[5] += Rational(ms, 1000) if ms
+      DateTime.new(*values, offset: result[:offset])
     end
 
     def year(result)

@@ -67,6 +67,56 @@ module EDTF
       end
     end
 
+    describe 'times and intervals' do
+      def self.time(*values, offset: nil)
+        { type: :date_time, values: [2004, 6, 11, *values], offset: offset }.compact
+      end
+
+      def self.interval(from, to)
+        { type: :interval, values: [from, to] }
+      end
+
+      {
+        '2004-06-11T10:10:10.042' => time(10, 10, 10, 42),
+        '2004-06-11T10:10:10,5' => time(10, 10, 10, 500),
+        '2004-06-11T10:10:10.000' => time(10, 10, 10, 0),
+        '2004-06-11T10:10:10-04' => time(10, 10, 10, offset: -240),
+        '2004-06-11T10:10:10+0230' => time(10, 10, 10, offset: 150),
+        '2004-06-11T10:10:10+00' => time(10, 10, 10, offset: 0),
+        '2004-06-11T10:10:10+14:01' => time(10, 10, 10, offset: 841),
+        '2004-06-11T10:10:10-15:56' => time(10, 10, 10, offset: -956),
+        '2004-06-11T10:10:10+23:59' => time(10, 10, 10, offset: 1439),
+        '/' => interval(:unknown, :unknown),
+        '../..' => interval(:open, :open),
+        '../' => interval(:open, :unknown),
+        '/..' => interval(:unknown, :open),
+        '2004-06-11T10:10:10Z/2004-06-11T12:00:00Z' =>
+          interval(time(10, 10, 10, offset: 0), time(12, 0, 0, offset: 0)),
+        '2004-06-11/2004-06-11T12:00:00' =>
+          interval({ type: :date, values: [2004, 6, 11] }, time(12, 0, 0))
+      }.each do |input, result|
+        it "reads #{input}" do
+          expect(grammar.parse(input)).to eq(result)
+        end
+      end
+
+      it 'turns off basic offsets with the extension' do
+        grammar = ISO.new(extensions: [])
+        expect { grammar.parse('2004-06-11T10:10:10+0230') }.to raise_error(ArgumentError)
+        expect(grammar.parse('2004-06-11T10:10:10+02')).to include(offset: 120)
+      end
+
+      %w[
+        2004-06-11T10:10:10.0421 2004-06-11T10:10:10. 2004-06-11T10:10:10-00
+        2004-06-11T10:10:10-0000 2004-06-11T10:10:10+24:00 2004-06-11T10:10:10+12:60
+        2004-06-11T10:10:10+2 2004-06-11T10:10:10+02:3 .. ../../.. 2004//2005
+      ].each do |input|
+        it "rejects #{input}" do
+          expect { grammar.parse(input) }.to raise_error(ArgumentError)
+        end
+      end
+    end
+
     describe 'years with significant digits' do
       def self.year(value, level, significant = nil)
         { type: :year, level: level, values: [value], significant: significant }.compact
@@ -121,9 +171,9 @@ module EDTF
       '2004-06-(11)~', '1984?~', '2004/open', 'unknown/2004', '199u',
       '198x', 'y17e7', '-0000', '{1960, 1961}', '2001-21^southern',
       '2001-02-03^julian', '2004T10:10:10',
-      '2004-06-11T24:00:00', '2004-06-11T10:10:10+14:01',
-      '2004-06-11T10:10:10-00:00', '2004-06-31?', '2015-02-29~',
-      'Y9999', 'Y01000', 'Y17E0', '..', '/', '../..', 'xyz', '2004 '
+      '2004-06-11T24:00:00', '2004-06-11T10:10:10-00:00',
+      '2004-06-31?', '2015-02-29~', 'Y9999', 'Y01000', 'Y17E0', '..',
+      'xyz', '2004 '
     ].each do |input|
       it "rejects #{input}" do
         expect { grammar.parse(input) }.to raise_error(ArgumentError)
