@@ -22,7 +22,7 @@ Gem::Specification.new do |s|
     --line-numbers
     --title EDTF-Ruby
     --main README.md
-    --exclude lib/edtf/parser.rb
+    --exclude lib/edtf/(iso|legacy).rb
   }
   s.extra_rdoc_files = %w{README.md CHANGELOG.md UPGRADING.md LICENSE}
 

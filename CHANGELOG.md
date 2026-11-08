@@ -31,6 +31,8 @@ See [UPGRADING.md](UPGRADING.md) for how to upgrade from 4.x.
 * ActiveSupport is no longer a dependency; EDTF-Ruby works with it.
 * Years beyond 100 digits are rejected (`Y3E9999999` would otherwise
   compute a ten-million-digit year).
+* Legacy syntax allows spaces only around `,` and `..` in sets;
+  other whitespace (`2004/ ..`, tabs, newlines) is rejected.
 
 4.1.1
 -----

@@ -450,8 +450,9 @@ To get started, install the dependencies and run all tests:
 (`rake spec:active_support`, in their own process),
 and the Cucumber features (see [features/README.md](features/README.md)).
 
-If you change the grammar in `lib/edtf/parser.y`,
-regenerate the parser with `bundle exec rake racc`.
+If you change a grammar
+(`lib/edtf/iso.y` or `lib/edtf/legacy.y`),
+regenerate the parsers with `bundle exec rake racc`.
 
 If you've found a bug or have a question,
 please open an issue on the

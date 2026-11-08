@@ -1,15 +1,21 @@
 require 'bundler/gem_tasks'
 
-desc 'Generate the parser'
-task :racc => ['lib/edtf/parser.rb']
+GRAMMARS = %w[lib/edtf/iso lib/edtf/legacy].freeze
 
-file 'lib/edtf/parser.rb' => ['lib/edtf/parser.y'] do
-  sh 'racc -o lib/edtf/parser.rb lib/edtf/parser.y'
+desc 'Generate the parsers'
+task :racc => GRAMMARS.map { |grammar| "#{grammar}.rb" }
+
+GRAMMARS.each do |grammar|
+  file "#{grammar}.rb" => ["#{grammar}.y"] do
+    sh "racc -o #{grammar}.rb #{grammar}.y"
+  end
 end
 
-desc 'Generate the parser with debug information'
+desc 'Generate the parsers with debug information'
 task :racc_debug do
-  sh 'racc -v -t -o lib/edtf/parser.rb lib/edtf/parser.y'
+  GRAMMARS.each do |grammar|
+    sh "racc -v -t -o #{grammar}.rb #{grammar}.y"
+  end
 end
 
 require 'rspec/core/rake_task'
