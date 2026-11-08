@@ -3,24 +3,27 @@ module EDTF
   # An EDTF date-time is a regular Ruby Time:
   # it acts as you would normally expect,
   # but knows whether its string had an offset.
-  # Without one (2004-01-01T10:10:10) the time is floating;
-  # it is kept on the UTC clock, never in the system's zone.
   #
   # Two times compare as instants, as in Ruby.
   # Compared with dates and other periods,
   # a time counts as its own calendar date in its own offset,
   # at a precision finer than a day.
-  #
-  # Date-times are frozen; use `with`, `getutc` or `getlocal` for a copy.
-  # Time math (+, -) returns plain times.
-  # Create date-times with `new`, `EDTF()` or `EDTF.parse`;
-  # Ruby's other constructors (now, at, …) are private.
   class DateTime < ::Time
     include Period
 
-    ATTRIBUTES = %i[year month day hour min sec offset].freeze
+    ATTRIBUTES = %i[
+      year month day hour min sec offset precision
+    ].freeze
 
-    # Ruby's constructors skip initialize, so their times would not be frozen.
+    # The values each precision has, and its length in seconds.
+    PRECISION = {
+      hour: [4, 3600],
+      minute: [5, 60],
+      second: [6, 1]
+    }.freeze
+
+    # Ruby's constructors skip initialize,
+    # so their times would not be frozen.
     private_class_method(*%i[
       now at mktime local utc gm parse strptime iso8601 xmlschema rfc2822 rfc822 httpdate
     ].select { |name| ::Time.respond_to?(name) })
@@ -33,9 +36,36 @@ module EDTF
     end
 
     # The offset is given in minutes; nil means a floating time.
-    def initialize(year, month, day, hour = 0, min = 0, sec = 0, offset: nil)
-      super(year, month, day, hour, min, sec, offset.nil? || offset.zero? ? 'UTC' : Integer(offset) * 60)
+    # Minutes and seconds beyond the precision must be zero.
+    def initialize(
+      year,
+      month,
+      day,
+      hour = 0,
+      min = 0,
+      sec = 0,
+      offset: nil,
+      precision: :second
+    )
+      precision = precision.to_sym
+      raise ArgumentError,
+        "invalid precision: #{precision.inspect}" unless PRECISION.key?(precision)
+
+      beyond = [min, sec].drop(PRECISION[precision][0] - 4)
+      raise ArgumentError,
+        "minutes or seconds beyond #{precision} precision" unless beyond.all?(&:zero?)
+
+      super(
+        year,
+        month,
+        day,
+        hour,
+        min,
+        sec,
+        offset.nil? || offset.zero? ? 'UTC' : Integer(offset) * 60)
+
       @floating = offset.nil?
+      @precision = precision
       freeze
     end
 
@@ -49,11 +79,11 @@ module EDTF
     end
 
     def precision
-      :second
+      @precision || :second
     end
 
     def values
-      [year, month, day, hour, min, sec]
+      [year, month, day, hour, min, sec].take(PRECISION[precision][0])
     end
 
     def with(**changes)
@@ -61,9 +91,24 @@ module EDTF
 
       check_keys!(changes, ATTRIBUTES)
 
+      precision = changes.fetch(:precision, self.precision).to_sym
+      raise ArgumentError,
+        "invalid precision: #{precision.inspect}" unless PRECISION.key?(precision)
+
+      count = PRECISION[precision][0]
+      beyond = ATTRIBUTES[count...6] & changes.keys
+      raise ArgumentError,
+        "#{beyond.join(' and ')} beyond #{precision} precision" unless beyond.empty?
+
       current = [year, month, day, hour, min, sec + subsec]
-      values = ATTRIBUTES.take(6).zip(current).map { |name, value| changes.fetch(name, value) }
-      self.class.new(*values, offset: changes.fetch(:offset, offset))
+      values = ATTRIBUTES.take(count).zip(current).map { |name, value|
+        changes.fetch(name, value)
+      }
+
+      self.class.new(
+        *values,
+        offset: changes.fetch(:offset, offset),
+        precision: precision)
     end
 
     # The calendar date in the time's own offset.
@@ -73,10 +118,23 @@ module EDTF
 
     alias_method :end, :begin
 
-    # Returns the next second (or the one by seconds later).
+    # Returns the next hour, minute or second, by precision
+    # (or the one by units later).
     def succ(by = 1)
-      time = self + by
-      self.class.new(time.year, time.month, time.day, time.hour, time.min, time.sec + time.subsec, offset: offset)
+      time = self + by * PRECISION[precision][1]
+      values = [
+        time.year,
+        time.month,
+        time.day,
+        time.hour,
+        time.min,
+        time.sec + time.subsec
+      ]
+
+      self.class.new(
+        *values.take(PRECISION[precision][0]),
+        offset: offset,
+        precision: precision)
     end
 
     alias next succ
@@ -85,34 +143,74 @@ module EDTF
       succ(-by)
     end
 
-    # A time covers only the same instant;
+    # A time to the second covers only the same instant,
+    # one to the hour or minute the instants within it;
     # dates and other periods compare by the time's calendar date.
     def cover?(other)
-      other.is_a?(::Time) ? self == other : super
+      return super unless other.is_a?(::Time)
+
+      first, other_first = to_r, other.to_r
+      other_span = DateTime.span(other)
+      return first == other_first && other_span.zero? if span.zero?
+
+      last = first + span
+      first <= other_first &&
+        (other_span.zero? ?
+           other_first < last : other_first + other_span <= last)
     end
 
+    # Times compare by their first instant, then by their last.
     def <=>(other)
-      other.is_a?(::Time) ? TIME[:<=>].bind_call(self, other) : super
+      return super unless other.is_a?(::Time)
+
+      order = TIME[:<=>].bind_call(self, other)
+      order.zero? ? span <=> DateTime.span(other) : order
     end
 
     # Returns true if other is the same instant with the same offset,
     # or is floating, too.
     def eql?(other)
       other.is_a?(::Time) && TIME[:eql?].bind_call(self, other) &&
-        utc_offset == other.utc_offset && floating? == (other.is_a?(DateTime) && other.floating?)
+        utc_offset == other.utc_offset && floating? == (other.is_a?(DateTime) && other.floating?) &&
+        precision == Period.precision(other)
     end
 
     def hash
-      floating? ? [TIME[:hash].bind_call(self), :floating].hash : TIME[:hash].bind_call(self)
+      extra = [
+        (:floating if floating?),
+        (precision unless precision == :second)
+      ].compact
+
+      if extra.empty?
+        TIME[:hash].bind_call(self)
+      else
+        [TIME[:hash].bind_call(self), *extra].hash
+      end
     end
 
     %i[getutc getgm getlocal].each do |name|
-      define_method(name) { |*args| ::Time.at(self, in: utc_offset).send(name, *args) }
+      define_method(name) { |*args|
+        ::Time.at(self, in: utc_offset).send(name, *args)
+      }
     end
 
     # Returns the date-time's EDTF string.
-    def edtf
-      string = "#{'-' if year.negative?}#{format('%04d', year.abs)}#{strftime('-%m-%dT%H:%M:%S')}"
+    # With t24: true, midnight is written as 24:00 of the day before,
+    # the end of that day (only intervals end there, see Interval#edtf).
+    def edtf(t24: false)
+      date, hours = self.begin, hour
+      date, hours = date - 1, 24 if t24 && midnight?
+
+      string = format(
+        '%s%04d-%02d-%02dT%02d',
+        ('-' if date.year.negative?),
+        date.year.abs,
+        date.month,
+        date.day,
+        hours)
+
+      string += format(':%02d', min) unless precision == :hour
+      string += format(':%02d', sec) if precision == :second
       string += ".#{strftime('%N').sub(/0+\z/, '')}" unless subsec.zero?
 
       return string if floating?
@@ -120,9 +218,26 @@ module EDTF
       string + (utc_offset.zero? ? 'Z' : strftime('%:z'))
     end
 
-    # Time's own methods, which Period overrides.
-    TIME = %i[<=> eql? hash].to_h { |name| [name, ::Time.instance_method(name)] }.freeze
-    private_constant :TIME
-  end
+    # The length of a time in seconds: 0 for instants.
+    def self.span(time) # :nodoc:
+      time.is_a?(DateTime) && time.precision != :second ? PRECISION[time.precision][1] : 0
+    end
 
+    # Time's own methods, which Period overrides.
+    TIME = %i[<=> eql? hash].to_h { |name|
+      [name, ::Time.instance_method(name)]
+    }.freeze
+
+    private_constant :TIME
+
+    private
+
+    def span
+      DateTime.span(self)
+    end
+
+    def midnight?
+      hour.zero? && min.zero? && sec.zero? && subsec.zero?
+    end
+  end
 end

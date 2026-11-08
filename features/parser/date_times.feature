@@ -49,3 +49,14 @@ Feature: Parse date-times
     Examples: Time zone offset without a colon
       | string                   | date-time           | utc                 |
       | 2016-05-02T16:54:59+0230 | 2016-05-02T16:54:59 | 2016-05-02T14:24:59 |
+
+  Scenario Outline: Times to the hour or minute
+    When I parse "<string>"
+    Then its EDTF string should be "<edtf>"
+
+    @level0
+    Examples:
+      | string              | edtf                   |
+      | 2016-05-02T16       | 2016-05-02T16          |
+      | 2016-05-02T16:54    | 2016-05-02T16:54       |
+      | 2016-05-02T16:54-04 | 2016-05-02T16:54-04:00 |

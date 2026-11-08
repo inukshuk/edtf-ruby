@@ -83,9 +83,12 @@ rule
       }
     ;
 
-  # Fractions of a second are read in milliseconds.
+  # Times may stop at the hour or minute (T14, T14:39);
+  # fractions of a second are read in milliseconds.
   time
-    : hour ':' minute ':' second {
+    : hour             { result = val }
+    | hour ':' minute  { result = val.values_at(0, 2) }
+    | hour ':' minute ':' second {
         result = val.values_at(0, 2, 4)
       }
     | hour ':' minute ':' second fraction {
@@ -133,6 +136,19 @@ rule
   # An empty end is unknown, `..` is open.
   interval
     : interval_end '/' interval_end  { result = interval(val[0], val[2]) }
+    | interval_end '/' end_of_day    { result = interval(val[0], val[2]) }
+    ;
+
+  # 24:00 is the end of a day (ISO 8601-1), but only as an interval's end.
+  end_of_day
+    : date 'T' midnight         { result = end_of_day(val[0], val[2]) }
+    | date 'T' midnight offset  { result = end_of_day(val[0], val[2], val[3]) }
+    ;
+
+  midnight
+    : '2' '4'                          { result = [0] }
+    | '2' '4' ':' '0' '0'              { result = [0, 0] }
+    | '2' '4' ':' '0' '0' ':' '0' '0'  { result = [0, 0, 0] }
     ;
 
   interval_end
@@ -389,6 +405,14 @@ end
 
     result = { type: :date_time, values: [*date[:values], *time] }
     result[:offset] = offset unless offset.nil?
+    result
+  end
+
+  # Midnight at the end of a day is stored as the next day's 00:00.
+  def end_of_day(date, time, offset = nil)
+    result = date_time(date, time, offset)
+    day = ::Date.new(*result[:values].take(3), ::Date::GREGORIAN) + 1
+    result[:values][0, 3] = [day.year, day.month, day.day]
     result
   end
 

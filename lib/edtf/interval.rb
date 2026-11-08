@@ -111,8 +111,17 @@ module EDTF
       cover?(other) && Period.precision(other) == precision
     end
 
-    def edtf
-      [from, to].map { |value| value == :open ? '..' : value == :unknown ? '' : value.edtf }.join('/')
+    # With t24: true, an end at midnight is written
+    # as 24:00 of the day before (ISO 8601-1 allows 24:00 only there).
+    def edtf(t24: false)
+      [from, to].map.with_index { |value, i|
+        case value
+        when :open then '..'
+        when :unknown then ''
+        when DateTime then value.edtf(t24: t24 && i == 1)
+        else value.edtf
+        end
+      }.join('/')
     end
 
     protected
