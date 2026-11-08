@@ -16,7 +16,7 @@ module EDTF
       nil, Bitmask::YEAR, Bitmask::YM, Bitmask::YMD
     ].freeze
 
-    EXTENSIONS = %i[season_uncertainty].freeze
+    EXTENSIONS = %i[season_uncertainty basic_offset].freeze
 
     class ParseError < ArgumentError; end
 

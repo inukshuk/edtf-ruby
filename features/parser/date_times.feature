@@ -18,7 +18,7 @@ Feature: Parse date-times
       | string              | date-time           |
       | 2016-05-02T24:00:00 | 2016-05-03T00:00:00 |
 
-    @level0 @wip
+    @level0
     Examples: Fractional seconds
       | string                  | date-time               |
       | 2016-05-02T16:54:59.042 | 2016-05-02T16:54:59.042 |
@@ -39,13 +39,13 @@ Feature: Parse date-times
       | 1985-04-12T23:20:30+04:30 | 1985-04-12T23:20:30 | 1985-04-12T18:50:30 |
       | 2016-05-02T16:54:59-12:00 | 2016-05-02T16:54:59 | 2016-05-03T04:54:59 |
 
-    @level0 @wip
+    @level0
     Examples: Time zone offset in hours only
       | string                 | date-time           | utc                 |
       | 1985-04-12T23:20:30-04 | 1985-04-12T23:20:30 | 1985-04-13T03:20:30 |
 
     # EDTF requires the extended format; edtf.js also accepts +hhmm.
-    @level0 @ext-basic-offset @wip
+    @level0 @ext-basic-offset
     Examples: Time zone offset without a colon
       | string                   | date-time           | utc                 |
       | 2016-05-02T16:54:59+0230 | 2016-05-02T16:54:59 | 2016-05-02T14:24:59 |
