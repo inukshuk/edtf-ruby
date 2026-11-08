@@ -284,10 +284,10 @@ rule
 
   masked_precision
     : digit digit digit X {
-        result = { type: :decade, values: [number(val[0, 3])] }
+        result = { type: :decade, values: [number(val[0, 3])], level: 2 }
       }
     | digit digit X X {
-        result = { type: :century, values: [number(val[0, 2])] }
+        result = { type: :century, values: [number(val[0, 2])], level: 2 }
       }
     ;
 

@@ -119,21 +119,24 @@ module EDTF
       end
     end
 
-    # The ISO grammar reads the input first;
-    # the legacy grammar only what the ISO grammar cannot read.
-    # If neither can, raises the ISO grammar's error.
+    # The ISO grammar reads the input first.
+    # If it fails, the legacy grammar's result counts
+    # only if the input used legacy syntax;
+    # otherwise raises the ISO grammar's error.
     def read(input)
-      error = nil
+      @grammars[0].parse(input, debug: debug?)
+    rescue ArgumentError => error
+      legacy = @grammars[1] or raise
 
-      @grammars.each do |grammar|
-        result = grammar.parse(input, debug: debug?)
-        @deprecations = grammar.deprecations.uniq
-        return result
-      rescue Grammar::ParseError => e
-        error ||= e
+      begin
+        result = legacy.parse(input, debug: debug?)
+      rescue ArgumentError
+        raise error
       end
 
-      raise error
+      raise error if legacy.deprecations.empty?
+      @deprecations = legacy.deprecations.uniq
+      result
     end
 
     def warn_deprecations(input)
@@ -178,16 +181,23 @@ module EDTF
         level
       when :date_time
         0
-      when :decade, :century, :set, :list
+      when :century
+        qualified?(result) ? 2 : 0
+      when :decade, :set, :list
         2
       when :season
-        result.key?(:uncertain) || result.key?(:approximate) || result[:qualifier] ? 2 : 1
+        level_2 = qualified?(result) || result[:qualifier]
+        level_2 || result[:values][1] > 24 ? 2 : 1
       when :interval
         # Open or unknown ends are level 1, unspecified digits level 2.
         result[:values].map { |value|
           !value.is_a?(Hash) ? 1 : value[:unspecified] ? 2 : value[:level]
         }.max
       end
+    end
+
+    def qualified?(result)
+      result.key?(:uncertain) || result.key?(:approximate)
     end
 
     def deep_freeze(result)

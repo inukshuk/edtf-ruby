@@ -30,7 +30,7 @@ Feature: Parse unspecified dates
       | string     | date       | unspecified |
       | XXXX       | 0000       | XXXX-MM-DD  |
 
-    @level1 @wip
+    @level1
     Examples: Unspecified year and month
       | string     | date       | unspecified |
       | XXXX-XX    | 0000-01    | XXXX-XX-DD  |
@@ -54,8 +54,8 @@ Feature: Parse unspecified dates
       | 15XX-12-XX | 1500-12-01 | YYXX-MM-XX  |
       | 15XX-XX-25 | 1500-01-25 | YYXX-XX-DD  |
 
-    @level2 @wip
-    Examples: Unspecified digits anywhere, not supported yet
+    @level2
+    Examples: Unspecified digits anywhere, in any digit
       | string     | date       | unspecified |
       | XXXX-12-XX | 0000-12-01 | XXXX-MM-XX  |
       | 1XXX-XX    | 1000-01    | YXXX-XX-DD  |

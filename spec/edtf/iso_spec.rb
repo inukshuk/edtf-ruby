@@ -27,6 +27,46 @@ module EDTF
       end
     end
 
+    describe 'dates made of parts' do
+      def self.date(*values, **attributes)
+        { type: :date, values: values, **attributes }
+      end
+
+      {
+        '?2004-06-~11' =>
+          date(2004, 6, 11, uncertain: Bitmask::YEAR, approximate: Bitmask::DAY),
+        '2001-?09~-09' =>
+          date(2001, 9, 9, uncertain: Bitmask::MONTH, approximate: Bitmask::YM),
+        '?-2004' => date(-2004, uncertain: Bitmask::YEAR),
+        '1XX3' => date(1003, unspecified: Bitmask.compute('yxxymmdd')),
+        '2016-01-X0' => date(2016, 1, 10, unspecified: Bitmask::XD),
+        '1984-1X' => date(1984, 10, unspecified: Bitmask::MX),
+        'XXXX-12-XX' => date(0, 12, 1, unspecified: Bitmask::XXXX | Bitmask::DAY),
+        '199X?' => date(1990, unspecified: Bitmask::YYYX, uncertain: Bitmask::YEAR),
+        '2001-33' => { type: :season, values: [2001, 33] },
+        '2001-21~' => { type: :season, values: [2001, 21], approximate: Bitmask::YM },
+        '196' => { type: :decade, values: [196] },
+        '-009~' => { type: :decade, values: [-9], approximate: Bitmask::YEAR },
+        '19' => { type: :century, values: [19] },
+        '?19' => { type: :century, values: [19], uncertain: Bitmask::YEAR }
+      }.each do |input, result|
+        it "reads #{input}" do
+          expect(grammar.parse(input)).to eq(result)
+        end
+      end
+
+      %w[
+        12345 1 -00 -000X 2004-2X 2004-00 2004-13 2004-42 2004-X4-31 2004-4X
+        19-21 2001?-21 2001-?21 20XX-21 1X 2004?-06-11T10:10:10
+        [19,20] 2001-21/2001-22 {..~-0662} [..0000%..] {..1600-08-20..}
+        [1667,1670..1672-01]
+      ].each do |input|
+        it "rejects #{input}" do
+          expect { grammar.parse(input) }.to raise_error(ArgumentError)
+        end
+      end
+    end
+
     [
       '2004-06-(11)~', '1984?~', '2004/open', 'unknown/2004', '199u',
       '198x', 'y17e7', '-0000', '{1960, 1961}', '2001-21^southern',

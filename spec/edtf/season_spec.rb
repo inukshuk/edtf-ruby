@@ -14,7 +14,7 @@ module EDTF
       let(:period) { season(2001, 24, approximate: true) }
     end
 
-    it_behaves_like 'a period', parses: false do
+    it_behaves_like 'a period' do
       let(:period) { season(2001, 30) }
     end
 

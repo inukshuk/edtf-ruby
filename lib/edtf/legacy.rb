@@ -1290,7 +1290,7 @@ module_eval(<<'.,.,', 'legacy.y', 281)
 
 module_eval(<<'.,.,', 'legacy.y', 286)
   def _reduce_95(val, _values, result)
-            result = { type: :decade, values: [number(val[0, 3])] }
+            result = { type: :decade, values: [number(val[0, 3])], level: 2 }
 
     result
   end
@@ -1298,7 +1298,7 @@ module_eval(<<'.,.,', 'legacy.y', 286)
 
 module_eval(<<'.,.,', 'legacy.y', 289)
   def _reduce_96(val, _values, result)
-            result = { type: :century, values: [number(val[0, 2])] }
+            result = { type: :century, values: [number(val[0, 2])], level: 2 }
 
     result
   end
