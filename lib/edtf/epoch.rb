@@ -8,6 +8,9 @@ module EDTF
   #
   # Qualifiers apply to the whole epoch:
   # 196~ is an approximate decade, not an approximate year.
+  #
+  # Epochs are written 196X and 19XX, or 196 and 19 if short
+  # (as read from those strings); both forms are the same epoch.
   class Epoch
     include Period
 
@@ -18,12 +21,13 @@ module EDTF
 
     attr_reader :value
 
-    def initialize(value, uncertain: false, approximate: false)
+    def initialize(value, uncertain: false, approximate: false, short: false)
       @value = Integer(value)
       raise ArgumentError, "invalid #{precision}: #{value}" unless @value.abs < 10**self.class.digits
 
       @uncertain = qualified?(uncertain)
       @approximate = qualified?(approximate)
+      @short = !!short
       freeze
     end
 
@@ -43,15 +47,20 @@ module EDTF
       @approximate
     end
 
+    def short?
+      @short
+    end
+
     def with(**changes)
       return self if changes.empty?
 
-      check_keys!(changes, %i[value uncertain approximate])
+      check_keys!(changes, %i[value uncertain approximate short])
 
       self.class.new(
         changes.fetch(:value, value),
         uncertain: changes.fetch(:uncertain, uncertain?),
-        approximate: changes.fetch(:approximate, approximate?)
+        approximate: changes.fetch(:approximate, approximate?),
+        short: changes.fetch(:short, short?)
       )
     end
 
@@ -75,6 +84,7 @@ module EDTF
 
     def edtf
       string = "#{'-' if value.negative?}#{format("%0#{self.class.digits}d", value.abs)}"
+      string += 'X' * (4 - self.class.digits) unless short?
       string += '?' if uncertain?
       string += '~' if approximate?
       string.sub('?~', '%')

@@ -31,16 +31,29 @@ module EDTF
     end
 
     describe '#edtf' do
-      it 'pads to three digits' do
-        expect(Decade.new(198).edtf).to eq('198')
-        expect(Decade.new(99).edtf).to eq('099')
-        expect(Decade.new(-9).edtf).to eq('-009')
+      it 'writes NNNX by default' do
+        expect(Decade.new(198).edtf).to eq('198X')
+        expect(Decade.new(-9).edtf).to eq('-009X')
+        expect(Decade.new(198, approximate: true).edtf).to eq('198X~')
+      end
+
+      it 'pads to three digits if short' do
+        expect(Decade.new(198, short: true).edtf).to eq('198')
+        expect(Decade.new(99, short: true).edtf).to eq('099')
+        expect(Decade.new(-9, short: true).edtf).to eq('-009')
       end
 
       it 'qualifies the whole decade' do
-        expect(Decade.new(198, approximate: true).edtf).to eq('198~')
-        expect(Decade.new(198, uncertain: true).edtf).to eq('198?')
-        expect(Decade.new(198, uncertain: true, approximate: true).edtf).to eq('198%')
+        expect(Decade.new(198, approximate: true, short: true).edtf).to eq('198~')
+        expect(Decade.new(198, uncertain: true, short: true).edtf).to eq('198?')
+        expect(Decade.new(198, uncertain: true, approximate: true).edtf).to eq('198X%')
+      end
+
+      it 'keeps the form it was read in' do
+        expect(EDTF.parse('196').edtf).to eq('196')
+        expect(EDTF.parse('196X').edtf).to eq('196X')
+        expect(EDTF.parse('196')).to eql(EDTF.parse('196X'))
+        expect(Decade.new(196).with(short: true).edtf).to eq('196')
       end
     end
 
@@ -64,8 +77,8 @@ module EDTF
 
     describe '#with' do
       it 'replaces the given attributes' do
-        expect(Decade.new(196).with(approximate: true).edtf).to eq('196~')
-        expect(Decade.new(196).with(value: 197).edtf).to eq('197')
+        expect(Decade.new(196).with(approximate: true)).to eql(Decade.new(196, approximate: true))
+        expect(Decade.new(196).with(value: 197)).to eql(Decade.new(197))
         expect { Decade.new(196).with(year: 1970) }.to raise_error(ArgumentError)
       end
     end
@@ -96,8 +109,8 @@ module EDTF
     end
 
     it 'steps by decade' do
-      expect((Decade.new(199)..Decade.new(201)).map(&:edtf)).to eq(%w[199 200 201])
-      expect(Decade.new(199).prev.edtf).to eq('198')
+      expect((Decade.new(199)..Decade.new(201)).map(&:value)).to eq([199, 200, 201])
+      expect(Decade.new(199).prev).to eql(Decade.new(198))
     end
   end
 
@@ -133,21 +146,26 @@ module EDTF
     end
 
     describe '#edtf' do
-      it 'pads to two digits' do
-        expect(Century.new(20).edtf).to eq('20')
-        expect(Century.new(1).edtf).to eq('01')
-        expect(Century.new(0).edtf).to eq('00')
-        expect(Century.new(-1).edtf).to eq('-01')
+      it 'writes NNXX by default' do
+        expect(Century.new(20).edtf).to eq('20XX')
+        expect(Century.new(-1, uncertain: true).edtf).to eq('-01XX?')
+      end
+
+      it 'pads to two digits if short' do
+        expect(Century.new(20, short: true).edtf).to eq('20')
+        expect(Century.new(1, short: true).edtf).to eq('01')
+        expect(Century.new(0, short: true).edtf).to eq('00')
+        expect(Century.new(-1, short: true).edtf).to eq('-01')
       end
 
       it 'qualifies the whole century' do
-        expect(Century.new(20, uncertain: true).edtf).to eq('20?')
+        expect(Century.new(20, uncertain: true, short: true).edtf).to eq('20?')
       end
     end
 
     it 'is a different period than the unspecified year with the same span' do
-      expect(Century.new(19)).not_to eq(EDTF.parse('19XX'))
-      expect(Century.new(19).to_range).to eq(EDTF.parse('19XX').to_range)
+      expect(Century.new(19)).not_to eq(EDTF.parse('19XX', centuries: false))
+      expect(Century.new(19).to_range).to eq(EDTF.parse('19XX', centuries: false).to_range)
     end
   end
 end

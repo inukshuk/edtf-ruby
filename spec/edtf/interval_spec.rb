@@ -213,11 +213,17 @@ module EDTF
         expect(interval('1984?/2004?~').edtf).to eq('1984?/2004%')
       end
 
-      it 'writes an end at midnight as 24:00 with t24: true' do
+      it 'writes its ends in their own form' do
+        expect(Interval.new(Century.new(19), Decade.new(201, short: true)).edtf).to eq('19XX/201')
+        expect(EDTF.parse('19/196X').edtf).to eq('19/196X')
+      end
+
+      it 'keeps an end at 24:00, the next day at midnight' do
         i = EDTF.parse('2004-01-01T10:00/2004-01-01T24:00')
-        expect(i.edtf).to eq('2004-01-01T10:00/2004-01-02T00:00')
-        expect(i.edtf(t24: true)).to eq('2004-01-01T10:00/2004-01-01T24:00')
-        expect(EDTF.parse('2004-01-02T00:00/..').edtf(t24: true)).to eq('2004-01-02T00:00/..')
+        expect(i.edtf).to eq('2004-01-01T10:00/2004-01-01T24:00')
+        expect(i.to).to eql(EDTF.parse('2004-01-02T00:00'))
+        expect(EDTF.parse('2004-01-01T10:00/2004-01-02T00:00').edtf)
+          .to eq('2004-01-01T10:00/2004-01-02T00:00')
       end
     end
 

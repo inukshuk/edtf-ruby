@@ -117,6 +117,7 @@ module EDTF
         '2004?-06~' => date(2004, 6, uncertain: Bitmask::YEAR, approximate: Bitmask::YM, level: 2),
         '2004-06-(11)~' => date(2004, 6, 11, approximate: Bitmask::DAY, level: 2, legacy: true),
         '199X' => date(1990, unspecified: Bitmask::YYYX, level: 1),
+        '19XX?' => date(1900, unspecified: Bitmask::YYXX, uncertain: Bitmask::YEAR, level: 1),
         '2004-XX-XX' => date(2004, 1, 1, unspecified: Bitmask::MD, level: 1),
         '19XX-06' => date(1900, 6, unspecified: Bitmask::YYXX, level: 2),
         'XXXX' => date(0, unspecified: Bitmask::XXXX, level: 1),

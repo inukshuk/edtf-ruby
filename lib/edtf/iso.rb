@@ -50,7 +50,8 @@ module_eval(<<'...end iso.y/module_eval...', 'iso.y', 264)
 
     case digits.map(&:length)
     when [2], [3]
-      epoch(negative ? -raw[0] : raw[0], parts[0])
+      left, _, right = parts[0]
+      epoch(negative ? -raw[0] : raw[0], digits[0], left | right)
     when [4, 2]
       if raw[1] > 12 && !digits[1].include?('X')
         season_of(negative ? -raw[0] : raw[0], raw[1], parts)
@@ -100,10 +101,10 @@ module_eval(<<'...end iso.y/module_eval...', 'iso.y', 264)
     range.any? { |n| pattern.match?(format('%02d', n)) }
   end
 
-  def epoch(value, (left, digits, right))
+  def epoch(value, digits, qualifiers)
     raise ArgumentError, "invalid year #{digits}" if digits.include?('X')
     type = digits.length == 2 ? :century : :decade
-    qualify({ type: type, values: [value] }, left | right)
+    qualify({ type: type, values: [value] }, qualifiers)
   end
 
   # Seasons 21-24 are level 1, 25-41 level 2.
@@ -123,14 +124,14 @@ module_eval(<<'...end iso.y/module_eval...', 'iso.y', 264)
     qualify({ type: :season, values: [year, number] }, right, Bitmask::YM)
   end
 
-  # Interval ends and set members are dates.
+  # Interval ends and set members are dates, decades or centuries.
   def member(result)
-    return result if result[:type] == :date
-    raise ArgumentError, "invalid #{result[:type]} in an interval or set"
+    return result unless result[:type] == :season
+    raise ArgumentError, 'invalid season in an interval or set'
   end
 
   def plain(result)
-    if member(result).keys != %i[type values]
+    if result[:type] != :date || result.keys != %i[type values]
       raise ArgumentError, 'open ends and consecutive dates must be plain dates'
     end
 
@@ -153,14 +154,6 @@ module_eval(<<'...end iso.y/module_eval...', 'iso.y', 264)
 
     result = { type: :date_time, values: [*date[:values], *time] }
     result[:offset] = offset unless offset.nil?
-    result
-  end
-
-  # Midnight at the end of a day is stored as the next day's 00:00.
-  def end_of_day(date, time, offset = nil)
-    result = date_time(date, time, offset)
-    day = ::Date.new(*result[:values].take(3), ::Date::GREGORIAN) + 1
-    result[:values][0, 3] = [day.year, day.month, day.day]
     result
   end
 
@@ -821,35 +814,35 @@ module_eval(<<'.,.,', 'iso.y', 138)
 
 module_eval(<<'.,.,', 'iso.y', 143)
   def _reduce_43(val, _values, result)
-     result = end_of_day(val[0], val[2])
+     result = date_time(val[0], val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'iso.y', 144)
   def _reduce_44(val, _values, result)
-     result = end_of_day(val[0], val[2], val[3])
+     result = date_time(val[0], val[2], val[3])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'iso.y', 148)
   def _reduce_45(val, _values, result)
-     result = [0]
+     result = [24]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'iso.y', 149)
   def _reduce_46(val, _values, result)
-     result = [0, 0]
+     result = [24, 0]
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'iso.y', 150)
   def _reduce_47(val, _values, result)
-     result = [0, 0, 0]
+     result = [24, 0, 0]
     result
   end
 .,.,

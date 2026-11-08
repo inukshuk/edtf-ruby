@@ -37,8 +37,11 @@ module EDTF
     nil
   end
   
-  def parse!(input, **options)
-    Builder.build(Parser.new(**options).parse!(input))
+  # Options go to the parser, except centuries: (see Builder),
+  # which is on unless strict: true.
+  def parse!(input, centuries: nil, **options)
+    centuries = !options[:strict] if centuries.nil?
+    Builder.build(Parser.new(**options).parse!(input), centuries: centuries)
   end
 
   def legacy?(input)

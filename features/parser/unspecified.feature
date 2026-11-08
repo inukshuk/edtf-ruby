@@ -2,6 +2,9 @@ Feature: Parse unspecified dates
   As a user of EDTF-Ruby
   I want to parse dates with unspecified digits
 
+  Background:
+    Given the century option is off
+
   Scenario Outline: Unspecified digits
     When I parse "<string>"
     Then it should be the date "<date>"

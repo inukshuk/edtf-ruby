@@ -7,14 +7,21 @@ module EDTF
       date date_time year decade century season interval set list
     ].freeze
 
+    # With centuries: true, years with only their trailing digits
+    # unspecified (19XX, 196X) are built as centuries and decades.
+    EPOCHS = {
+      Bitmask::YYXX => [Century, 100],
+      Bitmask::YYYX => [Decade, 10]
+    }.freeze
+
     module_function
 
-    def build(result)
+    def build(result, centuries: true)
       case result
       when :open, :unknown, 'open', 'unknown'
         result.to_sym
       when Array
-        build(result[0])..build(result[1])
+        build(result[0], centuries: centuries)..build(result[1], centuries: centuries)
       when Hash
         result = result.transform_keys(&:to_sym)
         type = result[:type].to_s.to_sym
@@ -29,13 +36,27 @@ module EDTF
             "invalid parse result values: #{result[:values].inspect}"
         end
 
-        send(type, result)
+        if %i[date interval set list].include?(type)
+          send(type, result, centuries: centuries)
+        else
+          send(type, result)
+        end
       else
         raise ArgumentError, "invalid parse result: #{result.inspect}"
       end
     end
 
-    def date(result)
+    def date(result, centuries: true)
+      if centuries && result[:values].length == 1
+        epoch, size = EPOCHS[result[:unspecified]]
+
+        if epoch
+          year = result[:values][0]
+          value = year.negative? ? -(-year / size) : year / size
+          return epoch.new(value, **result.slice(:uncertain, :approximate))
+        end
+      end
+
       Date.new(*result[:values], **result.slice(
         :uncertain,
         :approximate,
@@ -64,18 +85,24 @@ module EDTF
       Date.new(result[:values][0], significant: result[:significant])
     end
 
+    # Decades and centuries in results were written 196 and 19.
     def decade(result)
-      Decade.new(result[:values][0], **result.slice(:uncertain, :approximate))
+      Decade.new(result[:values][0], short: true,
+        **result.slice(:uncertain, :approximate))
     end
 
     def century(result)
-      Century.new(result[:values][0], **result.slice(:uncertain, :approximate))
+      Century.new(result[:values][0], short: true,
+        **result.slice(:uncertain, :approximate))
     end
 
     def season(result)
       year, season = result[:values]
       season = hemisphere(result[:qualifier], season)
-      Season.new(year, season, **result.slice(:uncertain, :approximate, :unspecified))
+      Season.new(year, season, **result.slice(
+        :uncertain,
+        :approximate,
+        :unspecified))
     end
 
     def hemisphere(qualifier, season)
@@ -86,16 +113,33 @@ module EDTF
       end
     end
 
-    def interval(result)
-      Interval.new(*result[:values].map { |value| build(value) })
+    # An interval may end at 24:00, the end of a day (hour 24),
+    # which is kept to be written that way again.
+    def interval(result, centuries: true)
+      from, to = result[:values].map { |value|
+        build(value, centuries: centuries)
+      }
+
+      to = to.with(t24: true) if to.is_a?(DateTime) && end_of_day?(result[:values][1])
+      Interval.new(from, to)
     end
 
-    def set(result)
-      Set.new(*result[:values].map { |value| build(value) }, **result.slice(:earlier, :later))
+    def end_of_day?(result)
+      result.is_a?(Hash) && (result[:values] || result['values'])[3] == 24
     end
 
-    def list(result)
-      List.new(*result[:values].map { |value| build(value) }, **result.slice(:earlier, :later))
+    def set(result, centuries: true)
+      members = result[:values].map { |value|
+        build(value, centuries: centuries)
+      }
+      Set.new(*members, **result.slice(:earlier, :later))
+    end
+
+    def list(result, centuries: true)
+      members = result[:values].map { |value|
+        build(value, centuries: centuries)
+      }
+      List.new(*members, **result.slice(:earlier, :later))
     end
   end
 end

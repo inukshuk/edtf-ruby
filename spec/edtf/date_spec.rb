@@ -24,7 +24,7 @@ module EDTF
     end
 
     it_behaves_like 'a period' do
-      let(:period) { EDTF.parse('-199X') }
+      let(:period) { EDTF.parse('-199X', centuries: false) }
     end
 
     describe '.new' do
@@ -73,9 +73,9 @@ module EDTF
 
       it 'holds the lowest values of unspecified digits' do
         expect(EDTF.parse('2016-XX').values).to eq([2016, 1])
-        expect(EDTF.parse('20XX').values).to eq([2000])
-        expect(EDTF.parse('-20XX').values).to eq([-2000])
-        expect(EDTF.parse('-201X').values).to eq([-2010])
+        expect(EDTF.parse('20XX', centuries: false).values).to eq([2000])
+        expect(EDTF.parse('-20XX', centuries: false).values).to eq([-2000])
+        expect(EDTF.parse('-201X', centuries: false).values).to eq([-2010])
       end
     end
 
@@ -205,18 +205,18 @@ module EDTF
       end
 
       it 'steps over unspecified digits' do
-        d = EDTF.parse('201X')
+        d = EDTF.parse('201X', centuries: false)
         expect([d.succ, d.succ.succ, d.succ.prev].map(&:edtf)).to eq(%w[202X 203X 201X])
         expect([d.prev, d.prev.prev, d.prev.succ].map(&:edtf)).to eq(%w[200X 199X 201X])
-        expect(d.prev).to eql(EDTF.parse('200X'))
-        expect(d.succ).to eql(EDTF.parse('202X'))
+        expect(d.prev).to eql(EDTF.parse('200X', centuries: false))
+        expect(d.succ).to eql(EDTF.parse('202X', centuries: false))
       end
 
       it 'steps over unspecified digits of negative years' do
-        d = EDTF.parse('-201X')
+        d = EDTF.parse('-201X', centuries: false)
         expect([d.succ, d.succ.succ, d.succ.prev].map(&:edtf)).to eq(%w[-200X -199X -201X])
         expect([d.prev, d.prev.prev, d.prev.succ].map(&:edtf)).to eq(%w[-202X -203X -201X])
-        expect(d.succ).to eql(EDTF.parse('-200X'))
+        expect(d.succ).to eql(EDTF.parse('-200X', centuries: false))
       end
 
       it 'keeps the qualifiers' do
@@ -347,7 +347,12 @@ module EDTF
         expect(d.with(uncertain: :day).edtf).to eq('2004-06-?11')
         expect(d.with(uncertain: []).edtf).to eq('2004-06-11')
         expect(d.with(approximate: true).edtf).to eq('2004-06?-11~')
-        expect(d.with(unspecified: :day).edtf).to eq('2004-06-XX')
+        expect(d.with(uncertain: [], unspecified: :day).edtf).to eq('2004-06-XX')
+      end
+
+      it 'cannot combine unspecified digits with qualifiers' do
+        expect { d.with(unspecified: :day) }.to raise_error(ArgumentError, /qualified/)
+        expect { date(1990, unspecified: 'yyyxmmdd', uncertain: true) }.to raise_error(ArgumentError)
       end
 
       it 'changes the precision' do
@@ -407,14 +412,14 @@ module EDTF
       it 'test the whole date or a part' do
         expect([d.uncertain?, d.uncertain?(:year), d.uncertain?(:month)]).to eq([true, true, false])
         expect([d.approximate?, d.approximate?(:year), d.approximate?(:month)]).to eq([true, true, true])
-        expect([d.unspecified?, EDTF.parse('199X').unspecified?(:year)]).to eq([false, true])
+        expect([d.unspecified?, EDTF.parse('199X', centuries: false).unspecified?(:year)]).to eq([false, true])
       end
     end
 
     describe 'comparison' do
       it 'orders by begin, then end, then precision' do
         expect(date(1980)).to be < date(1980, 7)
-        expect(EDTF.parse('198X')).to be > EDTF.parse('196X')
+        expect(EDTF.parse('198X', centuries: false)).to be > EDTF.parse('196X', centuries: false)
         expect(date(2004)).to be > date(2004, 1, 1)
         expect(date(2004) <=> EDTF.parse('2004-XX')).to eq(-1)
       end
@@ -443,8 +448,8 @@ module EDTF
         expect(EDTF.parse('1972-01-01')).not_to eql(EDTF.parse('1972-01-XX'))
         expect(EDTF.parse('1972%')).not_to eql(EDTF.parse('1972-XX-XX'))
 
-        a = date(1972, 1, uncertain: :year, approximate: :month, unspecified: :month)
-        b = date(1972, 1, uncertain: :year, approximate: :month, unspecified: :month)
+        a = date(1972, 1, uncertain: :year, approximate: :month)
+        b = date(1972, 1, uncertain: :year, approximate: :month)
         expect(a).to eql(b)
         expect(a.hash).to eq(b.hash)
         expect({ EDTF.parse('1972') => 1, EDTF.parse('1972?') => 2 }.size).to eq(2)
@@ -460,7 +465,7 @@ module EDTF
     end
 
     describe 'coverage' do
-      let(:d) { EDTF.parse('201X') }
+      let(:d) { EDTF.parse('201X', centuries: false) }
 
       it 'covers dates, times and periods within its bounds' do
         expect(d).to be_cover(::Date.new(2015, 6, 1))

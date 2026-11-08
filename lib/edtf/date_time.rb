@@ -12,7 +12,7 @@ module EDTF
     include Period
 
     ATTRIBUTES = %i[
-      year month day hour min sec offset precision
+      year month day hour min sec offset precision t24
     ].freeze
 
     # The values each precision has, and its length in seconds.
@@ -37,6 +37,8 @@ module EDTF
 
     # The offset is given in minutes; nil means a floating time.
     # Minutes and seconds beyond the precision must be zero.
+    # With t24: true, midnight is written as 24:00 of the day before,
+    # as an interval that ends with that day (see #edtf).
     def initialize(
       year,
       month,
@@ -45,7 +47,8 @@ module EDTF
       min = 0,
       sec = 0,
       offset: nil,
-      precision: :second
+      precision: :second,
+      t24: false
     )
       precision = precision.to_sym
       raise ArgumentError,
@@ -66,11 +69,17 @@ module EDTF
 
       @floating = offset.nil?
       @precision = precision
+      @t24 = !!t24
+      raise ArgumentError, 't24 needs a time at midnight' if @t24 && !midnight?
       freeze
     end
 
     def floating?
       !!@floating
+    end
+
+    def t24?
+      !!@t24
     end
 
     # Returns the offset in minutes, or nil for floating times.
@@ -108,7 +117,8 @@ module EDTF
       self.class.new(
         *values,
         offset: changes.fetch(:offset, offset),
-        precision: precision)
+        precision: precision,
+        t24: changes.fetch(:t24) { t24? && values.drop(3).all?(&:zero?) })
     end
 
     # The calendar date in the time's own offset.
@@ -194,12 +204,11 @@ module EDTF
       }
     end
 
-    # Returns the date-time's EDTF string.
-    # With t24: true, midnight is written as 24:00 of the day before,
-    # the end of that day (only intervals end there, see Interval#edtf).
-    def edtf(t24: false)
+    # Returns the date-time's EDTF string;
+    # a t24 time is written as 24:00 of the day before.
+    def edtf
       date, hours = self.begin, hour
-      date, hours = date - 1, 24 if t24 && midnight?
+      date, hours = date - 1, 24 if t24?
 
       string = format(
         '%s%04d-%02d-%02dT%02d',

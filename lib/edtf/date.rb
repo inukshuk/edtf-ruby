@@ -304,6 +304,10 @@ module EDTF
       raise ArgumentError, 'years beyond four digits need year precision' if year.abs > 9999 && precision != :year
       raise ArgumentError, 'significant digits need year precision' if significant && precision != :year
       raise ArgumentError, "invalid significant digits: #{significant}" if significant && significant < 1
+      unless unspecified.zero? || (uncertain.zero? && approximate.zero?)
+        raise ArgumentError, 'unspecified digits cannot be qualified'
+      end
+
       return unless long_year? || significant
 
       unless [uncertain, approximate, unspecified].all?(&:zero?)
