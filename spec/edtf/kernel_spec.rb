@@ -95,10 +95,12 @@ describe 'EDTF()' do
     expect([EDTF('2001-21'), ::Date.new(2001, 1, 1)].sort.first).to eq(::Date.new(2001, 1, 1))
   end
 
-  it 'converts plain dates by day, also from the Julian calendar' do
-    julian = Date.new(1500, 1, 1)
-    expect(EDTF(julian).edtf).to eq('1500-01-10')
-    expect(EDTF(julian).jd).to eq(julian.jd)
+  it 'converts plain dates by day, in their calendar before its reform' do
+    italy = Date.new(1500, 1, 1)
+    expect(EDTF(italy)).to have_attributes(edtf: '1500-01-01', calendar: :italy, jd: italy.jd)
+    expect(EDTF(Date.new(2000, 1, 1)).calendar).to eq(:gregorian)
+    expect(EDTF(Date.new(2000, 1, 1, Date::JULIAN)).calendar).to eq(:julian)
+    expect(EDTF(Date.new(1500, 1, 1, Date::GREGORIAN)).calendar).to eq(:gregorian)
   end
 
   it 'rejects times with offsets in seconds' do

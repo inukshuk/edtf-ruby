@@ -321,6 +321,15 @@ This interval has day precision,
 so 31 is the number of days in October 1582:
 EDTF-Ruby uses the proleptic Gregorian calendar,
 so the ten days skipped by the Gregorian calendar reform are included.
+Other calendars Ruby supports work, too:
+
+    EDTF.parse('1500-02-29', calendar: :julian)  #-> #<EDTF::Date 1500-02-29 julian>
+    EDTF.parse('1500-02-29')                     #-> nil
+
+Dates, seasons, decades and centuries keep their calendar
+for their bounds, stepping, and digits;
+`julian`, `gregorian`, and `new_start` convert to plain dates,
+as for Ruby dates.
 
 Intervals can have open (`..`) or unknown (empty) ends,
 whose bounds are nil:

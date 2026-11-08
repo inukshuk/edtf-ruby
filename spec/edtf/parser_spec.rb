@@ -69,6 +69,36 @@ module EDTF
         expect { Parser.new(level: 3) }.to raise_error(ArgumentError)
       end
 
+      it 'read dates in the calendar given' do
+        julian = Parser.new(calendar: :julian)
+        expect(julian.parse!('1500-02-29')).to include(values: [1500, 2, 29], calendar: :julian)
+        expect(julian.parse!('[1500,15]')[:values].map { _1[:calendar] }).to eq(%i[julian julian])
+        expect(parser.parse('1500-02-29')).to be_nil
+        expect(parser.parse!('1500-02-28')).not_to include(:calendar)
+      end
+
+      it 'reject days skipped by a calendar reform' do
+        expect(Parser.new(calendar: :italy).parse('1582-10-10')).to be_nil
+        expect(Parser.new(calendar: :england).parse('1582-10-10')).not_to be_nil
+        expect(Parser.new(calendar: 2299161).parse!('1582-10-15')).to include(calendar: :italy)
+        expect(Parser.new(calendar: 2299170).parse!('1582-10-30')).to include(calendar: 2299170)
+      end
+
+      it 'keep calendars named in legacy syntax' do
+        expect(parser.parse!('1500-02-29^julian')).to include(calendar: :julian)
+        expect(Parser.new(calendar: :julian).parse!('2001-02-03^gregorian')).to include(calendar: :gregorian)
+        expect { parser.parse!('2001-02-03^xyz') }.to raise_error(ArgumentError, /unknown calendar/)
+      end
+
+      it 'reject other calendars for date-times' do
+        expect { Parser.new(calendar: :julian).parse!('1500-02-03T10:00') }
+          .to raise_error(ArgumentError, /Gregorian/)
+      end
+
+      it 'reject unknown calendars' do
+        expect { Parser.new(calendar: :hebrew) }.to raise_error(ArgumentError, /hebrew/)
+      end
+
       it 'limit the year digits' do
         expect(Parser.new(max_year_digits: 10).parse('Y1E9')).not_to be_nil
         expect(Parser.new(max_year_digits: 10).parse('Y1E10')).to be_nil
@@ -123,7 +153,7 @@ module EDTF
         '2004-XX-XX' => date(2004, 1, 1, unspecified: Bitmask::MD, level: 1),
         '19XX-06' => date(1900, 6, unspecified: Bitmask::YYXX, level: 2),
         'XXXX' => date(0, unspecified: Bitmask::XXXX, level: 1),
-        '2001-02-03^julian' => date(2001, 2, 3, calendar: 'julian', level: 2, legacy: true),
+        '2001-02-03^julian' => date(2001, 2, 3, calendar: :julian, level: 2, legacy: true),
         '2016-05-02T16:54:59' =>
           { type: :date_time, values: [2016, 5, 2, 16, 54, 59], level: 0 },
         '2016-05-02T16:54:59-04:00' =>
@@ -175,7 +205,7 @@ module EDTF
         '-0000' => [:negative_zero],
         '{1960, 1961-12}' => [:whitespace],
         '[1864 ..]' => [:whitespace],
-        '2001-02-03^xyz' => [:caret],
+        '2001-02-03^julian' => [:caret],
         'uuuu' => [:unspecified],
         '2016-05-02T24:00:00' => [:midnight],
         '2004T10:10:10' => [:partial_date_time],

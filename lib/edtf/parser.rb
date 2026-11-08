@@ -39,6 +39,7 @@ module EDTF
       legacy: nil,
       strict: false,
       max_year_digits: 100,
+      calendar: nil,
       debug: false,
       warn: true
     )
@@ -55,6 +56,7 @@ module EDTF
         extensions: extensions,
         legacy: legacy,
         max_year_digits: max_year_digits,
+        calendar: Period.calendar(calendar),
         debug: debug,
         warn: warn
       }.freeze
@@ -155,8 +157,37 @@ module EDTF
       when Hash
         result[:values].each { |value| finish(value) }
         result[:level] ||= level(result)
+        check_calendar(result)
       end
       result
+    end
+
+    # Dates, years, epochs and seasons get the calendar option
+    # unless they name their own (legacy `^julian`);
+    # days are checked in it (leap days, days skipped by a reform).
+    # Date-times are Gregorian.
+    def check_calendar(result)
+      case result[:type]
+      when :date, :year, :decade, :century, :season
+        calendar = Period.calendar(result[:calendar] || options[:calendar])
+        result[:calendar] = calendar if result.key?(:calendar) || calendar != :gregorian
+        check_date(result, calendar) if result[:unspecified].to_i & Bitmask::YEAR == 0
+      when :date_time
+        unless options[:calendar] == :gregorian
+          raise ArgumentError, "date-times are Gregorian, not #{options[:calendar]}"
+        end
+
+        check_date(result, :gregorian)
+      end
+    end
+
+    def check_date(result, calendar)
+      year, month, day = result[:values]
+      return if day.nil?
+      return if ::Date.valid_date?(year, month, day, Period.start(calendar))
+
+      raise ArgumentError,
+        format('invalid date %04d-%02d-%02d in the %s calendar', year, month, day, calendar)
     end
 
     def level(result)

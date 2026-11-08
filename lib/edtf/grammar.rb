@@ -50,14 +50,10 @@ module EDTF
       raise ArgumentError, "extension #{name} is turned off"
     end
 
-    # Rejects days the month cannot have.
-    # With leap: true, February 29 is allowed in any year
-    # (unspecified years always include a leap year).
-    def check_day(year, month, day, leap: false)
-      max = Bitmask::MAXDAYS[month - 1]
-      max = 28 if month == 2 && !leap && !::Date.gregorian_leap?(year)
-
-      if day > max
+    # Rejects days the month cannot have in any year;
+    # the parser checks leap days in the date's calendar.
+    def check_day(year, month, day)
+      if day > Bitmask::MAXDAYS[month - 1]
         raise ArgumentError,
           "invalid date (invalid days #{day} for month #{month})"
       end

@@ -57,7 +57,7 @@ Output is ISO 8601-2:
 | `{1960, 1961-12}`              | `{1960,1961-12}`                       |
 | `2004-01-01T10:10:10+00:00`    | `2004-01-01T10:10:10Z`                 |
 | `2001-21^southern`             | `2001-29` (a hemisphere season)        |
-| `2001-02-03^julian`            | `2001-02-03` (no calendars in ISO)     |
+| `2001-02-03^julian`            | `2001-02-03` (a Julian date)           |
 | `2003-23^european`             | `2003-23` (no other season qualifiers) |
 
 `to_s` returns the EDTF string, too, for every type;
@@ -74,9 +74,13 @@ so `EDTF(string).edtf` converts a stored string:
     EDTF('2001-21^southern').edtf    #-> "2001-29"
 
 `EDTF.legacy?` finds the strings that need it.
-Calendars (`^julian`) and season qualifiers other than hemispheres
-(`^european`) have no ISO 8601-2 equivalent and are dropped;
-`EDTF::Parser` results still record them (`calendar:`, `qualifier:`).
+Season qualifiers other than hemispheres (`^european`)
+have no ISO 8601-2 equivalent and are dropped;
+`EDTF::Parser` results still record them (`qualifier:`).
+Calendars are kept (`^julian` reads a Julian date),
+but ISO 8601-2 strings do not name them:
+read the converted strings with `EDTF.parse(s, calendar: :julian)`.
+Unknown calendars (`^xyz`) raise an `ArgumentError`.
 With deprecation warnings enabled (`Warning[:deprecated] = true`),
 each conversion names the legacy syntax it read.
 Reversed intervals (`2008/2004`) raise an `ArgumentError`
@@ -107,7 +111,7 @@ Dates
 | `d.uncertain` etc. (structs)     | an `EDTF::Bitmask` each              |
 | `d.next(3)` (an array)           | `(1..3).map { d.succ(_1) }`          |
 | `d.change`, `d.advance`          | return plain dates now               |
-| `d.calendar`                     | gone; parse results keep `calendar:` |
+| `d.calendar` (a String)          | `d.calendar` (a Symbol: `:julian`)   |
 | `EDTF::Unknown` (`uuuu`, `XXXX`) | `EDTF::Date`, unspecified year       |
 | `Date.today` with EDTF methods   | `EDTF(Date.today)`                   |
 
@@ -124,6 +128,8 @@ To add a part, combine the bitmasks:
 
 Plain Ruby dates have no EDTF methods any more;
 convert them with `EDTF(date)`.
+It keeps the calendar of days before its reform:
+`EDTF(Date.new(1500, 1, 1))` is in Ruby's default calendar, `:italy`.
 Note that `Date.new(1984) == EDTF('1984')` is true,
 because Ruby's `Date#==` compares the day,
 while `EDTF('1984') == Date.new(1984)` is false:

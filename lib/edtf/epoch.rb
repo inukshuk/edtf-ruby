@@ -19,15 +19,16 @@ module EDTF
       attr_reader :span, :digits, :precision
     end
 
-    attr_reader :value
+    attr_reader :value, :calendar
 
-    def initialize(value, uncertain: false, approximate: false, short: false)
+    def initialize(value, uncertain: false, approximate: false, short: false, calendar: nil)
       @value = Integer(value)
       raise ArgumentError, "invalid #{precision}: #{value}" unless (0...10**self.class.digits).cover?(@value)
 
       @uncertain = qualified?(uncertain)
       @approximate = qualified?(approximate)
       @short = !!short
+      @calendar = Period.calendar(calendar)
       freeze
     end
 
@@ -60,16 +61,17 @@ module EDTF
         changes.fetch(:value, value),
         uncertain: changes.fetch(:uncertain, uncertain?),
         approximate: changes.fetch(:approximate, approximate?),
-        short: changes.fetch(:short, short?)
+        short: changes.fetch(:short, short?),
+        calendar: calendar
       )
     end
 
     def begin
-      ::Date.new(span.first, 1, 1, ::Date::GREGORIAN)
+      ::Date.new(span.first, 1, 1, Period.start(calendar))
     end
 
     def end
-      ::Date.new(span.last, 12, 31, ::Date::GREGORIAN)
+      ::Date.new(span.last, 12, 31, Period.start(calendar))
     end
 
     def succ(by = 1)
@@ -93,7 +95,7 @@ module EDTF
     protected
 
     def state
-      [value, uncertain?, approximate?]
+      [value, uncertain?, approximate?, calendar]
     end
 
     private

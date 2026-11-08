@@ -9,6 +9,16 @@ module EDTF
       century decade year season month day hour minute second
     ].freeze
 
+    # Calendars by name, and the Ruby Date start of each
+    # (the day of the reform: Julian dates before it, Gregorian after).
+    # Any other reform day (a Julian day number) is a calendar, too.
+    CALENDARS = {
+      gregorian: ::Date::GREGORIAN,
+      julian: ::Date::JULIAN,
+      italy: ::Date::ITALY,
+      england: ::Date::ENGLAND
+    }.freeze
+
     def earliest
       self.begin
     end
@@ -26,7 +36,8 @@ module EDTF
     end
 
     def inspect
-      "#<#{self.class} #{edtf}>"
+      calendar = " #{self.calendar}" if respond_to?(:calendar) && self.calendar != :gregorian
+      "#<#{self.class} #{edtf}#{calendar}>"
     end
 
     # The EDTF string, for JSON with or without ActiveSupport
@@ -100,6 +111,33 @@ module EDTF
       when ::Date
         [::Date.jd(other.jd, ::Date::GREGORIAN)] * 2
       end
+    end
+
+    # A calendar name (Symbol or String) or a Ruby Date start
+    # -> the calendar's name, or its reform day.
+    def self.calendar(value) # :nodoc:
+      case value
+      when nil
+        :gregorian
+      when Symbol, String
+        name = value.to_sym
+        return name if CALENDARS.key?(name)
+
+        raise ArgumentError, "unknown calendar: #{value}"
+      when Numeric
+        return CALENDARS.key(value) if CALENDARS.value?(value)
+        return value.to_i if value.finite? && value == value.to_i
+
+        raise ArgumentError, "invalid calendar: #{value}"
+      else
+        raise ArgumentError, "invalid calendar: #{value.inspect}"
+      end
+    end
+
+    # The Ruby Date start of a calendar.
+    def self.start(calendar) # :nodoc:
+      calendar = self.calendar(calendar)
+      CALENDARS.fetch(calendar, calendar)
     end
 
     def self.precision(other) # :nodoc:

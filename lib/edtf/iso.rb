@@ -80,7 +80,7 @@ module_eval(<<'...end iso.y/module_eval...', 'iso.y', 263)
         raise ArgumentError, "invalid day #{digits[2]}"
       end
 
-      check_day(*values, leap: digits[0].include?('X'))
+      check_day(*values)
     end
 
     year = Bitmask.new(mask).least_year(year) if negative && year.zero?

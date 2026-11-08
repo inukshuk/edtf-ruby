@@ -79,13 +79,31 @@ Feature: Parse dates
       | Y171010000S3 | 171010000 | 3      | 171000000-01-01     | 171999999-12-31     |
       | Y3388E2S3    | 338800    | 3      | 338000-01-01        | 338999-12-31        |
 
+  # Dates are proleptic Gregorian, unless parsed in another calendar.
   Scenario Outline: Calendars
+    Given the calendar option is "<calendar>"
     When I parse "<string>"
     Then it should be the date "<date>"
+    And it should be in the <calendar> calendar
+    And its first day should be "<gregorian>" in the Gregorian calendar
+
+    Examples:
+      | string     | calendar  | date       | gregorian  |
+      | 1500-02-29 | julian    | 1500-02-29 | 1500-03-10 |
+      | 1500       | julian    | 1500       | 1500-01-10 |
+      | 1582-10-04 | italy     | 1582-10-04 | 1582-10-14 |
+      | 1582-10-15 | italy     | 1582-10-15 | 1582-10-15 |
+      | 1752-09-02 | england   | 1752-09-02 | 1752-09-13 |
+      | 2001-02-03 | gregorian | 2001-02-03 | 2001-02-03 |
+
+  Scenario Outline: Calendar names
+    When I parse "<string>"
+    Then it should be the date "<date>"
+    And it should be in the <calendar> calendar
     And the parse result should record the calendar "<calendar>"
 
     @legacy
     Examples: Draft syntax: calendar names
       | string            | date       | calendar |
-      | 2001-02-03^xyz    | 2001-02-03 | xyz      |
       | 2001-02-03^julian | 2001-02-03 | julian   |
+      | 1500-02-29^julian | 1500-02-29 | julian   |

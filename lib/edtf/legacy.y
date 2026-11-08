@@ -359,7 +359,7 @@ rule
 
   partial_unspecified
     : unspecified_year '-' month '-' day {
-        check_day(val[0][0], val[2], val[4], leap: true)
+        check_day(val[0][0], val[2], val[4])
         result = date(val[0][0], val[2], val[4], unspecified: val[0][1])
       }
     | unspecified_year '-' month {

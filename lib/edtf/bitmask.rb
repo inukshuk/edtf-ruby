@@ -171,12 +171,13 @@ module EDTF
 
     # The highest values the unspecified digits allow.
     # The year must not be negative; callers handle the sign.
-    def max(values)
+    # Leap years follow the calendar (a Ruby Date start).
+    def max(values, start = ::Date::GREGORIAN)
       year, month, day = values
       return [] if year.nil?
 
-      month = months(year, month, day).last if month && month?
       year = fill(year, '9') if year?
+      month = months(year, month, day, start).last if month && month?
       return [year] if month.nil?
       return [year, month] if day.nil?
 
@@ -191,26 +192,27 @@ module EDTF
         day %= 10
 
         if month == 2
-          day += (day == 9 && !::Date.gregorian_leap?(year)) ? 10 : 20
+          day += (day == 9 && !::Date.valid_date?(year, 2, 29, start)) ? 10 : 20
         else
           day += day < 2 ? 30 : 20
           day -= 10 if day > maxdays
         end
       end
 
-      day = 28 if month == 2 && day > 28 && !::Date.gregorian_leap?(year)
+      day = 28 if month == 2 && day > 28 && !::Date.valid_date?(year, 2, 29, start)
 
       [year, month, day]
     end
 
     # The lowest values the unspecified digits allow.
     # The year must not be negative; callers handle the sign.
-    def min(values)
+    # Leap years follow the calendar (a Ruby Date start).
+    def min(values, start = ::Date::GREGORIAN)
       year, month, day = values
       return [] if year.nil?
 
-      month = months(year, month, day).first if month && month?
       year = fill(year, '0') if year?
+      month = months(year, month, day, start).first if month && month?
       return [year] if month.nil?
       return [year, month] if day.nil?
 
@@ -236,16 +238,15 @@ module EDTF
 
     private
 
-    # The months the digits allow in which the day can fall
-    # (X2-3X is December); all of them if the day fits none.
-    def months(year, month, day)
+    # Possible months allowed by the pattern.
+    def months(year, month, day, start)
       _, digits, day_digits = pattern(year, month, day)
       months = (1..12).select { |m| digits.match?(format('%02d', m)) }
       return [month] if months.empty?
       return months if day.nil?
 
       first = (1..31).find { |d| day_digits.match?(format('%02d', d)) }
-      fitting = months.select { |m| first && first <= MAXDAYS[m - 1] }
+      fitting = months.select { |m| first && ::Date.valid_date?(year, m, first, start) }
       fitting.empty? ? months : fitting
     end
 

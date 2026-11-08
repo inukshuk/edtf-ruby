@@ -33,7 +33,6 @@ describe 'Migrating legacy strings with EDTF(string).edtf' do
     '-0000' => '0000',
     '{1960, 1961-12}' => '{1960,1961-12}',
     '2001-21^southern' => '2001-29',
-    '2001-02-03^julian' => '2001-02-03',
     '2016-05-02T24:00:00' => '2016-05-03T00:00:00',
     '2004T10:10:10' => '2004-01-01T10:10:10'
   }.each do |legacy, iso|
@@ -41,6 +40,11 @@ describe 'Migrating legacy strings with EDTF(string).edtf' do
       expect(EDTF(legacy).edtf).to eq(iso)
       expect(EDTF.parse(iso, legacy: false)).to eql(EDTF(legacy))
     end
+  end
+
+  it 'keeps calendars, which ISO 8601-2 strings do not name' do
+    expect(EDTF('1500-02-29^julian').edtf).to eq('1500-02-29')
+    expect(EDTF('1500-02-29^julian')).to eql(EDTF.parse('1500-02-29', calendar: :julian))
   end
 
   it 'raises for reversed intervals' do

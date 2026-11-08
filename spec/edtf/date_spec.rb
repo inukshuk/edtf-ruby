@@ -142,6 +142,13 @@ module EDTF
         expect(bounds('2004-X1-31')).to eq(%w[2004-01-31 2004-01-31])
       end
 
+      it 'pick a month in which the day falls in the year' do
+        expect(bounds('1900-X2-29')).to eq(%w[1900-12-29 1900-12-29])
+        expect(bounds('19XX-X2-29')).to eq(%w[1900-12-29 1999-12-29])
+        expect(bounds('2000-X2-29')).to eq(%w[2000-02-29 2000-12-29])
+        expect(EDTF.parse('1900-X2-29', calendar: :julian).begin.iso8601).to eq('1900-02-29')
+      end
+
       it 'leave out year 0 in negative years' do
         expect(bounds('-00XX')).to eq(%w[-0099-01-01 -0001-12-31])
         expect(bounds('-00X0')).to eq(%w[-0090-01-01 -0010-12-31])
@@ -168,6 +175,68 @@ module EDTF
 
       it 'needs a leap year among them' do
         expect(EDTF.parse('1X01-02-29')).to be_nil
+      end
+    end
+
+    describe 'calendars' do
+      let(:julian) { date(1500, 2, 29, calendar: :julian) }
+
+      it 'are proleptic Gregorian by default' do
+        expect(date(1500).calendar).to eq(:gregorian)
+        expect(date(1500).start).to eq(::Date::GREGORIAN)
+      end
+
+      it 'are any calendar Ruby supports' do
+        expect(julian.start).to eq(::Date::JULIAN)
+        expect(date(1500, calendar: :italy).calendar).to eq(:italy)
+        expect(date(1500, calendar: ::Date::ENGLAND).calendar).to eq(:england)
+        expect(date(1500, calendar: 2299170).calendar).to eq(2299170)
+        expect { date(1500, calendar: :hebrew) }.to raise_error(ArgumentError, /hebrew/)
+        expect { date(1500, 2, 29) }.to raise_error(ArgumentError)
+      end
+
+      it 'set the digits: dates are written in their calendar' do
+        expect(julian.edtf).to eq('1500-02-29')
+        expect(julian.jd).to eq(::Date.new(1500, 2, 29, ::Date::JULIAN).jd)
+        expect(julian.inspect).to eq('#<EDTF::Date 1500-02-29 julian>')
+      end
+
+      it 'set the bounds and steps' do
+        year = date(1500, calendar: :julian)
+        expect(year.to_range.minmax.map(&:jd)).to eq([
+          ::Date.new(1500, 1, 1, ::Date::JULIAN).jd, ::Date.new(1500, 12, 31, ::Date::JULIAN).jd
+        ])
+        expect(date(1500, 2, calendar: :julian).end.day).to eq(29)
+        expect(date(1500, 2, 28, calendar: :julian).succ).to eql(julian)
+        expect(date(1582, 10, 4, calendar: :italy).succ.edtf).to eq('1582-10-15')
+        expect(date(1500, 2, 9, unspecified: 'yyyymmxd', calendar: :julian).end.day).to eq(29)
+      end
+
+      it 'reject days skipped by a reform' do
+        expect { date(1582, 10, 10, calendar: :italy) }.to raise_error(ArgumentError)
+      end
+
+      it 'find leap days in years with unspecified digits' do
+        expect(date(1900, 2, 29, unspecified: 'yyxxmmdd', calendar: :julian).values).to eq([1900, 2, 29])
+      end
+
+      it 'are kept by #with and copies' do
+        expect(julian.with(precision: :month).calendar).to eq(:julian)
+        expect(Marshal.load(Marshal.dump(julian))).to eql(julian)
+      end
+
+      it 'are compared by eql? unless the dates are plain days' do
+        expect(date(1500, calendar: :julian)).not_to eql(date(1500, calendar: :italy))
+        expect(date(2000, calendar: :italy)).not_to eql(date(2000))
+        expect(julian).to eql(::Date.new(1500, 2, 29, ::Date::JULIAN))
+        expect(julian).to eql(::Date.jd(julian.jd, ::Date::GREGORIAN))
+        expect(julian).to eql(EDTF(::Date.jd(julian.jd, ::Date::GREGORIAN)))
+        expect(julian.hash).to eq(EDTF(::Date.jd(julian.jd, ::Date::GREGORIAN)).hash)
+      end
+
+      it 'convert to plain dates the Ruby way' do
+        expect(julian.gregorian).to be_instance_of(::Date).and have_attributes(month: 3, day: 10)
+        expect(julian.new_start(::Date::GREGORIAN).to_s).to eq('1500-03-10')
       end
     end
 

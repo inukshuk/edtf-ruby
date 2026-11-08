@@ -40,7 +40,7 @@ module EDTF
 
     attr_reader :year, :season
 
-    def initialize(year, season, uncertain: nil, approximate: nil, unspecified: nil)
+    def initialize(year, season, uncertain: nil, approximate: nil, unspecified: nil, calendar: nil)
       @year = Integer(year)
       @season = Integer(season)
       raise ArgumentError, "invalid season: #{season}" unless DIVISIONS.key?(@season)
@@ -48,10 +48,11 @@ module EDTF
       @uncertain = bits(uncertain)
       @approximate = bits(approximate)
       @unspecified = Bitmask.new(Bitmask.convert(unspecified) & Bitmask::YEAR)
+      @calendar = Period.calendar(calendar)
       freeze
     end
 
-    attr_reader :uncertain, :approximate, :unspecified
+    attr_reader :uncertain, :approximate, :unspecified, :calendar
 
     def precision
       :season
@@ -80,17 +81,17 @@ module EDTF
       check_keys!(changes, attributes)
 
       values = attributes.to_h { |name| [name, changes.fetch(name) { send(name) }] }
-      self.class.new(values.delete(:year), values.delete(:season), **values)
+      self.class.new(values.delete(:year), values.delete(:season), **values, calendar: calendar)
     end
 
     def begin
       first, = DIVISIONS[season]
-      ::Date.new(years.first, first, 1, ::Date::GREGORIAN)
+      ::Date.new(years.first, first, 1, Period.start(calendar))
     end
 
     def end
       first, months = DIVISIONS[season]
-      ::Date.new(years.last, first, 1, ::Date::GREGORIAN).next_month(months).prev_day
+      ::Date.new(years.last, first, 1, Period.start(calendar)).next_month(months).prev_day
     end
 
     # Returns the next season, or division of the same kind, in calendar order.
@@ -129,7 +130,7 @@ module EDTF
     protected
 
     def state
-      [year, season, uncertain.value, approximate.value, unspecified.value]
+      [year, season, uncertain.value, approximate.value, unspecified.value, calendar]
     end
 
     private
