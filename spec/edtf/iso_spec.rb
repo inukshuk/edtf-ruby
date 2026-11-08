@@ -1,13 +1,12 @@
-# The features run through the legacy grammar until the parser
-# tries the ISO grammar first; until then these examples check
-# that both grammars read ISO 8601-2 input alike.
+# Both grammars read ISO 8601-2 input alike,
+# so the ISO grammar can take over from the legacy grammar.
 module EDTF
   describe ISO do
     let(:grammar) { ISO.new }
-    let(:parser) { Parser.new(warn: false) }
+    let(:legacy) { Legacy.new }
 
-    def parse(input)
-      parser.send(:finish, grammar.parse(input))
+    def parse(grammar, input)
+      Parser.new.send(:finish, grammar.parse(input))
     end
 
     %w[
@@ -24,7 +23,7 @@ module EDTF
       {..1984,1990..} [1984,1990?] [1760-01,1760-02,1760-12..]
     ].each do |input|
       it "reads #{input} like the legacy grammar" do
-        expect(parse(input)).to eq(parser.parse!(input))
+        expect(parse(grammar, input)).to eq(parse(legacy, input))
       end
     end
 

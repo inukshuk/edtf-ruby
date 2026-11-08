@@ -35,6 +35,7 @@ rule
   date_time
     : date T time {
         year, month, day = val[0][:values]
+        deprecate :partial_date_time if day.nil?
         values = [year, month || 1, day || 1, *val[2][0, 3]]
         result = { type: :date_time, values: values }
         result[:offset] = val[2][3] if val[2].length > 3
@@ -52,7 +53,10 @@ rule
     ;
 
   midnight
-    : '2' '4' ':' '0' '0' ':' '0' '0'  { result = [24, 0, 0] }
+    : '2' '4' ':' '0' '0' ':' '0' '0' {
+        deprecate :midnight
+        result = [24, 0, 0]
+      }
     ;
 
   zone_offset
@@ -116,7 +120,6 @@ rule
   unknown
     : U U U U {
         result = date(0, unspecified: Bitmask::XXXX)
-        deprecate :unknown_date
       }
     ;
 
@@ -231,6 +234,7 @@ rule
   # Qualified seasons are an extension (season-uncertainty).
   season
     : year '-' season_number ua {
+        extension :season_uncertainty unless val[3].empty?
         season = { type: :season, values: [val[0], val[2]] }
         result = qualify(season, val[3], Bitmask::YM)
       }

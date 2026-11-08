@@ -34,6 +34,73 @@ module EDTF
       end
     end
 
+    describe 'options' do
+      it 'read legacy syntax by default' do
+        expect(parser.parse('2004/open')).not_to be_nil
+      end
+
+      it 'turn off legacy syntax with legacy: false' do
+        expect(Parser.new(legacy: false).parse('2004/open')).to be_nil
+        expect(Parser.new(legacy: false).parse('2004/..')).not_to be_nil
+      end
+
+      it 'turn off extensions with extensions: false' do
+        expect(Parser.new(extensions: false).parse('2001-21?')).to be_nil
+        expect(Parser.new(extensions: false).parse('2001-21')).not_to be_nil
+      end
+
+      it 'turn off extensions in legacy syntax too' do
+        expect(Parser.new(extensions: false).parse('2001-21?~')).to be_nil
+      end
+
+      it 'turn on the extensions given by name' do
+        parser = Parser.new(extensions: [:season_uncertainty])
+        expect(parser.parse('2001-21?')).not_to be_nil
+      end
+
+      it 'reject unknown extensions' do
+        expect { Parser.new(extensions: [:xyz]) }.to raise_error(ArgumentError, /xyz/)
+      end
+
+      it 'limit the level' do
+        expect(Parser.new(level: 0).parse('1984?')).to be_nil
+        expect(Parser.new(level: 1).parse('1984?')).not_to be_nil
+        expect(Parser.new(level: 1).parse('2004?-06')).to be_nil
+        expect { Parser.new(level: 3) }.to raise_error(ArgumentError)
+      end
+
+      it 'limit the year digits' do
+        expect(Parser.new(max_year_digits: 10).parse('Y1E9')).not_to be_nil
+        expect(Parser.new(max_year_digits: 10).parse('Y1E10')).to be_nil
+      end
+
+      it 'turn off legacy syntax and extensions with strict: true' do
+        strict = Parser.new(strict: true)
+        expect(strict.parse('2004/open')).to be_nil
+        expect(strict.parse('2001-21?')).to be_nil
+        expect(strict.parse('2004?-06~')).not_to be_nil
+      end
+
+      it 'given explicitly override strict: true' do
+        expect(Parser.new(strict: true, legacy: true).parse('2004/open')).not_to be_nil
+      end
+
+      it 'reject unknown options' do
+        expect { Parser.new(lenient: true) }.to raise_error(ArgumentError)
+      end
+    end
+
+    describe 'grammars' do
+      it 'read ISO input with the ISO grammar' do
+        expect(parser.parse!('2004/..')).not_to include(:legacy)
+        expect(parser).not_to be_legacy
+      end
+
+      it 'raise the ISO error when no grammar reads the input' do
+        expect { parser.parse!('2004/ope') }.to raise_error(Grammar::ParseError, /'o'/)
+      end
+    end
+
     describe 'results' do
       let(:parser) { Parser.new(warn: false) }
 
@@ -106,8 +173,10 @@ module EDTF
         '{1960, 1961-12}' => [:whitespace],
         '[1864 ..]' => [:whitespace],
         '2001-02-03^xyz' => [:caret],
-        'XXXX' => [:unknown_date],
-        'uuuu' => [:unspecified, :unknown_date],
+        'uuuu' => [:unspecified],
+        '2016-05-02T24:00:00' => [:midnight],
+        '2004T10:10:10' => [:partial_date_time],
+        'XXXX' => [],
         '1984%' => [],
         '2004/..' => [],
         '2004/' => [],
@@ -135,7 +204,7 @@ module EDTF
         expect(parser).to be_legacy
       end
 
-      it 'is false for input that only changes meaning' do
+      it 'is false for ISO input' do
         parser.parse!('XXXX')
         expect(parser).not_to be_legacy
       end

@@ -12,9 +12,9 @@ Feature: Parse date-times
       | 2001-02-03T09:30:01 | 2001-02-03T09:30:01 |
       | 1985-04-12T23:20:30 | 1985-04-12T23:20:30 |
 
-    # ISO 8601-1:2019/Amd 1 allows 24:00 as the end of a day.
-    @level0
-    Examples: Midnight at the end of a day
+    # ISO 8601-1 allows 24:00 only as the end of an interval.
+    @level0 @legacy
+    Examples: Legacy syntax: midnight at the end of a day
       | string              | date-time           |
       | 2016-05-02T24:00:00 | 2016-05-03T00:00:00 |
 
