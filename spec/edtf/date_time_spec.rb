@@ -212,9 +212,20 @@ module EDTF
 
     describe 'the end of a day' do
       it 'is written as 24:00 of the day before with t24: true' do
-        expect(time(2004, 1, 2, precision: :minute).edtf(t24: true)).to eq('2004-01-01T24:00')
-        expect(time(2004, 1, 2, offset: 60).edtf(t24: true)).to eq('2004-01-01T24:00:00+01:00')
-        expect(time(2004, 1, 2, 0, 0, 1).edtf(t24: true)).to eq('2004-01-02T00:00:01')
+        expect(time(2004, 1, 2, precision: :minute, t24: true).edtf).to eq('2004-01-01T24:00')
+        expect(time(2004, 1, 2, offset: 60, t24: true).edtf).to eq('2004-01-01T24:00:00+01:00')
+        expect(time(2004, 1, 2, t24: true)).to eql(time(2004, 1, 2))
+      end
+
+      it 'needs a time at midnight' do
+        expect { time(2004, 1, 2, 0, 0, 1, t24: true) }.to raise_error(ArgumentError)
+      end
+
+      it 'is kept by #with while the time stays at midnight' do
+        t = time(2004, 1, 2, t24: true)
+        expect(t.with(offset: 60)).to be_t24
+        expect(t.with(hour: 1)).not_to be_t24
+        expect(t.with(t24: false)).not_to be_t24
       end
     end
 

@@ -4,7 +4,7 @@ module EDTFHelpers
   PARTS = %i[year month day].freeze
 
   def parse(string)
-    EDTF.parse!(string)
+    EDTF.parse!(string, **(@options || {}))
   end
 
   # "2004-06" -> [2004, 6]; "-0999" -> [-999]
@@ -41,6 +41,11 @@ World(EDTFHelpers)
 # all other input must not.
 Before do |scenario|
   @legacy = scenario.source_tag_names.include?('@legacy')
+end
+
+# By default, 19XX and 196X are centuries and decades.
+Given('the century option is off') do
+  @options = { centuries: false }
 end
 
 Given('the date {string}') do |date|
@@ -90,6 +95,10 @@ end
 # The mask marks unspecified digits with X, e.g. "YYYX-MM-DD".
 Then('the unspecified digits should be {string}') do |mask|
   expect(@result.unspecified.to_s).to eq(mask)
+end
+
+Then('it should be a {word}') do |type|
+  expect(@result).to be_an_instance_of(EDTF.const_get(type.capitalize))
 end
 
 Then('it should cover {string}') do |date|

@@ -48,7 +48,12 @@ module EDTF
         '196' => { type: :decade, values: [196] },
         '-009~' => { type: :decade, values: [-9], approximate: Bitmask::YEAR },
         '19' => { type: :century, values: [19] },
-        '?19' => { type: :century, values: [19], uncertain: Bitmask::YEAR }
+        '?19' => { type: :century, values: [19], uncertain: Bitmask::YEAR },
+        '-01' => { type: :century, values: [-1] },
+        '19/20' => {
+          type: :interval,
+          values: [{ type: :century, values: [19] }, { type: :century, values: [20] }]
+        }
       }.each do |input, result|
         it "reads #{input}" do
           expect(grammar.parse(input)).to eq(result)
@@ -58,7 +63,7 @@ module EDTF
       %w[
         12345 1 -00 -000X 2004-2X 2004-00 2004-13 2004-42 2004-X4-31 2004-4X
         19-21 2001?-21 2001-?21 20XX-21 1X 2004?-06-11T10:10:10
-        [19,20] 2001-21/2001-22 {..~-0662} [..0000%..] {..1600-08-20..}
+        2001-21/2001-22 {..~-0662} [..0000%..] {..1600-08-20..}
         [1667,1670..1672-01]
       ].each do |input|
         it "rejects #{input}" do
@@ -89,10 +94,10 @@ module EDTF
         '2004-06-11T10' => time(10),
         '2004-06-11T10:30-04' => time(10, 30, offset: -240),
         '2004-06-11T10/2004-06-11T24' =>
-          interval(time(10), { type: :date_time, values: [2004, 6, 12, 0] }),
+          interval(time(10), time(24)),
         '2004-12-31/2004-12-31T24:00:00Z' => interval(
           { type: :date, values: [2004, 12, 31] },
-          { type: :date_time, values: [2005, 1, 1, 0, 0, 0], offset: 0 }
+          { type: :date_time, values: [2004, 12, 31, 24, 0, 0], offset: 0 }
         ),
         '/' => interval(:unknown, :unknown),
         '../..' => interval(:open, :open),

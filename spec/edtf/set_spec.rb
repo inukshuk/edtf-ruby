@@ -16,6 +16,10 @@ module EDTF
     end
 
     describe '#edtf' do
+      it 'writes its members in their own form' do
+        expect(Set.new(Century.new(19), Decade.new(201, short: true)).edtf).to eq('[19XX,201]')
+      end
+
       it 'wraps the members in brackets' do
         expect(Set.new.edtf).to eq('[]')
         expect(Set.new(Date.new(2016)).edtf).to eq('[2016]')
