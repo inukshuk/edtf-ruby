@@ -1,15 +1,17 @@
 EDTF-Ruby
 =========
-[![ci](https://github.com/inukshuk/edtf-ruby/actions/workflows/ci.yml/badge.svg)](https://github.com/inukshuk/edtf-ruby/actions/workflows/ci.yml)
-
 EDTF-Ruby comprises a parser and an API implementation
-of the [Extended Date/Time Format](https://www.loc.gov/standards/datetime/) (EDTF)
+of the [Extended Date/Time Format][edtf] (EDTF)
 as specified by ISO 8601-2.
 
 This is the development version of EDTF-Ruby 5.0,
 which switches from the EDTF draft syntax to ISO 8601-2.
-For EDTF-Ruby 4.x see the [legacy branch](https://github.com/inukshuk/edtf-ruby/tree/legacy);
-to upgrade, see [UPGRADING.md](UPGRADING.md).
+For EDTF-Ruby 4.x see the [legacy branch][legacy];
+to upgrade, see [UPGRADING.md][upgrading].
+
+[edtf]: https://www.loc.gov/standards/datetime/
+[legacy]: https://github.com/inukshuk/edtf-ruby/tree/legacy
+[upgrading]: UPGRADING.md
 
 
 Compatibility
@@ -29,12 +31,15 @@ and hour-only or basic-format offsets (`-04`, `+0230`).
 EDTF-Ruby still reads the draft syntax of earlier EDTF versions
 (`?~`, parentheses, `u`, `open`, `unknown`, …)
 and warns when deprecation warnings are enabled;
-see [Legacy syntax](#legacy-syntax).
+see [Legacy syntax][legacy-syntax].
 
 EDTF-Ruby is tested on Ruby 3.3 and later, and on JRuby.
 It does not depend on ActiveSupport,
 but works with it and with Rails;
-see [Rails and ActiveSupport](#rails-and-activesupport).
+see [Rails and ActiveSupport][rails].
+
+[legacy-syntax]: #legacy-syntax
+[rails]: #rails-and-activesupport
 
 
 Quickstart
@@ -51,7 +56,7 @@ which raise an ArgumentError instead.
     EDTF('2016-04~/2016-05')         #-> #<EDTF::Interval 2016-04~/2016-05>
 
 `EDTF()` also converts Ruby dates and times,
-parse results (see [Parser](#parser)),
+parse results (see [Parser][parser]),
 and returns EDTF objects unchanged.
 
     EDTF(Date.new(2016, 5, 31))      #-> #<EDTF::Date 2016-05-31>
@@ -100,6 +105,8 @@ Ruby's other constructors (such as `EDTF::Date.today`) are private,
 use `EDTF(Date.today)` instead.
 
     EDTF('2016-05?').with(approximate: true).edtf  #-> "2016-05%"
+
+[parser]: #parser
 
 
 Dates
@@ -435,7 +442,7 @@ EDTF-Ruby 5.0 will read the draft syntax only in a legacy mode.
 
 Contributing
 ------------
-The EDTF-Ruby source code is [hosted on GitHub](https://github.com/inukshuk/edtf-ruby).
+The EDTF-Ruby source code is [hosted on GitHub][github].
 You can check out a copy of the latest code using Git:
 
     $ git clone https://github.com/inukshuk/edtf-ruby.git
@@ -448,7 +455,7 @@ To get started, install the dependencies and run all tests:
 
 `rake` runs the specs, the specs with ActiveSupport loaded
 (`rake spec:active_support`, in their own process),
-and the Cucumber features (see [features/README.md](features/README.md)).
+and the Cucumber features (see [features/README.md][features]).
 
 If you change a grammar
 (`lib/edtf/iso.y` or `lib/edtf/legacy.y`),
@@ -456,10 +463,14 @@ regenerate the parsers with `bundle exec rake racc`.
 
 If you've found a bug or have a question,
 please open an issue on the
-[EDTF-Ruby issue tracker](https://github.com/inukshuk/edtf-ruby/issues).
+[EDTF-Ruby issue tracker][issues].
 Or, for extra credit, clone the EDTF-Ruby repository,
 write a failing example, fix the bug
 and submit a pull request.
+
+[github]: https://github.com/inukshuk/edtf-ruby
+[features]: features/README.md
+[issues]: https://github.com/inukshuk/edtf-ruby/issues
 
 
 Credits

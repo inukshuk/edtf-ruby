@@ -13,7 +13,7 @@ module EDTF
       open: '`open` is legacy syntax, use `..`',
       unknown: '`unknown` is legacy syntax, leave the end empty',
       unspecified: '`u` is legacy syntax, use `X`',
-      masked: '`198x` is legacy syntax, use `198` (decade) or `19` (century)',
+      masked: '`198x` is legacy syntax, use `198X`',
       lowercase_y: '`y` is legacy syntax, use `Y`',
       lowercase_e: '`e` is legacy syntax, use `E`',
       negative_zero: '`-0000` is legacy syntax, use `0000`',
