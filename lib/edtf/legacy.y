@@ -279,10 +279,10 @@ rule
 
   masked_precision
     : digit digit digit X {
-        result = { type: :decade, values: [number(val[0, 3])], level: 2 }
+        result = date(number(val[0, 3]) * 10, unspecified: Bitmask::YYYX)
       }
     | digit digit X X {
-        result = { type: :century, values: [number(val[0, 2])], level: 2 }
+        result = date(number(val[0, 2]) * 100, unspecified: Bitmask::YYXX)
       }
     ;
 

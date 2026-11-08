@@ -128,8 +128,8 @@ module EDTF
           { type: :date_time, values: [2016, 5, 2, 16, 54, 59], offset: -240, level: 0 },
         'Y170000002' => { type: :year, level: 1, values: [170000002] },
         'Y-17E7' => { type: :year, level: 2, values: [-170000000] },
-        '196x' => { type: :decade, values: [196], level: 2, legacy: true },
-        '19xx' => { type: :century, values: [19], level: 2, legacy: true },
+        '196x' => date(1960, unspecified: Bitmask::YYYX, level: 1, legacy: true),
+        '19xx' => date(1900, unspecified: Bitmask::YYXX, level: 1, legacy: true),
         '2001-21' => { type: :season, values: [2001, 21], level: 1 },
         '2001-21?' => { type: :season, values: [2001, 21], uncertain: Bitmask::YM, level: 2 },
         '2001-21^southern' =>
