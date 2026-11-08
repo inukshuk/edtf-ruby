@@ -2,7 +2,7 @@
 # so the ISO grammar can take over from the legacy grammar.
 module EDTF
   describe ISO do
-    let(:grammar) { ISO.new }
+    let(:grammar) { ISO.new(extensions: Grammar::EXTENSIONS) }
     let(:legacy) { Legacy.new }
 
     def parse(grammar, input)
@@ -48,6 +48,15 @@ module EDTF
         '199X?' => date(1990, unspecified: Bitmask::YYYX, uncertain: Bitmask::YEAR),
         '2001-33' => { type: :season, values: [2001, 33] },
         '2001-21~' => { type: :season, values: [2001, 21], approximate: Bitmask::YM },
+        '?2001-~21' => {
+          type: :season, values: [2001, 21], uncertain: Bitmask::YEAR, approximate: Bitmask::MONTH
+        },
+        '20XX-21' => { type: :season, values: [2000, 21], unspecified: Bitmask::YYXX },
+        '-000X-21' => { type: :season, values: [-1, 21], unspecified: Bitmask::YYYX },
+        '2001-21/2001-22' => {
+          type: :interval,
+          values: [{ type: :season, values: [2001, 21] }, { type: :season, values: [2001, 22] }]
+        },
         '196' => { type: :decade, values: [196] },
         '009~' => { type: :decade, values: [9], approximate: Bitmask::YEAR },
         '19' => { type: :century, values: [19] },
@@ -64,8 +73,8 @@ module EDTF
 
       %w[
         12345 1 -00 -01 -196 -009~ 2004-2X 2004-00 2004-13 2004-42 2004-X4-31 2004-4X
-        19-21 2001?-21 2001-?21 20XX-21 1X 2004?-06-11T10:10:10
-        2001-21/2001-22 {..~-0662} [..0000%..] {..1600-08-20..}
+        19-21 200X-21? 1X 2004?-06-11T10:10:10
+        [2001-21,2001-22] 2001-21/.. 2001-21/2002 {..~-0662} [..0000%..] {..1600-08-20..}
         [1667,1670..1672-01]
       ].each do |input|
         it "rejects #{input}" do

@@ -108,11 +108,10 @@ module EDTF
 
       year = self.year + shift
       unless unspecified.zero? || shift.zero?
-        year = (shift.positive? ^ written_year.negative? ? years.last : years.first) + shift
-        year = Period.written_year(year, year_zero?)
+        year = Period.written_year((shift.positive? ? years.last : years.first) + shift, year_zero?)
         sign = year.negative? ? -1 : 1
         year = unspecified.min([year.abs])[0]
-        year = unspecified.least_year(year) if year.zero? && !year_zero?
+        year = unspecified.least_year(year) if year.zero? && (sign.negative? || !year_zero?)
         year = Period.astronomical_year(sign * year, year_zero?)
       end
 
@@ -166,7 +165,7 @@ module EDTF
 
       low, = unspecified.min([written_year.abs])
       high, = unspecified.max([written_year.abs])
-      low = unspecified.least_year(low) if low.zero? && !year_zero?
+      low = unspecified.least_year(low) if low.zero? && (written_year.negative? || !year_zero?)
       years = written_year.negative? ? [-high, -low] : [low, high]
       years.map { |year| Period.astronomical_year(year, year_zero?) }.then { |a, b| a..b }
     end

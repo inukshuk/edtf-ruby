@@ -17,6 +17,9 @@ see [UPGRADING.md](UPGRADING.md) for the API changes and migration.
   (`centuries: false` to turn off).
 * Dates, seasons, decades and centuries in other calendars Ruby supports
   (`calendar: :julian`, also a parse option); legacy `^julian` is kept.
+* Seasons may be qualified by part (`2001?-21`) and have unspecified years
+  (`200X-21`); season intervals (`2001-21/2002-22`) are an extension,
+  off by default (`extensions: [:season_intervals]`).
 * `year_zero: false` reads and writes years before 1 historically
   (`-0001` is 1 BC, stored as year 0).
 * Reversed intervals and years beyond 100 digits are rejected.

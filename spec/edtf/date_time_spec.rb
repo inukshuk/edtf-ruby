@@ -125,7 +125,10 @@ module EDTF
       let(:t) { EDTF.parse('2004-01-01T10:00:00+05:00') }
 
       it 'returns plain times from math, getutc and getlocal' do
-        expect(t + 60).to be_instance_of(::Time)
+        expect(t + 60).to be_instance_of(::Time).and have_attributes(utc_offset: 18_000)
+        expect(t - 60).to be_instance_of(::Time)
+        expect([t.round, t.floor, t.ceil]).to all(be_instance_of(::Time))
+        expect(EDTF('2004-01-01T10:00:00Z') + 1).to be_utc
         expect(t.getutc).to be_instance_of(::Time).and eq(t)
         expect(t.getlocal('+01:00').hour).to eq(6)
       end

@@ -58,6 +58,21 @@ module EDTF
         expect(parser.parse('2001-21?')).not_to be_nil
       end
 
+      it 'read season intervals only with the season_intervals extension' do
+        expect(parser.parse('2001-21/2001-22')).to be_nil
+        expect(parser.parse('2001-21?')).not_to be_nil
+        expect(Parser.new(extensions: true).parse('2001-21/2001-22')).not_to be_nil
+        intervals = Parser.new(extensions: [:season_intervals])
+        expect(intervals.parse('2001-21/2001-22')).not_to be_nil
+        expect(intervals.parse('2001-21?')).to be_nil
+      end
+
+      it 'read qualified parts and unspecified years of seasons by default' do
+        expect(parser.parse('2001?-21')).not_to be_nil
+        expect(parser.parse('200X-21')).to include(unspecified: Bitmask::YYYX, level: 2)
+        expect(Parser.new(extensions: false).parse('2001?-21')).to be_nil
+      end
+
       it 'reject unknown extensions' do
         expect { Parser.new(extensions: [:xyz]) }.to raise_error(ArgumentError, /xyz/)
       end

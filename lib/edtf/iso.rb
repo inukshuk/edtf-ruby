@@ -55,7 +55,7 @@ module_eval(<<'...end iso.y/module_eval...', 'iso.y', 263)
       epoch(raw[0], digits[0], left | right)
     when [4, 2]
       if raw[1] > 12 && !digits[1].include?('X')
-        season_of(negative ? -raw[0] : raw[0], raw[1], parts)
+        season_of(negative, raw[0], raw[1], parts)
       else
         calendar_date(negative, digits, raw, parts)
       end
@@ -112,20 +112,46 @@ module_eval(<<'...end iso.y/module_eval...', 'iso.y', 263)
   end
 
   # Seasons 21-24 are level 1, 25-41 level 2.
-  # Only seasons as a whole can be qualified (season-uncertainty).
-  def season_of(year, number, parts)
-    (year_left, year_digits, year_right), (left, _, right) = parts
-
+  # Qualified seasons and seasons with unspecified year digits
+  # are an extension (season-uncertainty, from edtf.js).
+  def season_of(negative, year, number, parts)
     unless (21..41).cover?(number)
       raise ArgumentError, "invalid month or season #{number}"
     end
 
-    if year_digits.include?('X') || [year_left, year_right, left].any?(&:any?)
-      raise ArgumentError, "invalid season #{year_digits}-#{number}"
+    mask = Bitmask.compute(parts[0][1].delete_prefix('-').ljust(8, '0'))
+    year = Bitmask.new(mask).least_year(year) if negative && year.zero?
+    result = { type: :season, values: [negative ? -year : year, number] }
+
+    parts.each_with_index do |(left, _, right), i|
+      qualify(result, left, PART_NAMES[i])
+      qualify(result, right, PART_NAMES[0..i])
     end
 
-    extension :season_uncertainty if right.any?
-    qualify({ type: :season, values: [year, number] }, right, Bitmask::YM)
+    qualified = result.key?(:uncertain) || result.key?(:approximate)
+    extension :season_uncertainty if qualified || !mask.zero?
+    return result if mask.zero?
+
+    raise ArgumentError, 'unspecified digits cannot be qualified' if qualified
+    result.merge(unspecified: mask)
+  end
+
+  # Seasons are interval ends as an extension (season-intervals, from edtf.js),
+  # checked by season_interval.
+  def interval_end(result)
+    result[:type] == :season ? result : member(result)
+  end
+
+  # Season intervals go from season to season.
+  def season_interval(from, to)
+    seasons = [from, to].map { |value| value.is_a?(Hash) && value[:type] == :season }
+
+    if seasons.any?
+      raise ArgumentError, 'invalid season in an interval' unless seasons.all?
+      extension :season_intervals
+    end
+
+    interval(from, to)
   end
 
   # Interval ends and set members are dates, decades or centuries.
@@ -804,14 +830,14 @@ module_eval(<<'.,.,', 'iso.y', 126)
 
 module_eval(<<'.,.,', 'iso.y', 136)
   def _reduce_41(val, _values, result)
-     result = interval(val[0], val[2])
+     result = season_interval(val[0], val[2])
     result
   end
 .,.,
 
 module_eval(<<'.,.,', 'iso.y', 137)
   def _reduce_42(val, _values, result)
-     result = interval(val[0], val[2])
+     result = season_interval(val[0], val[2])
     result
   end
 .,.,
@@ -867,7 +893,7 @@ module_eval(<<'.,.,', 'iso.y', 154)
 
 module_eval(<<'.,.,', 'iso.y', 155)
   def _reduce_50(val, _values, result)
-     result = member(val[0])
+     result = interval_end(val[0])
     result
   end
 .,.,
