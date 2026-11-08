@@ -277,9 +277,14 @@ module EDTF
         expect(date(1500, calendar: :julian)).not_to eql(date(1500, calendar: :italy))
         expect(date(2000, calendar: :italy)).not_to eql(date(2000))
         expect(julian).to eql(::Date.new(1500, 2, 29, ::Date::JULIAN))
-        expect(julian).to eql(::Date.jd(julian.jd, ::Date::GREGORIAN))
         expect(julian).to eql(EDTF(::Date.jd(julian.jd, ::Date::GREGORIAN)))
         expect(julian.hash).to eq(EDTF(::Date.jd(julian.jd, ::Date::GREGORIAN)).hash)
+      end
+
+      # Ruby dates of the same day in two calendars are eql? on MRI, not on JRuby.
+      it 'are compared with plain dates like Ruby dates' do
+        gregorian = ::Date.jd(julian.jd, ::Date::GREGORIAN)
+        expect(julian.eql?(gregorian)).to eq(::Date.new(1500, 2, 29, ::Date::JULIAN).eql?(gregorian))
       end
 
       it 'convert to plain dates the Ruby way' do
@@ -614,9 +619,10 @@ module EDTF
 
       it 'an unqualified day eql?s a plain date, with the same hash' do
         d = EDTF.parse('2004-06-11')
-        expect(d).to eql(::Date.new(2004, 6, 11))
-        expect(::Date.new(2004, 6, 11)).to eql(d)
-        expect(d.hash).to eq(::Date.new(2004, 6, 11).hash)
+        plain = ::Date.new(2004, 6, 11, ::Date::GREGORIAN)
+        expect(d).to eql(plain)
+        expect(plain).to eql(d)
+        expect(d.hash).to eq(plain.hash)
         expect(EDTF.parse('2004-06-11?')).not_to eql(::Date.new(2004, 6, 11))
       end
     end
