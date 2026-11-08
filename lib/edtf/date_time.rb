@@ -28,11 +28,17 @@ module EDTF
       now at mktime local utc gm parse strptime iso8601 xmlschema rfc2822 rfc822 httpdate
     ].select { |name| ::Time.respond_to?(name) })
 
-    # Marshal uses Time's own _dump and _load, then freezes.
+    # Marshal stores the values and attributes:
+    # Time's own format keeps no instance variables on JRuby.
     undef_method :marshal_dump, :marshal_load
 
-    def self._load(...)
-      super.freeze
+    def _dump(_level)
+      Marshal.dump([year, month, day, hour, min, sec + subsec, offset, precision, t24?, year_zero?])
+    end
+
+    def self._load(data)
+      *values, offset, precision, t24, year_zero = Marshal.load(data)
+      new(*values, offset: offset, precision: precision, t24: t24, year_zero: year_zero)
     end
 
     # The offset is given in minutes; nil means a floating time.
@@ -209,6 +215,14 @@ module EDTF
     %i[getutc getgm getlocal].each do |name|
       define_method(name) { |*args|
         ::Time.at(self, in: utc_offset).send(name, *args)
+      }
+    end
+
+    # Time math returns plain times (on JRuby, too, which keeps the class).
+    %i[+ - round floor ceil].each do |name|
+      define_method(name) { |*args|
+        plain = utc? ? ::Time.at(self).utc : ::Time.at(self, in: utc_offset)
+        plain.public_send(name, *args)
       }
     end
 
