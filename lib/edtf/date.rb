@@ -276,12 +276,15 @@ module EDTF
       define_method(name) { plain.send(name) }
     end
 
+    # Ruby's Date Marshal data keeps instance variables on MRI only.
     def marshal_dump
-      DATE_MARSHAL[:marshal_dump].bind_call(self)
+      variables = instance_variables.to_h { |name| [name, instance_variable_get(name)] }
+      [DATE_MARSHAL[:marshal_dump].bind_call(self), variables]
     end
 
-    def marshal_load(data)
+    def marshal_load((data, variables))
       DATE_MARSHAL[:marshal_load].bind_call(self, data)
+      variables.each { |name, value| instance_variable_set(name, value) }
       freeze
     end
 
