@@ -3,36 +3,20 @@ Changelog
 
 5.0.0 (unreleased)
 ------------------
-EDTF-Ruby 5.0 switches from the EDTF draft syntax to ISO 8601-2.
-See [UPGRADING.md](UPGRADING.md) for how to upgrade from 4.x.
+EDTF-Ruby 5.0 switches from the EDTF draft syntax to ISO 8601-2;
+see [UPGRADING.md](UPGRADING.md) for the API changes and migration.
 
-* Output is ISO 8601-2 only
-  (`%`, qualification from the left, `..` and empty interval ends, `X`, `Z`).
-* New types, all frozen periods with plain dates as `begin` and `end`:
-  `EDTF::Date < Date`, `EDTF::DateTime < Time`, `EDTF::Decade`,
-  `EDTF::Century`, `EDTF::Season`, `EDTF::Interval`,
-  `EDTF::Set` (one of) and `EDTF::List` (all of).
-* `with` returns modified copies; there are no bang! methods.
-* No core patches: `Date.edtf`, `Date#edtf`, `Range#edtf` and the
-  EDTF methods on Ruby's `Date` and `DateTime` are gone.
-  `EDTF()` converts strings, parse results, Ruby dates and times.
-* `EDTF::Parser` returns parse results (frozen hashes) with levels;
-  `EDTF()` builds objects from them, also when read back from JSON.
-* Unspecified digits widen a date's bounds; `XXXX` is a date with an
-  unspecified year (`EDTF::Unknown` is gone).
-* Seasons 21–41 with their bounds; southern seasons step in calendar order.
-  Legacy hemisphere qualifiers become hemisphere seasons
-  (`2001-21^southern` is `2001-29`).
-* Intervals iterate by the units of their start, without its qualifiers;
-  with an open or unknown end, they iterate endlessly, like endless ranges.
-* Date-times without an offset are floating, never in the system's zone.
-* `==` means the same period; `eql?` and `hash` the same EDTF expression.
-* `to_s` and `as_json` return the EDTF string.
+* Reads all of ISO 8601-2 levels 0–2; writes ISO 8601-2 only.
+* Still reads the draft syntax (legacy syntax), with a grammar of its own;
+  `legacy: false` or `strict: true` turn it off.
+* New frozen types, all periods with plain dates as bounds;
+  no core patches: `EDTF()` converts strings, parse results, dates and times.
+* `EDTF::Parser` returns plain parse results and takes the options
+  `level:`, `extensions:`, `legacy:`, `strict:` and `max_year_digits:`.
+* `19XX` and `196X` are read as centuries and decades
+  (`centuries: false` to turn off).
+* Reversed intervals and years beyond 100 digits are rejected.
 * ActiveSupport is no longer a dependency; EDTF-Ruby works with it.
-* Years beyond 100 digits are rejected (`Y3E9999999` would otherwise
-  compute a ten-million-digit year).
-* Legacy syntax allows spaces only around `,` and `..` in sets;
-  other whitespace (`2004/ ..`, tabs, newlines) is rejected.
 
 4.1.1
 -----
