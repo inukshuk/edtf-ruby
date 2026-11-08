@@ -37,8 +37,7 @@ module EDTF
 
     # The offset is given in minutes; nil means a floating time.
     # Minutes and seconds beyond the precision must be zero.
-    # With t24: true, midnight is written as 24:00 of the day before,
-    # as an interval that ends with that day (see #edtf).
+    # A t24 time is midnight, written as 24:00 of the day before.
     def initialize(
       year,
       month,
@@ -82,7 +81,7 @@ module EDTF
       !!@t24
     end
 
-    # Returns the offset in minutes, or nil for floating times.
+    # In minutes, nil for floating times.
     def offset
       utc_offset / 60 unless floating?
     end
@@ -128,8 +127,8 @@ module EDTF
 
     alias_method :end, :begin
 
-    # Returns the next hour, minute or second, by precision
-    # (or the one by units later).
+    # Returns the next hour, minute, or second,
+    # depending on the time's precision.
     def succ(by = 1)
       time = self + by * PRECISION[precision][1]
       values = [
@@ -204,8 +203,6 @@ module EDTF
       }
     end
 
-    # Returns the date-time's EDTF string;
-    # a t24 time is written as 24:00 of the day before.
     def edtf
       date, hours = self.begin, hour
       date, hours = date - 1, 24 if t24?

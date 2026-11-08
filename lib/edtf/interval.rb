@@ -17,7 +17,7 @@ module EDTF
   #
   #     EDTF('2003/2006').cover? EDTF('2004-03')     -> true
   #
-  # Each end is a date or season, :open (no bound, written ..),
+  # Each end is a period, :open (no bound, written ..),
   # or :unknown (written empty).
   # The bounds of open or unknown ends are nil.
   class Interval
@@ -34,7 +34,6 @@ module EDTF
       freeze
     end
 
-    # Returns the interval's precision.
     # Mixed precisions are not supported;
     # the start's precision takes precedence (the end's if the start has no date).
     def precision

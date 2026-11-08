@@ -1,8 +1,7 @@
 # -*- racc -*-
 #
 # The ISO 8601-2 grammar: EDTF levels 0 to 2 and EDTF-Ruby's extensions.
-# Each section below covers one level;
-# rules for extensions are marked as such.
+# Section headers give the levels; rules for extensions are marked.
 #
 # Regenerate lib/edtf/iso.rb with `bundle exec rake racc`.
 

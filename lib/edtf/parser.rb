@@ -174,7 +174,7 @@ module EDTF
         unless qs.empty?
           level = [
             level,
-            qs.all?(Grammar::DATE_MASKS[n]) ? 1 : 2
+            qs.all?(Date::MASKS[n]) ? 1 : 2
           ].max
         end
 

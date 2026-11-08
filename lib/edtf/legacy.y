@@ -6,7 +6,7 @@
 # Regenerate lib/edtf/legacy.rb with `bundle exec rake racc`.
 
 class EDTF::Legacy < EDTF::Grammar
-  token T Z E X U UNKNOWN OPEN LONGYEAR UNMATCHED DOTS UA PUA
+  token T Z E X U UNKNOWN OPEN LONGYEAR UNMATCHED DOTS UA
 
   expect 0
 
@@ -103,9 +103,6 @@ rule
   minute : d00_59 ;
   second : d00_59 ;
 
-  # Completely covered by level_1_interval
-  # level_0_interval : date '/' date { result = Interval.new(val[0], val[1]) }
-
   # ---- Level 1 Extension Rules ----
 
   # NB: Uncertain/approximate Dates are covered by the Level 2 rules
@@ -122,8 +119,6 @@ rule
         result = date(0, unspecified: Bitmask::XXXX)
       }
     ;
-
-  # uncertain_or_approximate_date : date UA { result = qualify(val[0], val[1]) }
 
   unspecified
     : unspecified_year  { result = date(val[0][0], unspecified: val[0][1]) }
@@ -451,11 +446,6 @@ rule
         result = qualify(result, val[6], [:day])
         result = qualify(result, val[8], [:month, :day])
       }
-    # | '(' pua_year '-(' month ')' UA ')' UA '-' day ua {
-    #     result = val[1].change(:month => val[3], :day => val[9])
-    #     result = qualify(result, val[5], [:month])
-    #     result = [qualify(result, val[7], [:year]), true]
-    # }
     ;
 
   ua
@@ -561,12 +551,6 @@ end
     when @src.scan(/\(/)
       deprecate :parentheses
       ['(', @src.matched]
-    # when @src.scan(/\)\?~-/)
-    #   [:PUA, [:uncertain!, :approximate!]]
-    # when @src.scan(/\)\?-/)
-    #   [:PUA, [:uncertain!]]
-    # when @src.scan(/\)~-/)
-    #   [:PUA, [:approximate!]]
     when @src.scan(/\)/)
       [')', @src.matched]
     when @src.scan(/[\[{]/)

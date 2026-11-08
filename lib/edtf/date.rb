@@ -25,7 +25,7 @@ module EDTF
     PRECISION = %i[year month day].freeze
 
     # The masks that cover the whole date, by number of values.
-    WHOLE = [
+    MASKS = [
       nil,
       Bitmask::YEAR,
       Bitmask::YM,
@@ -65,7 +65,6 @@ module EDTF
 
     attr_reader :significant
 
-    # Returns this date's precision.
     # Instances created by Ruby's own date methods skip initialize;
     # they behave like unqualified dates with day precision.
     def precision
@@ -96,8 +95,6 @@ module EDTF
       qualified?(unspecified, part)
     end
 
-    # Returns an array of the year, month, and day values
-    # filtered by the date's precision.
     # Unspecified digits hold their lowest values.
     def values
       [year, month, day].take(values_count)
@@ -169,7 +166,6 @@ module EDTF
 
     alias next succ
 
-    # Returns the previous day, month, or year depending on the date's precision.
     def prev(by = 1)
       succ(-by)
     end
@@ -220,7 +216,6 @@ module EDTF
       define_method(name) { |n = 1| plain.send(name, n) }
     end
 
-    # Calendar conversions return plain dates of the same day.
     def new_start(start = ::Date::ITALY)
       plain.new_start(start)
     end
@@ -259,7 +254,6 @@ module EDTF
       plain? ? plain.hash : [jd, *state].hash
     end
 
-    # Returns the date's EDTF string.
     def edtf
       return "Y#{year}#{"S#{significant}" if significant}" if long_year?
       return "#{'-' if year.negative?}#{format('%04d', year.abs)}S#{significant}" if significant
@@ -284,16 +278,14 @@ module EDTF
     private
 
     def bits(value)
-      mask = value == true ? WHOLE[values_count] : Bitmask.convert(value)
-      Bitmask.new(mask & WHOLE[values_count])
+      mask = value == true ? MASKS[values_count] : Bitmask.convert(value)
+      Bitmask.new(mask & MASKS[values_count])
     end
 
     def values_count
       PRECISION.index(precision) + 1
     end
 
-    # Returns true if this date has year precision and the year exceeds four digits;
-    # such years are written with a Y prefix.
     def long_year?
       precision == :year && year.abs > 9999
     end
@@ -331,7 +323,6 @@ module EDTF
       part.nil? ? !mask.zero? : mask.intersect?(part)
     end
 
-    # True for a single day without qualifiers.
     def plain?
       precision == :day && uncertain.zero? && approximate.zero? && unspecified.zero?
     end
@@ -348,8 +339,6 @@ module EDTF
       [year.abs, *values.drop(1)]
     end
 
-    # The highest (or lowest) values the unspecified digits allow,
-    # with the sign of negative years restored.
     def bound_values(forward:)
       values = forward ? unspecified.max(absolute_values) : unspecified.min(absolute_values)
       values[0] = -values[0] if year.negative?

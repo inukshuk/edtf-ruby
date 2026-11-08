@@ -35,11 +35,9 @@ module EDTF
       edtf
     end
 
-    # Returns true if the other period, date or time lies within this period,
-    # like Range#cover?: by the bounds only, not by precision.
-    # (Intervals, sets, and lists also have #include?.)
-    # A time counts as its own calendar date in its own offset.
-    # Open or unknown ends (nil bounds) reach without limit.
+    # Like Range#cover?: by the bounds only, not by precision.
+    # A time counts as its own calendar date in its own offset;
+    # nil bounds (open or unknown ends) reach without limit.
     def cover?(other)
       return false unless other.is_a?(Period) || Period.bounds(other)
 
@@ -104,7 +102,6 @@ module EDTF
       end
     end
 
-    # Plain dates are days; plain times are instants within a day.
     def self.precision(other) # :nodoc:
       case other
       when Period
@@ -116,7 +113,6 @@ module EDTF
       end
     end
 
-    # The sort keys of a plain date or time.
     def self.keys(other) # :nodoc:
       first, last = bounds(other)
       [[0, first], [0, last], PRECISIONS.index(precision(other))] if first
@@ -124,13 +120,11 @@ module EDTF
 
     private
 
-    # Raises like Data#with for keywords outside allowed.
     def check_keys!(changes, allowed)
       unknown = changes.keys - allowed
       raise ArgumentError, "unknown keyword#{'s' if unknown.length > 1}: #{unknown.join(', ')}" unless unknown.empty?
     end
 
-    # The sort keys: begin, end and precision.
     # Open bounds (nil) sort first at the start and last at the end.
     # Private, but read from other periods too (see <=>).
     def keys
