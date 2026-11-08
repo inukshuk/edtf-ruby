@@ -2,8 +2,8 @@ module EDTF
 
   # Decades and centuries are dedicated periods,
   # which always cover 10 or 100 years, respectively:
-  # the years that begin with the given digits
-  # (196 is 1960 to 1969, -19 is -1999 to -1900).
+  # the years that begin with the given digits (196 is 1960 to 1969).
+  # As in ISO 8601, they are never negative.
   # Epoch is their shared base.
   #
   # Qualifiers apply to the whole epoch:
@@ -23,7 +23,7 @@ module EDTF
 
     def initialize(value, uncertain: false, approximate: false, short: false)
       @value = Integer(value)
-      raise ArgumentError, "invalid #{precision}: #{value}" unless @value.abs < 10**self.class.digits
+      raise ArgumentError, "invalid #{precision}: #{value}" unless (0...10**self.class.digits).cover?(@value)
 
       @uncertain = qualified?(uncertain)
       @approximate = qualified?(approximate)
@@ -83,7 +83,7 @@ module EDTF
     end
 
     def edtf
-      string = "#{'-' if value.negative?}#{format("%0#{self.class.digits}d", value.abs)}"
+      string = format("%0#{self.class.digits}d", value)
       string += 'X' * (4 - self.class.digits) unless short?
       string += '?' if uncertain?
       string += '~' if approximate?
@@ -100,9 +100,8 @@ module EDTF
 
     # The first and last year.
     def span
-      low = value.abs * self.class.span
-      high = low + self.class.span - 1
-      value.negative? ? -high..-low : low..high
+      low = value * self.class.span
+      low..(low + self.class.span - 1)
     end
 
     # Qualifiers are booleans, or bitmasks as in parse results.

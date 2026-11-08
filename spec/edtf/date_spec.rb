@@ -131,6 +131,25 @@ module EDTF
       end
     end
 
+    describe 'unspecified digits' do
+      def bounds(string)
+        EDTF.parse(string, centuries: false).to_range.minmax.map(&:iso8601)
+      end
+
+      it 'pick a month in which the day falls' do
+        expect(bounds('2004-X2-3X')).to eq(%w[2004-12-30 2004-12-31])
+        expect(bounds('2004-0X-31')).to eq(%w[2004-01-31 2004-08-31])
+        expect(bounds('2004-X1-31')).to eq(%w[2004-01-31 2004-01-31])
+      end
+
+      it 'leave out year 0 in negative years' do
+        expect(bounds('-00XX')).to eq(%w[-0099-01-01 -0001-12-31])
+        expect(bounds('-00X0')).to eq(%w[-0090-01-01 -0010-12-31])
+        expect(EDTF.parse('-00XX', centuries: false).edtf).to eq('-00XX')
+        expect(EDTF.parse('-01XX', centuries: false).succ.edtf).to eq('-00XX')
+      end
+    end
+
     describe 'February 29 in a year with unspecified digits' do
       let(:d) { EDTF.parse('19XX-02-29', centuries: false) }
 

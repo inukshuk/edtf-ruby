@@ -50,10 +50,11 @@ module EDTF
       if centuries && result[:values].length == 1
         epoch, size = EPOCHS[result[:unspecified]]
 
-        if epoch
-          year = result[:values][0]
-          value = year.negative? ? -(-year / size) : year / size
-          return epoch.new(value, **result.slice(:uncertain, :approximate))
+        year = result[:values][0]
+
+        # Negative years stay dates: decades and centuries are not negative.
+        if epoch && !year.negative?
+          return epoch.new(year / size, **result.slice(:uncertain, :approximate))
         end
       end
 

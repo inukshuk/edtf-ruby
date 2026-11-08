@@ -18,16 +18,23 @@ module EDTF
 
     class << self
       def compute(pattern)
-        pattern.each_char.with_index.sum { |c, idx| DIGIT.match?(c) ? 2**idx : 0 }
+        pattern.each_char.with_index.sum { |c, idx|
+          DIGIT.match?(c) ? 2**idx : 0
+        }
       end
 
       def convert(value)
         case value
-        when Bitmask then value.value
-        when Integer then value
-        when true then YMD
-        when false, nil then 0
-        when Array then value.sum { |part| convert(part) }
+        when Bitmask
+          value.value
+        when Integer
+          value
+        when true
+          YMD
+        when false, nil
+          0
+        when Array
+          value.sum { |part| convert(part) }
         when Symbol, String
           case value.to_s
           when /\Adays?\z/i then DAY
@@ -168,23 +175,18 @@ module EDTF
       year, month, day = values
       return [] if year.nil?
 
+      month = months(year, month, day).last if month && month?
       year = fill(year, '9') if year?
       return [year] if month.nil?
-
-      case value & MONTH
-      when MONTH then month = 12
-      when MX then month = month < 10 ? 9 : 12
-      when XM
-        month %= 10
-        month += 10 if month < 3
-      end
       return [year, month] if day.nil?
 
       maxdays = MAXDAYS[month - 1]
 
       case value & DAY
-      when DAY then day = maxdays
-      when DX then day = [maxdays, day + (9 - day % 10)].min
+      when DAY
+        day = maxdays
+      when DX
+        day = [maxdays, day + (9 - day % 10)].min
       when XD
         day %= 10
 
@@ -207,16 +209,9 @@ module EDTF
       year, month, day = values
       return [] if year.nil?
 
+      month = months(year, month, day).first if month && month?
       year = fill(year, '0') if year?
       return [year] if month.nil?
-
-      # Unlike edtf.js, X2 and X0 keep their known digit
-      # (February and the 10th, not January and the 1st).
-      case value & MONTH
-      when MONTH then month = 1
-      when MX then month = month < 10 ? 1 : 10
-      when XM then month = month % 10 == 0 ? 10 : month % 10
-      end
       return [year, month] if day.nil?
 
       case value & DAY
@@ -232,7 +227,33 @@ module EDTF
       masks(%w[YYYY MM DD], symbol).join('-')
     end
 
+    # The lowest year above 0 the year digits allow:
+    # negative years have no year 0 (-00XX ends with -0001).
+    def least_year(year)
+      digits = pattern(year)[0]
+      (1..9999).find { |n| digits.match?(format('%04d', n)) }
+    end
+
     private
+
+    # The months the digits allow in which the day can fall
+    # (X2-3X is December); all of them if the day fits none.
+    def months(year, month, day)
+      _, digits, day_digits = pattern(year, month, day)
+      months = (1..12).select { |m| digits.match?(format('%02d', m)) }
+      return [month] if months.empty?
+      return months if day.nil?
+
+      first = (1..31).find { |d| day_digits.match?(format('%02d', d)) }
+      fitting = months.select { |m| first && first <= MAXDAYS[m - 1] }
+      fitting.empty? ? months : fitting
+    end
+
+    # Patterns that match the values the digits allow, e.g. /\A19..\z/.
+    def pattern(*values)
+      strings = values.compact.each_with_index.map { |v, i| format(i.zero? ? '%04d' : '%02d', v) }
+      masks(strings, '.').map { |digits| Regexp.new("\\A#{digits}\\z") }
+    end
 
     def fill(year, digit)
       masks([format('%04d', year)], digit)[0].to_i
