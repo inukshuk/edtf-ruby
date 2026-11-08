@@ -87,3 +87,16 @@ Feature: Parse intervals
     Examples: Qualification to the left of a part
       | string                  | start       | end         |
       | 2004-06-~01/2004-06-~20 | 2004-06-~01 | 2004-06-~20 |
+
+  # ISO 8601-1 allows 24:00, the end of a day, only as an interval's end;
+  # it is the next day's 00:00.
+  Scenario Outline: Midnight at the end of an interval
+    When I parse "<string>"
+    Then its EDTF string should be "<edtf>"
+
+    @level0
+    Examples:
+      | string                                    | edtf                                      |
+      | 2016-05-02T10:00/2016-05-02T24:00         | 2016-05-02T10:00/2016-05-03T00:00         |
+      | 2016-12-31T10:00:00Z/2016-12-31T24:00:00Z | 2016-12-31T10:00:00Z/2017-01-01T00:00:00Z |
+      | 2016-05-02/2016-05-02T24                  | 2016-05-02/2016-05-03T00                  |

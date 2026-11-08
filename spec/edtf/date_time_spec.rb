@@ -166,6 +166,58 @@ module EDTF
       end
     end
 
+    describe 'hour and minute precision' do
+      let(:hour) { EDTF.parse('2004-01-01T10') }
+      let(:minute) { EDTF.parse('2004-01-01T10:30Z') }
+
+      it 'is read from the string' do
+        expect([hour.precision, minute.precision]).to eq(%i[hour minute])
+        expect([hour.values, minute.values]).to eq([[2004, 1, 1, 10], [2004, 1, 1, 10, 30]])
+        expect([hour.edtf, minute.edtf]).to eq(%w[2004-01-01T10 2004-01-01T10:30Z])
+      end
+
+      it 'is given by keyword, without minutes or seconds beyond it' do
+        expect(time(2004, 1, 1, 10, precision: :hour)).to eql(hour)
+        expect { time(2004, 1, 1, 10, 30, precision: :hour) }.to raise_error(ArgumentError)
+        expect { time(2004, 1, 1, precision: :day) }.to raise_error(ArgumentError)
+      end
+
+      it 'covers the instants within the hour or minute' do
+        expect(hour).to be_cover(EDTF.parse('2004-01-01T10:59:59'))
+        expect(hour).to be_cover(minute.with(offset: nil))
+        expect(hour).not_to be_cover(EDTF.parse('2004-01-01T11'))
+        expect(minute).to be_cover(::Time.utc(2004, 1, 1, 10, 30, 59.9r))
+        expect(EDTF.parse('2004-01-01T10:00:00')).not_to be_cover(hour)
+      end
+
+      it 'orders by the first instant, then the last' do
+        second = EDTF.parse('2004-01-01T10:00:00')
+        expect([hour, second, EDTF.parse('2004-01-01T10:00')].sort.map(&:edtf))
+          .to eq(%w[2004-01-01T10:00:00 2004-01-01T10:00 2004-01-01T10])
+        expect(hour).not_to eq(second)
+        expect(hour).not_to eql(second)
+      end
+
+      it 'steps by its unit' do
+        expect(hour.succ.edtf).to eq('2004-01-01T11')
+        expect(minute.prev(31).edtf).to eq('2004-01-01T09:59Z')
+      end
+
+      it 'changes with #with, dropping what lies beyond' do
+        expect(EDTF.parse('2004-01-01T10:30:15').with(precision: :hour).edtf).to eq('2004-01-01T10')
+        expect(hour.with(precision: :minute, min: 5).edtf).to eq('2004-01-01T10:05')
+        expect { hour.with(min: 5) }.to raise_error(ArgumentError)
+      end
+    end
+
+    describe 'the end of a day' do
+      it 'is written as 24:00 of the day before with t24: true' do
+        expect(time(2004, 1, 2, precision: :minute).edtf(t24: true)).to eq('2004-01-01T24:00')
+        expect(time(2004, 1, 2, offset: 60).edtf(t24: true)).to eq('2004-01-01T24:00:00+01:00')
+        expect(time(2004, 1, 2, 0, 0, 1).edtf(t24: true)).to eq('2004-01-02T00:00:01')
+      end
+    end
+
     describe 'construction and copies' do
       let(:t) { EDTF.parse('2004-01-01T10:10:10') }
 

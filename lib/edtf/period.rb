@@ -6,7 +6,7 @@ module EDTF
     include Comparable
 
     PRECISIONS = %i[
-      century decade year season month day second
+      century decade year season month day hour minute second
     ].freeze
 
     def earliest

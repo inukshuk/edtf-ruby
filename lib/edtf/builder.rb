@@ -47,7 +47,17 @@ module EDTF
       values = result[:values].take(6)
       ms = result[:values][6]
       values[5] += Rational(ms, 1000) if ms
-      DateTime.new(*values, offset: result[:offset])
+
+      precision = {
+        4 => :hour,
+        5 => :minute
+      }.fetch(values.length, :second)
+
+      DateTime.new(
+        *values,
+        offset: result[:offset],
+        precision: precision
+      )
     end
 
     def year(result)

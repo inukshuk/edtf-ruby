@@ -212,6 +212,13 @@ module EDTF
         expect(interval('unknown/2006').edtf).to eq('/2006')
         expect(interval('1984?/2004?~').edtf).to eq('1984?/2004%')
       end
+
+      it 'writes an end at midnight as 24:00 with t24: true' do
+        i = EDTF.parse('2004-01-01T10:00/2004-01-01T24:00')
+        expect(i.edtf).to eq('2004-01-01T10:00/2004-01-02T00:00')
+        expect(i.edtf(t24: true)).to eq('2004-01-01T10:00/2004-01-01T24:00')
+        expect(EDTF.parse('2004-01-02T00:00/..').edtf(t24: true)).to eq('2004-01-02T00:00/..')
+      end
     end
 
     describe '#with' do
