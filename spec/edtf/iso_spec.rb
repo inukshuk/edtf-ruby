@@ -34,10 +34,10 @@ module EDTF
 
       {
         '?2004-06-~11' =>
-          date(2004, 6, 11, uncertain: Bitmask::YEAR, approximate: Bitmask::DAY),
+          date(2004, 6, 11, uncertain: Bitmask::YEAR, approximate: Bitmask::DAY, level: 2),
         '2001-?09~-09' =>
-          date(2001, 9, 9, uncertain: Bitmask::MONTH, approximate: Bitmask::YM),
-        '?-2004' => date(-2004, uncertain: Bitmask::YEAR),
+          date(2001, 9, 9, uncertain: Bitmask::MONTH, approximate: Bitmask::YM, level: 2),
+        '?-2004' => date(-2004, uncertain: Bitmask::YEAR, level: 2),
         '1XX3' => date(1003, unspecified: Bitmask.compute('yxxymmdd')),
         '2016-01-X0' => date(2016, 1, 10, unspecified: Bitmask::XD),
         '1984-1X' => date(1984, 10, unspecified: Bitmask::MX),

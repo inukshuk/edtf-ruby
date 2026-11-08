@@ -93,6 +93,8 @@ module_eval(<<'...end iso.y/module_eval...', 'iso.y', 263)
       qualify(result, right, PART_NAMES[0..i])
     end
 
+    # Level 1 qualifies only at the end (2001?); ?2001 is level 2.
+    result[:level] = 2 if parts.any? { |left, _, _| left.any? }
     result
   end
 
