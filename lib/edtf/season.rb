@@ -36,7 +36,7 @@ module EDTF
       [33, 34, 35, 36], [37, 38, 39], [40, 41]
     ].freeze
 
-    WHOLE = Bitmask::YM
+    MASK = Bitmask::YM
 
     attr_reader :year, :season
 
@@ -135,8 +135,8 @@ module EDTF
     private
 
     def bits(value)
-      mask = value == true ? WHOLE : Bitmask.convert(value)
-      Bitmask.new(mask & WHOLE)
+      mask = value == true ? MASK : Bitmask.convert(value)
+      Bitmask.new(mask & MASK)
     end
 
     def qualified?(mask, part)

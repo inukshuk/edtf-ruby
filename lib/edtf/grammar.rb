@@ -12,16 +12,14 @@ module EDTF
       day:   Bitmask::DAY
     }.freeze
 
-    DATE_MASKS = [
-      nil, Bitmask::YEAR, Bitmask::YM, Bitmask::YMD
-    ].freeze
-
     EXTENSIONS = %i[season_uncertainty basic_offset].freeze
 
     class ParseError < ArgumentError; end
 
     attr_reader :deprecations
 
+    # Exponents let short strings stand for huge years (Y3E9999999 has ten
+    # million digits); years beyond max_year_digits are rejected unread.
     def initialize(extensions: EXTENSIONS, max_year_digits: 100)
       @extensions = extensions
       @max_year_digits = max_year_digits
@@ -53,7 +51,8 @@ module EDTF
     end
 
     # Rejects days the month cannot have.
-    # With leap: true, February 29 is allowed in any year,
+    # With leap: true, February 29 is allowed in any year
+    # (unspecified years always include a leap year).
     def check_day(year, month, day, leap: false)
       max = Bitmask::MAXDAYS[month - 1]
       max = 28 if month == 2 && !leap && !::Date.gregorian_leap?(year)
@@ -66,7 +65,7 @@ module EDTF
       [year, month, day]
     end
 
-    # Returns the number written with the given digits.
+    # [1, 9, 8, 4] -> 1984
     def number(digits)
       digits.reduce(0) { |n, digit| 10 * n + digit }
     end
@@ -103,7 +102,7 @@ module EDTF
     def qualify(result, qualifiers, parts = nil)
       mask = case parts
         when nil
-          DATE_MASKS[result[:values].length]
+          Date::MASKS[result[:values].length]
         when Integer
           parts
         else

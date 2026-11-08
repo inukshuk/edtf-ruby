@@ -42,7 +42,6 @@ module EDTF
       values.empty?
     end
 
-    # The precision of the first member.
     def precision
       members.first&.precision
     end
@@ -75,7 +74,6 @@ module EDTF
       self
     end
 
-    # An empty set covers nothing.
     def cover?(other)
       !empty? && super
     end

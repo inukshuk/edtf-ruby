@@ -10,7 +10,6 @@ module EDTF
   #   Year    11110000
   #
   # Bitmasks are immutable: combining or qualifying returns a new one.
-  # Months are 1-based throughout.
   class Bitmask < Data.define(:value)
 
     DIGIT = /\A[xX]\z/
