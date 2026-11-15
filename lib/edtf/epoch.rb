@@ -21,9 +21,18 @@ module EDTF
 
     attr_reader :value, :calendar
 
-    def initialize(value, uncertain: false, approximate: false, short: false, calendar: nil, year_zero: true)
+    def initialize(
+      value,
+      uncertain: false,
+      approximate: false,
+      short: false,
+      calendar: nil,
+      year_zero: true
+    )
       @value = Integer(value)
-      raise ArgumentError, "invalid #{precision}: #{value}" unless (0...10**self.class.digits).cover?(@value)
+      unless (0...10**self.class.digits).cover?(@value)
+        raise ArgumentError, "invalid #{precision}: #{value}"
+      end
 
       @uncertain = qualified?(uncertain)
       @approximate = qualified?(approximate)
@@ -118,9 +127,13 @@ module EDTF
     # Qualifiers are booleans, or bitmasks as in parse results.
     def qualified?(qualifier)
       case qualifier
-      when true, false, nil then !!qualifier
-      when Integer then !qualifier.zero?
-      else raise ArgumentError, "invalid qualifier: #{qualifier.inspect} (an epoch is qualified as a whole)"
+      when true, false, nil
+        !!qualifier
+      when Integer
+        !qualifier.zero?
+      else
+        raise ArgumentError, "invalid qualifier: #{qualifier.inspect} " \
+          '(an epoch is qualified as a whole)'
       end
     end
   end

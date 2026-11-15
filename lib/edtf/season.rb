@@ -1,6 +1,7 @@
 module EDTF
 
-  # EDTF covers seasons and other divisions of a year (ISO 8601-2 codes 21–41),
+  # EDTF covers seasons and other divisions of a year
+  # (ISO 8601-2 codes 21–41),
   # and EDTF-Ruby provides a dedicated class for them:
   #
   #   21–24  spring, summer, autumn, winter (meteorological, northern)
@@ -40,10 +41,20 @@ module EDTF
 
     attr_reader :year, :season
 
-    def initialize(year, season, uncertain: nil, approximate: nil, unspecified: nil, calendar: nil, year_zero: true)
+    def initialize(
+      year,
+      season,
+      uncertain: nil,
+      approximate: nil,
+      unspecified: nil,
+      calendar: nil,
+      year_zero: true
+    )
       @year = Integer(year)
       @season = Integer(season)
-      raise ArgumentError, "invalid season: #{season}" unless DIVISIONS.key?(@season)
+      unless DIVISIONS.key?(@season)
+        raise ArgumentError, "invalid season: #{season}"
+      end
 
       @uncertain = bits(uncertain)
       @approximate = bits(approximate)
@@ -86,8 +97,17 @@ module EDTF
       attributes = %i[year season uncertain approximate unspecified]
       check_keys!(changes, attributes)
 
-      values = attributes.to_h { |name| [name, changes.fetch(name) { send(name) }] }
-      self.class.new(values.delete(:year), values.delete(:season), **values, calendar: calendar, year_zero: year_zero?)
+      values = attributes.to_h { |name|
+        [name, changes.fetch(name) { send(name) }]
+      }
+
+      self.class.new(
+        values.delete(:year),
+        values.delete(:season),
+        **values,
+        calendar: calendar,
+        year_zero: year_zero?
+      )
     end
 
     def begin
@@ -97,7 +117,8 @@ module EDTF
 
     def end
       first, months = DIVISIONS[season]
-      ::Date.new(years.last, first, 1, Period.start(calendar)).next_month(months).prev_day
+      date = ::Date.new(years.last, first, 1, Period.start(calendar))
+      date.next_month(months).prev_day
     end
 
     # Returns the next season, or division of the same kind, in calendar order.
@@ -108,10 +129,13 @@ module EDTF
 
       year = self.year + shift
       unless unspecified.zero? || shift.zero?
-        year = Period.written_year((shift.positive? ? years.last : years.first) + shift, year_zero?)
+        bound = shift.positive? ? years.last : years.first
+        year = Period.written_year(bound + shift, year_zero?)
         sign = year.negative? ? -1 : 1
         year = unspecified.min([year.abs])[0]
-        year = unspecified.least_year(year) if year.zero? && (sign.negative? || !year_zero?)
+        if year.zero? && (sign.negative? || !year_zero?)
+          year = unspecified.least_year(year)
+        end
         year = Period.astronomical_year(sign * year, year_zero?)
       end
 
@@ -131,7 +155,11 @@ module EDTF
       return sign + unspecified.masks(values).join('-') unless unspecified.zero?
 
       values = uncertain.marks(values, '?') unless uncertain.zero?
-      values = approximate.marks(values, '~').map { |value| value.sub(/~\?|\?~/, '%') } unless approximate.zero?
+      unless approximate.zero?
+        values = approximate.marks(values, '~').map { |value|
+          value.sub(/~\?|\?~/, '%')
+        }
+      end
 
       sign + values.join('-')
     end
@@ -139,8 +167,15 @@ module EDTF
     protected
 
     def state
-      [year, season, uncertain.value, approximate.value, unspecified.value, calendar,
-        year_zero? || unspecified.zero?]
+      [
+        year,
+        season,
+        uncertain.value,
+        approximate.value,
+        unspecified.value,
+        calendar,
+        year_zero? || unspecified.zero?
+      ]
     end
 
     private
@@ -165,9 +200,13 @@ module EDTF
 
       low, = unspecified.min([written_year.abs])
       high, = unspecified.max([written_year.abs])
-      low = unspecified.least_year(low) if low.zero? && (written_year.negative? || !year_zero?)
+      if low.zero? && (written_year.negative? || !year_zero?)
+        low = unspecified.least_year(low)
+      end
+
       years = written_year.negative? ? [-high, -low] : [low, high]
-      years.map { |year| Period.astronomical_year(year, year_zero?) }.then { |a, b| a..b }
+      first, last = years.map { |y| Period.astronomical_year(y, year_zero?) }
+      first..last
     end
   end
 

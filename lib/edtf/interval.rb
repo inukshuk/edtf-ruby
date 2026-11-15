@@ -5,7 +5,8 @@ module EDTF
   # when generating the set of contained values and for membership tests.
   # All tests are implemented without iteration.
   #
-  # For example, the interval "2003/2006" covers the years 2003, 2004, 2005 and 2006.
+  # For example, the interval "2003/2006"
+  # covers the years 2003, 2004, 2005 and 2006.
   # Converting the interval to an array results in an array
   # containing exactly four dates with year precision.
   # This is also reflected in membership tests.
@@ -22,7 +23,8 @@ module EDTF
   # The bounds of open or unknown ends are nil.
   class Interval
     include Enumerable
-    include Period # after Enumerable, so ActiveSupport's Enumerable#as_json doesn't win
+    # After Enumerable, so ActiveSupport's Enumerable#as_json doesn't win.
+    include Period
 
     ENDS = %i[open unknown].freeze
 
@@ -36,7 +38,8 @@ module EDTF
     end
 
     # Mixed precisions are not supported;
-    # the start's precision takes precedence (the end's if the start has no date).
+    # the start's precision takes precedence
+    # (the end's if the start has no date).
     def precision
       [from, to].find { |value| value.is_a?(Period) }&.precision
     end
@@ -77,11 +80,14 @@ module EDTF
     # yielding each unit that begins within the interval,
     # without the qualifiers of the start:
     # 1980-08?/1994 yields the months from 1980-08 to 1994-12.
-    # Like endless ranges, intervals with an open or unknown end iterate endlessly;
+    # Like endless ranges,
+    # intervals with an open or unknown end iterate endlessly;
     # those without a dated start raise a RangeError.
     def each
       return to_enum(:each) unless block_given?
-      raise RangeError, "cannot iterate the interval #{edtf} without a start" if ENDS.include?(from)
+      if ENDS.include?(from)
+        raise RangeError, "cannot iterate the interval #{edtf} without a start"
+      end
 
       unit = unqualified(from)
       while within?(unit)
@@ -92,7 +98,10 @@ module EDTF
     end
 
     def to_a
-      raise RangeError, "cannot convert the endless interval #{edtf} to an array" if endless?
+      if endless?
+        raise RangeError,
+          "cannot convert the endless interval #{edtf} to an array"
+      end
 
       super
     end
@@ -112,7 +121,16 @@ module EDTF
     end
 
     def edtf
-      [from, to].map { |value| value == :open ? '..' : value == :unknown ? '' : value.edtf }.join('/')
+      [from, to].map { |value|
+        case value
+        when :open
+          '..'
+        when :unknown
+          ''
+        else
+          value.edtf
+        end
+      }.join('/')
     end
 
     protected
@@ -139,17 +157,23 @@ module EDTF
 
     def within?(unit)
       case to
-      when *ENDS then true
-      when ::Time then unit <= to
-      else unit.begin <= self.end
+      when *ENDS
+        true
+      when ::Time
+        unit <= to
+      else
+        unit.begin <= self.end
       end
     end
 
     def unqualified(period)
       case period
-      when Date, Season then period.with(uncertain: nil, approximate: nil)
-      when Epoch then period.with(uncertain: false, approximate: false)
-      else period
+      when Date, Season
+        period.with(uncertain: nil, approximate: nil)
+      when Epoch
+        period.with(uncertain: false, approximate: false)
+      else
+        period
       end
     end
 
@@ -164,9 +188,12 @@ module EDTF
 
     def coerce_end(value)
       case value
-      when *ENDS, Period then value
-      when ::Date then EDTF(value)
-      else raise ArgumentError, "invalid interval end: #{value.inspect}"
+      when *ENDS, Period
+        value
+      when ::Date
+        EDTF(value)
+      else
+        raise ArgumentError, "invalid interval end: #{value.inspect}"
       end
     end
   end

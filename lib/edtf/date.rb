@@ -16,7 +16,7 @@ module EDTF
   # Dates can also be uncertain, approximate, or have unspecified digits,
   # marked by bitmasks.
   #
-  # Years of any size are written with a Y prefix beyond four digits (Y170000002),
+  # Years of any size are written with a Y prefix beyond four digits (Y17002),
   # and may have significant digits (1950S2 spans 1900 to 1999).
   #
   # Dates are frozen; use `with` for a modified copy.
@@ -49,7 +49,9 @@ module EDTF
       iso8601 rfc3339 xmlschema rfc2822 rfc822 httpdate jisx0301
     ].select { |name| ::Date.respond_to?(name) })
 
-    DATE_MARSHAL = %i[marshal_dump marshal_load].to_h { |name| [name, ::Date.instance_method(name)] }.freeze
+    DATE_MARSHAL = %i[marshal_dump marshal_load].to_h { |name|
+      [name, ::Date.instance_method(name)]
+    }.freeze
     private_constant :DATE_MARSHAL
 
     # JRuby's Date.new is a native Date.civil that skips initialize.
@@ -57,18 +59,31 @@ module EDTF
       allocate.tap { |date| date.send(:initialize, ...) }
     end
 
-    def initialize(year, month = nil, day = nil, uncertain: nil, approximate: nil, unspecified: nil, significant: nil, calendar: nil, year_zero: true)
+    def initialize(
+      year,
+      month = nil,
+      day = nil,
+      uncertain: nil,
+      approximate: nil,
+      unspecified: nil,
+      significant: nil,
+      calendar: nil,
+      year_zero: true
+    )
       values = [year, month, day].compact
       raise ArgumentError, 'day given without month' if day && month.nil?
 
       start = Period.start(calendar)
       if month == 2 && day == 29
-        year = Date.leap_years(year, unspecified, start, year_zero).first || year
+        leap = Date.leap_years(year, unspecified, start, year_zero).first
+        year = leap || year
       end
 
       # Ruby's Date#initialize takes other arguments on JRuby;
       # both read the day from a plain date's Marshal data.
-      DATE_MARSHAL[:marshal_load].bind_call(self, ::Date.civil(year, month || 1, day || 1, start).marshal_dump)
+      DATE_MARSHAL[:marshal_load].bind_call(
+        self,
+        ::Date.civil(year, month || 1, day || 1, start).marshal_dump)
 
       @precision = PRECISION[values.length - 1]
       @uncertain = bits(uncertain)
@@ -95,17 +110,20 @@ module EDTF
     # February 29 in a year with unspecified digits (19XX-02-29)
     # falls in the leap years the digits allow;
     # such a date stores the first one (1904).
-    def self.leap_years(year, unspecified, start = ::Date::GREGORIAN, year_zero = true) # :nodoc:
+    def self.leap_years(year, unspecified, start, year_zero) # :nodoc:
       written = Period.written_year(year, year_zero)
-      pattern = Bitmask.new(unspecified).masks([format('%04d', written.abs)])[0]
+      mask = Bitmask.new(unspecified)
+      pattern = mask.masks([format('%04d', written.abs)])[0]
       return [year] unless pattern.include?('X')
 
       digits = Regexp.new("\\A#{pattern.gsub('X') { '\\d' }}\\z")
       sign = written.negative? ? -1 : 1
 
       (year_zero ? 0 : 1).upto(9999).filter_map do |n|
+        next unless digits.match?(format('%04d', n))
+
         year = Period.astronomical_year(sign * n, year_zero)
-        year if digits.match?(format('%04d', n)) && ::Date.valid_date?(year, 2, 29, start)
+        year if ::Date.valid_date?(year, 2, 29, start)
       end
     end
 
@@ -152,15 +170,27 @@ module EDTF
       check_keys!(changes, ATTRIBUTES)
 
       precision = changes.fetch(:precision, self.precision).to_sym
-      raise ArgumentError, "invalid precision: #{precision.inspect}" unless PRECISION.include?(precision)
+      unless PRECISION.include?(precision)
+        raise ArgumentError, "invalid precision: #{precision.inspect}"
+      end
 
       count = PRECISION.index(precision) + 1
       beyond = PRECISION.drop(count) & changes.keys
-      raise ArgumentError, "#{beyond.join(' and ')} beyond #{precision} precision" unless beyond.empty?
+      unless beyond.empty?
+        raise ArgumentError,
+          "#{beyond.join(' and ')} beyond #{precision} precision"
+      end
+
+      values = PRECISION.take(count).map { |name|
+        changes.fetch(name) { send(name) }
+      }
+      qualifiers = QUALIFIERS.to_h { |name|
+        [name, changes.fetch(name) { send(name) }]
+      }
 
       self.class.new(
-        *PRECISION.take(count).map { |name| changes.fetch(name) { send(name) } },
-        **QUALIFIERS.to_h { |name| [name, changes.fetch(name) { send(name) }] },
+        *values,
+        **qualifiers,
         calendar: calendar,
         year_zero: year_zero?
       )
@@ -172,7 +202,12 @@ module EDTF
       return ::Date.new(leap_years.min, 2, 29, start) if leap_day?
 
       year, month, day = unspecified.min(absolute_values, start)
-      year = written_year.negative? ? -unspecified.max([written_year.abs])[0] : nonzero(year)
+      year =
+        if written_year.negative?
+          -unspecified.max([written_year.abs])[0]
+        else
+          nonzero(year)
+        end
 
       ::Date.new(astronomical(year), month || 1, day || 1, start)
     end
@@ -183,7 +218,9 @@ module EDTF
       return ::Date.new(leap_years.max, 2, 29, start) if leap_day?
 
       year, month, day = unspecified.max(absolute_values, start)
-      year = -least(unspecified.min([written_year.abs])[0]) if written_year.negative?
+      if written_year.negative?
+        year = -least(unspecified.min([written_year.abs])[0])
+      end
       year = astronomical(year)
 
       return ::Date.new(year, 12, 31, start) if month.nil?
@@ -196,24 +233,39 @@ module EDTF
     # Returns the next day, month, or year depending on the date's precision.
     # Unspecified digits step by the unit they leave open (201X -> 202X).
     def succ(by = 1)
-      year, month, day = unspecified.zero? ? values : bound_values(forward: by.positive? ^ written_year.negative?)
+      forward = by.positive? ^ written_year.negative?
+      year, month, day =
+        unspecified.zero? ? values : bound_values(forward: forward)
 
       values =
         case precision
-        when :year then [year + by]
-        when :month then (year * 12 + month - 1 + by).divmod(12).then { |y, m| [y, m + 1] }
-        else (::Date.new(year, month, day, start) + by).then { |d| [d.year, d.month, d.day] }
+        when :year
+          [year + by]
+        when :month
+          y, m = (year * 12 + month - 1 + by).divmod(12)
+          [y, m + 1]
+        else
+          date = ::Date.new(year, month, day, start) + by
+          [date.year, date.month, date.day]
         end
 
       # Keep the lowest values the unspecified digits allow, as parsing does.
       unless unspecified.zero?
         written = Period.written_year(values[0], year_zero?)
         values = unspecified.min([written.abs, *values.drop(1)], start)
-        values[0] = astronomical(written.negative? ? -least(values[0]) : nonzero(values[0]))
+        year = written.negative? ? -least(values[0]) : nonzero(values[0])
+        values[0] = astronomical(year)
       end
 
-      self.class.new(*values, uncertain: uncertain, approximate: approximate, unspecified: unspecified,
-        significant: significant, calendar: calendar, year_zero: year_zero?)
+      self.class.new(
+        *values,
+        uncertain: uncertain,
+        approximate: approximate,
+        unspecified: unspecified,
+        significant: significant,
+        calendar: calendar,
+        year_zero: year_zero?
+      )
     end
 
     alias next succ
@@ -264,7 +316,9 @@ module EDTF
       plain << other
     end
 
-    %i[next_day prev_day next_month prev_month next_year prev_year].each do |name|
+    %i[
+      next_day prev_day next_month prev_month next_year prev_year
+    ].each do |name|
       define_method(name) { |n = 1| plain.send(name, n) }
     end
 
@@ -278,7 +332,9 @@ module EDTF
 
     # Ruby's Date Marshal data keeps instance variables on MRI only.
     def marshal_dump
-      variables = instance_variables.to_h { |name| [name, instance_variable_get(name)] }
+      variables = instance_variables.to_h { |name|
+        [name, instance_variable_get(name)]
+      }
       [DATE_MARSHAL[:marshal_dump].bind_call(self), variables]
     end
 
@@ -311,16 +367,24 @@ module EDTF
 
     def edtf
       year = written_year
-      return "Y#{year}#{"S#{significant}" if significant}" if long_year?
-      return "#{'-' if year.negative?}#{format('%04d', year.abs)}S#{significant}" if significant
-
       sign = year.negative? ? '-' : ''
-      values = [year, *self.values.drop(1)].each_with_index.map { |value, idx| format(idx.zero? ? '%04d' : '%02d', value.abs) }
+      suffix = "S#{significant}" if significant
+
+      return "Y#{year}#{suffix}" if long_year?
+      return "#{sign}#{format('%04d', year.abs)}#{suffix}" if significant
+
+      values = [year, *self.values.drop(1)].each_with_index.map { |value, i|
+        format(i.zero? ? '%04d' : '%02d', value.abs)
+      }
 
       return sign + unspecified.masks(values).join('-') unless unspecified.zero?
 
       values = uncertain.marks(values, '?') unless uncertain.zero?
-      values = approximate.marks(values, '~').map { |value| value.sub(/~\?|\?~/, '%') } unless approximate.zero?
+      unless approximate.zero?
+        values = approximate.marks(values, '~').map { |value|
+          value.sub(/~\?|\?~/, '%')
+        }
+      end
 
       sign + values.join('-')
     end
@@ -330,8 +394,14 @@ module EDTF
     # Plain days compare by day like Ruby dates, whatever their calendar.
     # Year zero matters only to unspecified year digits (00XX).
     def state
-      state = [precision, uncertain.value, approximate.value, unspecified.value, significant,
-        year_zero? || !unspecified.year?]
+      state = [
+        precision,
+        uncertain.value,
+        approximate.value,
+        unspecified.value,
+        significant,
+        year_zero? || !unspecified.year?
+      ]
       plain? ? state : state << calendar
     end
 
@@ -353,9 +423,18 @@ module EDTF
     # Masks cover four-digit years only,
     # and EDTF does not qualify long years or years with significant digits.
     def check_digits
-      raise ArgumentError, 'years beyond four digits need year precision' if written_year.abs > 9999 && precision != :year
-      raise ArgumentError, 'significant digits need year precision' if significant && precision != :year
-      raise ArgumentError, "invalid significant digits: #{significant}" if significant && significant < 1
+      if written_year.abs > 9999 && precision != :year
+        raise ArgumentError, 'years beyond four digits need year precision'
+      end
+
+      if significant && precision != :year
+        raise ArgumentError, 'significant digits need year precision'
+      end
+
+      if significant && significant < 1
+        raise ArgumentError, "invalid significant digits: #{significant}"
+      end
+
       unless unspecified.zero? || (uncertain.zero? && approximate.zero?)
         raise ArgumentError, 'unspecified digits cannot be qualified'
       end
@@ -363,7 +442,8 @@ module EDTF
       return unless long_year? || significant
 
       unless [uncertain, approximate, unspecified].all?(&:zero?)
-        raise ArgumentError, 'long years and significant digits cannot be qualified or unspecified'
+        raise ArgumentError, 'long years and significant digits ' \
+          'cannot be qualified or unspecified'
       end
     end
 
@@ -394,7 +474,8 @@ module EDTF
     end
 
     def plain?
-      precision == :day && uncertain.zero? && approximate.zero? && unspecified.zero?
+      precision == :day && unspecified.zero? &&
+        uncertain.zero? && approximate.zero?
     end
 
     def atomic?
@@ -428,7 +509,13 @@ module EDTF
     end
 
     def bound_values(forward:)
-      values = forward ? unspecified.max(absolute_values, start) : unspecified.min(absolute_values, start)
+      values =
+        if forward
+          unspecified.max(absolute_values, start)
+        else
+          unspecified.min(absolute_values, start)
+        end
+
       values[0] = astronomical(written_year.negative? ? -values[0] : values[0])
       values
     end

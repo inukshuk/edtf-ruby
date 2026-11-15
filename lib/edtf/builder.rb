@@ -21,7 +21,8 @@ module EDTF
       when :open, :unknown, 'open', 'unknown'
         result.to_sym
       when Array
-        build(result[0], centuries: centuries)..build(result[1], centuries: centuries)
+        from, to = result.map { |value| build(value, centuries: centuries) }
+        from..to
       when Hash
         result = result.transform_keys(&:to_sym)
         type = result[:type].to_s.to_sym
@@ -54,7 +55,8 @@ module EDTF
 
         # Negative years stay dates: decades and centuries are not negative.
         if epoch && !year.negative?
-          return epoch.new(year / size, **result.slice(:uncertain, :approximate, :calendar, :year_zero))
+          return epoch.new(year / size, **result.slice(
+            :uncertain, :approximate, :calendar, :year_zero))
         end
       end
 
@@ -104,7 +106,8 @@ module EDTF
     end
 
     def year(result)
-      Date.new(astronomical(result)[0], **result.slice(:significant, :calendar, :year_zero))
+      Date.new(astronomical(result)[0],
+        **result.slice(:significant, :calendar, :year_zero))
     end
 
     # Decades and centuries in results were written 196 and 19.
@@ -131,9 +134,12 @@ module EDTF
 
     def hemisphere(qualifier, season)
       case qualifier
-      when /\Anorth/i then season + 4
-      when /\Asouth/i then season + 8
-      else season
+      when /\Anorth/i
+        season + 4
+      when /\Asouth/i
+        season + 8
+      else
+        season
       end
     end
 
@@ -144,7 +150,9 @@ module EDTF
         build(value, centuries: centuries)
       }
 
-      to = to.with(t24: true) if to.is_a?(DateTime) && end_of_day?(result[:values][1])
+      if to.is_a?(DateTime) && end_of_day?(result[:values][1])
+        to = to.with(t24: true)
+      end
       Interval.new(from, to)
     end
 

@@ -9,7 +9,8 @@ module EDTF
     # Legacy syntax and what to write in ISO syntax instead.
     LEGACY = {
       combined_qualifier: '`?~` is legacy syntax, use `%`',
-      parentheses: '`(...)` is legacy syntax, qualify from the left: `2004-?06`',
+      parentheses:
+        '`(...)` is legacy syntax, qualify from the left: `2004-?06`',
       open: '`open` is legacy syntax, use `..`',
       unknown: '`unknown` is legacy syntax, leave the end empty',
       unspecified: '`u` is legacy syntax, use `X`',
@@ -18,7 +19,8 @@ module EDTF
       lowercase_e: '`e` is legacy syntax, use `E`',
       negative_zero: '`-0000` is legacy syntax, use `0000`',
       whitespace: 'spaces in sets are legacy syntax, remove them',
-      caret: '`^...` is legacy syntax, only hemispheres are kept (seasons 25-32)',
+      caret:
+        '`^...` is legacy syntax, only hemispheres are kept (seasons 25-32)',
       midnight: '`T24:00:00` is legacy syntax, use `T00:00:00` of the next day',
       partial_date_time: '`2004T...` is legacy syntax, use `2004-01-01T...`'
     }.freeze
@@ -48,7 +50,9 @@ module EDTF
         raise ArgumentError, "invalid level #{level.inspect}"
       end
 
-      extensions = strict ? false : Grammar::DEFAULT_EXTENSIONS if extensions.nil?
+      if extensions.nil?
+        extensions = strict ? false : Grammar::DEFAULT_EXTENSIONS
+      end
       legacy = !strict if legacy.nil?
       extensions = check_extensions(extensions)
 
@@ -173,11 +177,14 @@ module EDTF
       case result[:type]
       when :date, :year, :decade, :century, :season
         calendar = Period.calendar(result[:calendar] || options[:calendar])
-        result[:calendar] = calendar if result.key?(:calendar) || calendar != :gregorian
-        check_date(result, calendar) if result[:unspecified].to_i & Bitmask::YEAR == 0
+        if result.key?(:calendar) || calendar != :gregorian
+          result[:calendar] = calendar
+        end
+        check_date(result, calendar) if year_specified?(result)
       when :date_time
         unless options[:calendar] == :gregorian
-          raise ArgumentError, "date-times are Gregorian, not #{options[:calendar]}"
+          raise ArgumentError,
+            "date-times are Gregorian, not #{options[:calendar]}"
         end
 
         check_date(result, :gregorian)
@@ -187,24 +194,33 @@ module EDTF
     # Without year zero, years are written historically (1 BC is -0001):
     # results record year_zero: false, and year 0 is invalid.
     def check_year_zero(result)
-      return unless %i[date year decade century season date_time].include?(result[:type])
+      types = %i[date year decade century season date_time]
+      return unless types.include?(result[:type])
 
       result[:year_zero] = false
       return if %i[decade century].include?(result[:type])
-      return unless result[:values][0].zero? && result[:unspecified].to_i & Bitmask::YEAR == 0
+      return unless result[:values][0].zero? && year_specified?(result)
 
-      raise ArgumentError, 'there is no year 0 without year zero (1 BC is -0001)'
+      raise ArgumentError,
+        'there is no year 0 without year zero (1 BC is -0001)'
+    end
+
+    def year_specified?(result)
+      result[:unspecified].to_i & Bitmask::YEAR == 0
     end
 
     def check_date(result, calendar)
       year, month, day = result[:values]
       return if day.nil?
 
-      astronomical = Period.astronomical_year(year, result[:year_zero] != false)
-      return if ::Date.valid_date?(astronomical, month, day, Period.start(calendar))
+      year_zero = result[:year_zero] != false
+      astronomical = Period.astronomical_year(year, year_zero)
+      start = Period.start(calendar)
+      return if ::Date.valid_date?(astronomical, month, day, start)
 
-      raise ArgumentError,
-        format('invalid date %04d-%02d-%02d in the %s calendar', year, month, day, calendar)
+      raise ArgumentError, format(
+        'invalid date %04d-%02d-%02d in the %s calendar',
+        year, month, day, calendar)
     end
 
     def level(result)
@@ -234,7 +250,8 @@ module EDTF
       when :decade, :set, :list
         2
       when :season
-        level_2 = qualified?(result) || result[:qualifier] || result[:unspecified]
+        level_2 = qualified?(result) ||
+          result[:qualifier] || result[:unspecified]
         level_2 || result[:values][1] > 24 ? 2 : 1
       when :interval
         # Open or unknown ends are level 1, unspecified digits level 2.

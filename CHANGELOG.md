@@ -1,7 +1,7 @@
 Changelog
 =========
 
-5.0.0 (unreleased)
+5.0.0 (2026-11-15)
 ------------------
 EDTF-Ruby 5.0 switches from the EDTF draft syntax to ISO 8601-2;
 see [UPGRADING.md](UPGRADING.md) for the API changes and migration.
