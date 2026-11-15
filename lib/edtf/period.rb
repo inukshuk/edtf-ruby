@@ -36,7 +36,9 @@ module EDTF
     end
 
     def inspect
-      calendar = " #{self.calendar}" if respond_to?(:calendar) && self.calendar != :gregorian
+      if respond_to?(:calendar) && self.calendar != :gregorian
+        calendar = " #{self.calendar}"
+      end
       "#<#{self.class} #{edtf}#{calendar}>"
     end
 
@@ -73,7 +75,9 @@ module EDTF
     # Ruby's Date#<=> coerces objects it doesn't know,
     # so plain dates compare with periods without a core patch.
     def coerce(other)
-      raise TypeError, "#{other.class} can't be coerced into #{self.class}" unless other.is_a?(::Date)
+      unless other.is_a?(::Date)
+        raise TypeError, "#{other.class} can't be coerced into #{self.class}"
+      end
 
       [EDTF(other), self]
     end
@@ -171,13 +175,20 @@ module EDTF
 
     def check_keys!(changes, allowed)
       unknown = changes.keys - allowed
-      raise ArgumentError, "unknown keyword#{'s' if unknown.length > 1}: #{unknown.join(', ')}" unless unknown.empty?
+      return if unknown.empty?
+
+      raise ArgumentError, "unknown keyword#{'s' if unknown.length > 1}: " \
+        "#{unknown.join(', ')}"
     end
 
     # Open bounds (nil) sort first at the start and last at the end.
     # Private, but read from other periods too (see <=>).
     def keys
-      [self.begin ? [0, self.begin] : [-1], self.end ? [0, self.end] : [1], rank]
+      [
+        self.begin ? [0, self.begin] : [-1],
+        self.end ? [0, self.end] : [1],
+        rank
+      ]
     end
 
     # Periods without a precision (intervals without dated ends) rank first.

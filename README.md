@@ -4,10 +4,9 @@ EDTF-Ruby comprises a parser and an API implementation
 of the [Extended Date/Time Format][edtf] (EDTF)
 as specified by ISO 8601-2.
 
-This is the development version of EDTF-Ruby 5.0,
-which switches from the EDTF draft syntax to ISO 8601-2.
-For EDTF-Ruby 4.x see the [legacy branch][legacy];
-to upgrade, see [UPGRADING.md][upgrading].
+EDTF-Ruby 5.0 switches from the EDTF draft syntax to ISO 8601-2;
+to upgrade from 4.x, see [UPGRADING.md][upgrading].
+For EDTF-Ruby 4.x see the [legacy branch][legacy].
 
 [edtf]: https://www.loc.gov/standards/datetime/
 [legacy]: https://github.com/inukshuk/edtf-ruby/tree/legacy
@@ -51,7 +50,8 @@ Installation
 ------------
     $ gem install edtf
 
-Or add `gem 'edtf'` to your Gemfile.
+Or add `gem 'edtf', '~> 5.0'` to your Gemfile
+(`'~> 4.1'` to stay on EDTF-Ruby 4.x).
 
 
 Quickstart

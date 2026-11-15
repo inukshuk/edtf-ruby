@@ -8,17 +8,19 @@ module EDTF
   # Sets remember which members were specified as a range;
   # ranges are however enumerated for membership tests:
   #
-  #     EDTF('{1667,1668,1670..1672}').values.length       -> 3
-  #     EDTF('{1667,1668,1670..1672}').map(&:year)         -> [1667, 1668, 1670, 1671, 1672]
+  #     list = EDTF('{1667,1668,1670..1672}')
+  #     list.values.length                -> 3
+  #     list.map(&:year)                  -> [1667, 1668, 1670, 1671, 1672]
   #
-  #     EDTF('{1667,1668,1670..1672}').include? EDTF('1671')  -> true
-  #     EDTF('{1667,1668,1670..1672}').include? EDTF('1669')  -> false
+  #     list.include? EDTF('1671')        -> true
+  #     list.include? EDTF('1669')        -> false
   #
   # Sets also feature #earlier? and #later?:
   # an open start (..1667) or end (1672..) without bound.
   module Members
     include Enumerable
-    include Period # after Enumerable, so ActiveSupport's Enumerable#as_json doesn't win
+    # After Enumerable, so ActiveSupport's Enumerable#as_json doesn't win.
+    include Period
 
     attr_reader :values
 
@@ -71,7 +73,13 @@ module EDTF
     def each(&block)
       return to_enum(:each) unless block_given?
 
-      values.each { |value| value.is_a?(Range) ? value.each(&block) : yield(value) }
+      values.each do |value|
+        if value.is_a?(Range)
+          value.each(&block)
+        else
+          yield value
+        end
+      end
       self
     end
 
@@ -89,9 +97,14 @@ module EDTF
       return false if empty?
 
       precision = Period.precision(other)
-      return true if values.any? do |value|
-        value.is_a?(Range) ? value.begin.precision == precision && value.cover?(other) : value == other
-      end
+      matched = values.any? { |value|
+        if value.is_a?(Range)
+          value.begin.precision == precision && value.cover?(other)
+        else
+          value == other
+        end
+      }
+      return true if matched
 
       first, last = members.first, members.last
       (earlier? && first.precision == precision && other <= first) ||
@@ -100,13 +113,21 @@ module EDTF
 
     # Returns a Ruby Set of the enumerated members.
     def to_set
-      raise RangeError, "cannot enumerate the open set #{edtf}" if earlier? || later?
+      if earlier? || later?
+        raise RangeError, "cannot enumerate the open set #{edtf}"
+      end
 
       ::Set.new(to_a)
     end
 
     def edtf
-      content = values.map { |value| value.is_a?(Range) ? "#{value.begin.edtf}..#{value.end.edtf}" : value.edtf }
+      content = values.map { |value|
+        if value.is_a?(Range)
+          "#{value.begin.edtf}..#{value.end.edtf}"
+        else
+          value.edtf
+        end
+      }
       return wrap('') if content.empty?
 
       wrap("#{'..' if earlier?}#{content.join(',')}#{'..' if later?}")
@@ -127,19 +148,26 @@ module EDTF
 
     # The members as written, with ranges as their two ends.
     def members
-      values.flat_map { |value| value.is_a?(Range) ? [value.begin, value.end] : [value] }
+      values.flat_map { |value|
+        value.is_a?(Range) ? [value.begin, value.end] : [value]
+      }
     end
 
     # As in the grammar: members are dates, decades or centuries;
     # open ends and ranges are plain dates, ranges of one precision.
     def check_members
-      invalid = members.find { |member| !member.is_a?(Date) && !member.is_a?(Epoch) }
-      raise ArgumentError, "invalid #{self.class} member: #{invalid.edtf}" if invalid
+      invalid = members.find { |member|
+        !member.is_a?(Date) && !member.is_a?(Epoch)
+      }
+      if invalid
+        raise ArgumentError, "invalid #{self.class} member: #{invalid.edtf}"
+      end
 
       ranges = values.grep(Range)
       ends = [(values.first if earlier?), (values.last if later?)].compact
+      bounds = ends + ranges.flat_map { |r| [r.begin, r.end] }
 
-      unless (ends + ranges.flat_map { |r| [r.begin, r.end] }).all? { |v| plain?(v) }
+      unless bounds.all? { |v| plain?(v) }
         raise ArgumentError, 'open ends and ranges must be plain dates'
       end
 
@@ -149,16 +177,21 @@ module EDTF
     end
 
     def plain?(value)
-      value.instance_of?(Date) && value.year.abs <= 9999 && value.significant.nil? &&
+      value.instance_of?(Date) && value.year.abs <= 9999 &&
+        value.significant.nil? &&
         [value.uncertain, value.approximate, value.unspecified].all?(&:zero?)
     end
 
     def coerce_member(value)
       case value
-      when Period then value
-      when ::Date then EDTF(value)
-      when Range then coerce_member(value.begin)..coerce_member(value.end)
-      else raise ArgumentError, "invalid #{self.class} member: #{value.inspect}"
+      when Period
+        value
+      when ::Date
+        EDTF(value)
+      when Range
+        coerce_member(value.begin)..coerce_member(value.end)
+      else
+        raise ArgumentError, "invalid #{self.class} member: #{value.inspect}"
       end
     end
   end

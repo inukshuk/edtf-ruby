@@ -25,7 +25,8 @@ module EDTF
     # Ruby's constructors skip initialize,
     # so their times would not be frozen.
     private_class_method(*%i[
-      now at mktime local utc gm parse strptime iso8601 xmlschema rfc2822 rfc822 httpdate
+      now at mktime local utc gm parse strptime
+      iso8601 xmlschema rfc2822 rfc822 httpdate
     ].select { |name| ::Time.respond_to?(name) })
 
     # Marshal stores the values and attributes:
@@ -33,12 +34,21 @@ module EDTF
     undef_method :marshal_dump, :marshal_load
 
     def _dump(_level)
-      Marshal.dump([year, month, day, hour, min, sec + subsec, offset, precision, t24?, year_zero?])
+      Marshal.dump([
+        year, month, day, hour, min, sec + subsec,
+        offset, precision, t24?, year_zero?
+      ])
     end
 
     def self._load(data)
       *values, offset, precision, t24, year_zero = Marshal.load(data)
-      new(*values, offset: offset, precision: precision, t24: t24, year_zero: year_zero)
+      new(
+        *values,
+        offset: offset,
+        precision: precision,
+        t24: t24,
+        year_zero: year_zero
+      )
     end
 
     # The offset is given in minutes; nil means a floating time.
@@ -58,12 +68,15 @@ module EDTF
       year_zero: true
     )
       precision = precision.to_sym
-      raise ArgumentError,
-        "invalid precision: #{precision.inspect}" unless PRECISION.key?(precision)
+      unless PRECISION.key?(precision)
+        raise ArgumentError, "invalid precision: #{precision.inspect}"
+      end
 
       beyond = [min, sec].drop(PRECISION[precision][0] - 4)
-      raise ArgumentError,
-        "minutes or seconds beyond #{precision} precision" unless beyond.all?(&:zero?)
+      unless beyond.all?(&:zero?)
+        raise ArgumentError,
+          "minutes or seconds beyond #{precision} precision"
+      end
 
       super(
         year,
@@ -113,13 +126,16 @@ module EDTF
       check_keys!(changes, ATTRIBUTES)
 
       precision = changes.fetch(:precision, self.precision).to_sym
-      raise ArgumentError,
-        "invalid precision: #{precision.inspect}" unless PRECISION.key?(precision)
+      unless PRECISION.key?(precision)
+        raise ArgumentError, "invalid precision: #{precision.inspect}"
+      end
 
       count = PRECISION[precision][0]
       beyond = ATTRIBUTES[count...6] & changes.keys
-      raise ArgumentError,
-        "#{beyond.join(' and ')} beyond #{precision} precision" unless beyond.empty?
+      unless beyond.empty?
+        raise ArgumentError,
+          "#{beyond.join(' and ')} beyond #{precision} precision"
+      end
 
       current = [year, month, day, hour, min, sec + subsec]
       values = ATTRIBUTES.take(count).zip(current).map { |name, value|
@@ -195,7 +211,8 @@ module EDTF
     # or is floating, too.
     def eql?(other)
       other.is_a?(::Time) && TIME[:eql?].bind_call(self, other) &&
-        utc_offset == other.utc_offset && floating? == (other.is_a?(DateTime) && other.floating?) &&
+        utc_offset == other.utc_offset &&
+        floating? == (other.is_a?(DateTime) && other.floating?) &&
         precision == Period.precision(other)
     end
 
@@ -250,7 +267,9 @@ module EDTF
 
     # The length of a time in seconds: 0 for instants.
     def self.span(time) # :nodoc:
-      time.is_a?(DateTime) && time.precision != :second ? PRECISION[time.precision][1] : 0
+      return 0 unless time.is_a?(DateTime) && time.precision != :second
+
+      PRECISION[time.precision][1]
     end
 
     # Time's own methods, which Period overrides.

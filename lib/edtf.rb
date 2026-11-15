@@ -37,8 +37,6 @@ module EDTF
     nil
   end
   
-  # Options go to the parser, except centuries: (see Builder),
-  # which is on unless strict: true.
   def parse!(input, centuries: nil, **options)
     centuries = !options[:strict] if centuries.nil?
     Builder.build(Parser.new(**options).parse!(input), centuries: centuries)
@@ -68,7 +66,8 @@ module Kernel
       time = value.to_time
 
       unless (time.utc_offset % 60).zero?
-        raise ArgumentError, "offset #{time.strftime('%::z')} is not in whole minutes"
+        raise ArgumentError,
+          "offset #{time.strftime('%::z')} is not in whole minutes"
       end
 
       EDTF::DateTime.new(

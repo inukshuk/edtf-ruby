@@ -37,11 +37,16 @@ module EDTF
           value.sum { |part| convert(part) }
         when Symbol, String
           case value.to_s
-          when /\Adays?\z/i then DAY
-          when /\Amonths?\z/i, /\Aseasons?\z/i then MONTH
-          when /\Ayears?\z/i then YEAR
-          when PATTERN then compute(value.to_s)
-          else raise ArgumentError, "invalid bitmask: #{value.inspect}"
+          when /\Adays?\z/i
+            DAY
+          when /\Amonths?\z/i, /\Aseasons?\z/i
+            MONTH
+          when /\Ayears?\z/i
+            YEAR
+          when PATTERN
+            compute(value.to_s)
+          else
+            raise ArgumentError, "invalid bitmask: #{value.inspect}"
           end
         else
           raise ArgumentError, "invalid bitmask: #{value.inspect}"
@@ -52,7 +57,8 @@ module EDTF
       # with each X replaced by digit.
       def values(mask, digit: 0, normalize: true)
         num = mask.gsub(/[xX]/, digit.to_s)
-        values = num.match(/\A(\d{4})(\d\d)?(\d\d)?\z/).captures.compact.map(&:to_i)
+        digits = num.match(/\A(\d{4})(\d\d)?(\d\d)?\z/).captures
+        values = digits.compact.map(&:to_i)
         normalize ? normalize(values) : values
       end
 
@@ -182,6 +188,7 @@ module EDTF
       return [year, month] if day.nil?
 
       maxdays = MAXDAYS[month - 1]
+      leap = ::Date.valid_date?(year, 2, 29, start)
 
       case value & DAY
       when DAY
@@ -192,14 +199,14 @@ module EDTF
         day %= 10
 
         if month == 2
-          day += (day == 9 && !::Date.valid_date?(year, 2, 29, start)) ? 10 : 20
+          day += (day == 9 && !leap) ? 10 : 20
         else
           day += day < 2 ? 30 : 20
           day -= 10 if day > maxdays
         end
       end
 
-      day = 28 if month == 2 && day > 28 && !::Date.valid_date?(year, 2, 29, start)
+      day = 28 if month == 2 && day > 28 && !leap
 
       [year, month, day]
     end
@@ -217,9 +224,12 @@ module EDTF
       return [year, month] if day.nil?
 
       case value & DAY
-      when DAY then day = 1
-      when DX then day = [1, day / 10 * 10].max
-      when XD then day = day % 10 == 0 ? 10 : day % 10
+      when DAY
+        day = 1
+      when DX
+        day = [1, day / 10 * 10].max
+      when XD
+        day = day % 10 == 0 ? 10 : day % 10
       end
 
       [year, month, day]
@@ -246,13 +256,17 @@ module EDTF
       return months if day.nil?
 
       first = (1..31).find { |d| day_digits.match?(format('%02d', d)) }
-      fitting = months.select { |m| first && ::Date.valid_date?(year, m, first, start) }
+      fitting = months.select { |m|
+        first && ::Date.valid_date?(year, m, first, start)
+      }
       fitting.empty? ? months : fitting
     end
 
     # Patterns that match the values the digits allow, e.g. /\A19..\z/.
     def pattern(*values)
-      strings = values.compact.each_with_index.map { |v, i| format(i.zero? ? '%04d' : '%02d', v) }
+      strings = values.compact.each_with_index.map { |v, i|
+        format(i.zero? ? '%04d' : '%02d', v)
+      }
       masks(strings, '.').map { |digits| Regexp.new("\\A#{digits}\\z") }
     end
 
