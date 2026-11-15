@@ -16,17 +16,13 @@ For EDTF-Ruby 4.x see the [legacy branch][legacy].
 Compatibility
 -------------
 EDTF-Ruby fully implements EDTF levels 0, 1, and 2
-as specified by ISO 8601-2
-with the following exceptions:
+as specified by ISO 8601-2 with the following exceptions:
 
 1. Uncertain or approximate seasons (`2001-21?`, `2001?-21`)
-   and seasons with unspecified years (`200X-21`)
-   are a non-standard extension.
+   and seasons with unspecified years (`200X-21`).
 2. Offsets without a colon after an extended date
-   (`2004-01-01T10:10:10+0230`) are a non-standard extension.
-3. Seasons in intervals (`2001-21/2002-22`) are a non-standard extension,
-   off by default.
-4. Fractions of a second are read to the millisecond.
+   (`2004-01-01T10:10:10+0230`).
+3. Seasons in intervals (`2001-21/2002-22`).
 
 The first two extensions are on by default;
 see [Parser options][options] to turn them on or off.
@@ -36,9 +32,9 @@ EDTF-Ruby still reads the draft syntax of earlier EDTF versions
 and warns when deprecation warnings are enabled;
 see [Legacy syntax][legacy-syntax].
 
-EDTF-Ruby is tested on Ruby 3.3 and later, and on JRuby.
-It does not depend on ActiveSupport,
-but works with it and with Rails;
+EDTF-Ruby is tested on Ruby 3.3 and later.
+It does not depend on ActiveSupport anymore,
+but works fine alongside it and on Rails;
 see [Rails and ActiveSupport][rails].
 
 [options]: #parser-options
@@ -50,8 +46,7 @@ Installation
 ------------
     $ gem install edtf
 
-Or add `gem 'edtf', '~> 5.0'` to your Gemfile
-(`'~> 4.1'` to stay on EDTF-Ruby 4.x).
+Or add it to your Gemfile.
 
 
 Quickstart
@@ -81,11 +76,10 @@ EDTF-Ruby has the following types:
 `EDTF::Set` (one of a set) and `EDTF::List` (all members of a set).
 
 Each EDTF string stands for a period of time,
-so all types share an interface (`EDTF::Period`):
+so all types share an interface (`EDTF::Period`) exposing:
 the corresponding EDTF string,
 the first and last day of the period,
-its precision,
-and its values.
+its precision, and its values.
 
     EDTF('2016?').edtf               #-> "2016?"
     EDTF('2016?').to_s               #-> "2016?"
@@ -110,11 +104,8 @@ and its values.
 
     EDTF('2016?-02').values          #-> [2016, 2]
 
-All EDTF objects are frozen;
-use `with` for a modified copy.
-Create them with `EDTF()`, `EDTF.parse`, or their `new` method;
-Ruby's other constructors (such as `EDTF::Date.today`) are private,
-use `EDTF(Date.today)` instead.
+All EDTF objects are frozen.
+Use `with` to return a modified copy.
 
     EDTF('2016-05?').with(approximate: true).edtf  #-> "2016-05%"
 
@@ -152,7 +143,7 @@ To change a date's precision, use `with`:
 In the examples above, you also see that `edtf`
 prints a different string depending on the date's precision.
 
-Date math (`+`, `-`, `>>`, `<<`, `next_day`, …) returns plain Ruby dates,
+Date math (`+`, `-`, `>>`, `<<`, or `next_day`) returns plain Ruby dates,
 because the result no longer stands for the same EDTF string:
 
     (EDTF('2016-05?') + 1).class     #-> Date
